@@ -517,171 +517,177 @@
   "dk_players": [
     {
       "name": "Iga Swiatek",
-      "id": 42666988,
-      "salary": 10600,
-      "avg_ppg": 60.69
+      "id": 42671014,
+      "salary": 8800,
+      "avg_ppg": 60.5
     },
     {
       "name": "Coco Gauff",
-      "id": 42666989,
-      "salary": 10200,
-      "avg_ppg": 49.35
+      "id": 42671012,
+      "salary": 9100,
+      "avg_ppg": 53.08
     },
     {
       "name": "Alexander Zverev",
-      "id": 42666990,
-      "salary": 10000,
-      "avg_ppg": 56.39
+      "id": 42671009,
+      "salary": 9500,
+      "avg_ppg": 63.65
     },
     {
       "name": "Joao Fonseca",
-      "id": 42666991,
-      "salary": 9800,
-      "avg_ppg": 62.92
+      "id": 42671013,
+      "salary": 8900,
+      "avg_ppg": 55.72
     },
     {
       "name": "Elena Rybakina",
-      "id": 42666992,
-      "salary": 9700,
-      "avg_ppg": 66.09
+      "id": 42671018,
+      "salary": 8300,
+      "avg_ppg": 66.35
     },
     {
       "name": "Andrey Rublev",
-      "id": 42666993,
-      "salary": 9600,
-      "avg_ppg": 54.17
+      "id": 42671016,
+      "salary": 8600,
+      "avg_ppg": 55.51
     },
     {
       "name": "Katie Boulter",
-      "id": 42666994,
-      "salary": 9400,
-      "avg_ppg": 59.42
+      "id": 42671011,
+      "salary": 9300,
+      "avg_ppg": 55.03
     },
     {
       "name": "Lorenzo Musetti",
-      "id": 42666995,
-      "salary": 9200,
-      "avg_ppg": 55.24
-    },
-    {
-      "name": "Marta Kostyuk",
-      "id": 42666996,
-      "salary": 9000,
+      "id": 42671020,
+      "salary": 7900,
       "avg_ppg": 56.8
     },
     {
+      "name": "Marta Kostyuk",
+      "id": 42671007,
+      "salary": 10000,
+      "avg_ppg": 57.11
+    },
+    {
       "name": "Sorana Cirstea",
-      "id": 42666997,
-      "salary": 8800,
-      "avg_ppg": 52.11
+      "id": 42671010,
+      "salary": 9400,
+      "avg_ppg": 62.86
     },
     {
       "name": "Elina Svitolina",
-      "id": 42666998,
-      "salary": 8600,
-      "avg_ppg": 56.0
+      "id": 42671015,
+      "salary": 8700,
+      "avg_ppg": 61.38
     },
     {
       "name": "Rafael Jodar",
-      "id": 42666999,
-      "salary": 8400,
-      "avg_ppg": 51.86
+      "id": 42671008,
+      "salary": 9700,
+      "avg_ppg": 56.74
     },
     {
       "name": "Arthur Fils",
-      "id": 42667000,
-      "salary": 8200,
-      "avg_ppg": 55.16
+      "id": 42671021,
+      "salary": 7800,
+      "avg_ppg": 56.28
     },
     {
       "name": "Mirra Andreeva",
-      "id": 42667001,
-      "salary": 7800,
-      "avg_ppg": 41.89
+      "id": 42671027,
+      "salary": 6500,
+      "avg_ppg": 62.28
     },
     {
       "name": "Denis Shapovalov",
-      "id": 42667002,
-      "salary": 7600,
-      "avg_ppg": 43.84
+      "id": 42671017,
+      "salary": 8400,
+      "avg_ppg": 45.29
     },
     {
       "name": "Ben Shelton",
-      "id": 42667003,
-      "salary": 7200,
-      "avg_ppg": 40.89
+      "id": 42671028,
+      "salary": 6400,
+      "avg_ppg": 58.38
     },
     {
       "name": "Karolina Muchova",
-      "id": 42667004,
-      "salary": 7000,
-      "avg_ppg": 51.26
+      "id": 42671029,
+      "salary": 6100,
+      "avg_ppg": 62.4
     },
     {
       "name": "Iryna Shymanovich",
-      "id": 42667005,
-      "salary": 6800,
-      "avg_ppg": 73.75
+      "id": 42671019,
+      "salary": 8200,
+      "avg_ppg": 67.62
     },
     {
       "name": "Francisco Cerundolo",
-      "id": 42667006,
-      "salary": 6600,
-      "avg_ppg": 47.18
+      "id": 42671032,
+      "salary": 5600,
+      "avg_ppg": 58.68
     },
     {
       "name": "Linda Noskova",
-      "id": 42667007,
-      "salary": 6400,
-      "avg_ppg": 55.69
+      "id": 42671026,
+      "salary": 6700,
+      "avg_ppg": 57.1
     },
     {
       "name": "Alex Molcan",
-      "id": 42667008,
-      "salary": 6200,
-      "avg_ppg": 52.6
+      "id": 42671024,
+      "salary": 7200,
+      "avg_ppg": 53.98
     },
     {
       "name": "Leylah Fernandez",
-      "id": 42667009,
-      "salary": 6000,
-      "avg_ppg": 34.28
+      "id": 42671023,
+      "salary": 7400,
+      "avg_ppg": 36.27
     },
     {
       "name": "Tomas Machac",
-      "id": 42667010,
-      "salary": 5800,
-      "avg_ppg": 45.05
+      "id": 42671025,
+      "salary": 6900,
+      "avg_ppg": 50.96
     },
     {
       "name": "Anna Bondar",
-      "id": 42667011,
-      "salary": 5600,
-      "avg_ppg": 48.4
+      "id": 42671031,
+      "salary": 5800,
+      "avg_ppg": 50.75
     },
     {
       "name": "Cameron Norrie",
-      "id": 42667012,
-      "salary": 5400,
-      "avg_ppg": 30.47
+      "id": 42671033,
+      "salary": 5300,
+      "avg_ppg": 52.04
     },
     {
       "name": "Tatjana Maria",
-      "id": 42667013,
-      "salary": 5200,
-      "avg_ppg": 35.0
+      "id": 42671022,
+      "salary": 7600,
+      "avg_ppg": 36.95
     },
     {
       "name": "Veronika Podrez",
-      "id": 42667014,
-      "salary": 5000,
-      "avg_ppg": 79.5
+      "id": 42671030,
+      "salary": 5900,
+      "avg_ppg": 67.02
     },
     {
       "name": "Ann Li",
-      "id": 42667015,
-      "salary": 4800,
-      "avg_ppg": 25.92
+      "id": 42671034,
+      "salary": 5100,
+      "avg_ppg": 47.12
+    },
+    {
+      "name": "Flavio Cobolli",
+      "id": 0,
+      "salary": 0,
+      "avg_ppg": 0
     },
     {
       "name": "Hamad Medjedovic",
@@ -691,12 +697,6 @@
     },
     {
       "name": "Nuno Borges",
-      "id": 0,
-      "salary": 0,
-      "avg_ppg": 0
-    },
-    {
-      "name": "Flavio Cobolli",
       "id": 0,
       "salary": 0,
       "avg_ppg": 0
@@ -840,5 +840,5 @@
       "mult": "normal"
     }
   ],
-  "last_updated": "2026-04-16 09:40 PM ET"
+  "last_updated": "2026-04-17 12:11 PM MT"
 }
