@@ -93,22 +93,19 @@ function Tip({ emoji, label }) { const [s, setS] = useState(false); return <span
 export default function App() {
   const { data, error } = useSlateData();
   const [tab, setTab] = useState('dk');
-  const [buildRes, setBuildRes] = useState(null);
-  const [buildExp, setBuildExp] = useState({});
   const { dkPlayers, ppRows } = useMemo(() => buildProjections(data), [data]);
   const ownership = useMemo(() => dkPlayers.length > 0 ? simulateOwnership(dkPlayers) : {}, [dkPlayers]);
   if (error) return <div className="app"><div className="empty"><h2>No Slate Loaded</h2><p>Push slate.json and redeploy.</p></div></div>;
   if (!data) return <div className="app"><div className="empty"><h2>Loading...</h2></div></div>;
-  const tabs = [{ id: 'dk', l: 'DK Projections' }, { id: 'pp', l: 'PP Projections' }, { id: 'build', l: 'Lineup Builder' }, { id: 'leverage', l: 'Live Leverage' }, { id: 'export', l: 'Export' }];
+  const tabs = [{ id: 'dk', l: 'DK Projections' }, { id: 'pp', l: 'PP Projections' }, { id: 'build', l: 'Lineup Builder' }, { id: 'leverage', l: 'Live Leverage' }];
   return (<div className="app">
     <div className="topbar"><div className="topbar-brand"><img src="./logo.png" alt="DD" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} /><span>DeuceData</span></div><div className="topbar-date">{data.date} · {data.matches.length} matches{data.last_updated && <> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></>}</div></div>
     <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.l}</button>)}</div>
     <div className="content">
       {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches.length} own={ownership} />}
       {tab === 'pp' && <PPTab rows={ppRows} />}
-      {tab === 'build' && <BuilderTab players={dkPlayers} buildRes={buildRes} setBuildRes={setBuildRes} buildExp={buildExp} setBuildExp={setBuildExp} />}
+      {tab === 'build' && <BuilderTab players={dkPlayers} />}
       {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
-      {tab === 'export' && <ExportTab players={dkPlayers} buildRes={buildRes} />}
     </div>
   </div>);
 }
@@ -204,24 +201,32 @@ function PPTab({ rows }) {
   </>);
 }
 
-function BuilderTab({ players: rp, buildRes, setBuildRes, buildExp, setBuildExp }) {
-  const exp = buildExp; const setExp = setBuildExp;
-  const res = buildRes; const setRes = setBuildRes;
+function BuilderTab({ players: rp }) {
+  const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [nL, setNL] = useState(45); const [sc, setSC] = useState(50000);
   const sp = useMemo(() => [...rp].filter(p => p.salary > 0).sort((a, b) => b.val - a.val), [rp]);
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const run = () => { const pd = sp.map(p => ({ name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: exp[p.name]?.max ?? 60, minExp: exp[p.name]?.min ?? 0 })); const r = optimize(pd, nL, sc, 6); setRes({ ...r, pData: pd }); };
+  const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
+  const exportDK = () => { if (!res) return; let c = 'P,P,P,P,P,P\n'; res.lineups.forEach(lu => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload.csv'); };
+  const exportReadable = () => { if (!res) return; let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6\n'; res.lineups.forEach((lu, i) => { const ps = lu.players.map(j => res.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups.csv'); };
+  const exportProjections = () => { let c = 'Player,Salary,Win%,Proj,Value,GW,GL,SW,Aces,DFs,Breaks,P(2-0),Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.val},${fmt(p.gw)},${fmt(p.gl)},${fmt(p.sw)},${fmt(p.aces)},${fmt(p.dfs)},${fmt(p.breaks)},${fmtPct(p.pStraight)},${p.opponent}\n`; }); dl(c, 'projections.csv'); };
   return (<>
-    <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups</div>
+    <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
     <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Cap: <input style={{ width: 70, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={sc} onChange={e => setSC(+e.target.value)} /></label>
+      <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name">{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj">{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? 0} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" /><input type="number" value={exp[p.name]?.max ?? 60} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" /></div>)}</div>
     <button className="btn btn-primary" onClick={run}>⚡ Build {nL} Lineups</button>
     {res && <>
-      <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{res.lineups[0]?.proj}</span> → <span style={{ color: 'var(--text-dim)' }}>{res.lineups[res.lineups.length - 1]?.proj}</span> · <span style={{color:'var(--green)'}}>Ready to export →</span></div>
-      <button className="btn btn-primary" style={{ marginTop: 10 }} onClick={run}>⚡ Rebuild {nL} Lineups</button>
+      <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{res.lineups[0]?.proj}</span> → <span style={{ color: 'var(--text-dim)' }}>{res.lineups[res.lineups.length - 1]?.proj}</span></div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" onClick={run} style={{ flex: '1 1 auto', width: 'auto' }}>⚡ Rebuild {nL}</button>
+        <button className="btn btn-primary" onClick={exportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}>📥 Download DK Upload CSV</button>
+        <button className="btn btn-outline" onClick={exportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}>📥 Readable CSV</button>
+      </div>
       <div className="section-head" style={{ marginTop: 20 }}>📊 Exposure</div>
       <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr><th>Player</th><th>Salary</th><th>Proj</th><th>Value</th><th>Count</th><th>Exposure</th></tr></thead>
       <tbody>{[...res.pData].map((p, i) => ({ ...p, cnt: res.counts[i], pct: res.counts[i] / res.lineups.length * 100 })).sort((a, b) => b.pct - a.pct).map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">{fmtSal(p.salary)}</td><td className="num">{fmt(p.projection, 1)}</td><td className="num">{fmt(p.projection / (p.salary / 1000), 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td></tr>)}</tbody></table></div>
@@ -254,13 +259,4 @@ function LeverageTab({ players: rp }) {
     </>}
     {!cd && !ul && <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' }}><div style={{ fontSize: 32, marginBottom: 8 }}>🔄</div><div style={{ fontSize: 14 }}>Upload both CSVs to see leverage vs field</div></div>}
   </>);
-}
-
-function ExportTab({ players, buildRes }) {
-  const sp = useMemo(() => [...players].filter(p => p.salary > 0).sort((a, b) => b.val - a.val), [players]);
-  const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
-  const eDK = () => { if (!buildRes) return; let c = 'P,P,P,P,P,P\n'; buildRes.lineups.forEach(lu => { const ps = lu.players.map(i => buildRes.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload.csv'); };
-  const eR = () => { if (!buildRes) return; let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6\n'; buildRes.lineups.forEach((lu, i) => { const ps = lu.players.map(j => buildRes.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups.csv'); };
-  const eP = () => { let c = 'Player,Salary,Win%,Proj,Value,GW,GL,SW,Aces,DFs,Breaks,P(2-0),Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.val},${fmt(p.gw)},${fmt(p.gl)},${fmt(p.sw)},${fmt(p.aces)},${fmt(p.dfs)},${fmt(p.breaks)},${fmtPct(p.pStraight)},${p.opponent}\n`; }); dl(c, 'projections.csv'); };
-  return (<><div className="section-head">📥 Export</div><div className="section-sub">{buildRes ? `Exporting your latest build — ${buildRes.lineups.length} lineups` : '⚠️ Build lineups in the Lineup Builder tab first'}</div><div style={{ maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 8 }}><button className="btn btn-primary" onClick={eDK} style={{ opacity: buildRes ? 1 : 0.4, cursor: buildRes ? 'pointer' : 'not-allowed' }}>📥 DraftKings Upload CSV</button><button className="btn btn-outline" onClick={eR} style={{ opacity: buildRes ? 1 : 0.4, cursor: buildRes ? 'pointer' : 'not-allowed' }}>📥 Readable Lineups CSV</button><button className="btn btn-outline" onClick={eP}>📥 Projections CSV</button></div></>);
 }
