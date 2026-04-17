@@ -252,7 +252,7 @@ function LeverageTab({ players: rp }) {
 }
 
 function ExportTab({ players }) {
-  const sp = useMemo(() => [...players].sort((a, b) => b.val - a.val), [players]);
+  const sp = useMemo(() => [...players].filter(p => p.salary > 0).sort((a, b) => b.val - a.val), [players]);
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
   const eDK = () => { const pd = sp.map(p => ({ name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: 100, minExp: 0 })); const r = optimize(pd, 45, 50000, 6); let c = 'P,P,P,P,P,P\n'; r.lineups.forEach(lu => { const ps = lu.players.map(i => pd[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload.csv'); };
   const eR = () => { const pd = sp.map(p => ({ name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: 100, minExp: 0 })); const r = optimize(pd, 45, 50000, 6); let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6\n'; r.lineups.forEach((lu, i) => { const ps = lu.players.map(j => pd[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups.csv'); };
