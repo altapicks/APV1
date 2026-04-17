@@ -1,0 +1,363 @@
+// ============================================================
+// ODDS HELPERS
+// ============================================================
+export function americanToProb(odds) {
+  if (!odds || odds === 0) return 0.5;
+  return odds > 0 ? 100 / (odds + 100) : Math.abs(odds) / (Math.abs(odds) + 100);
+}
+
+export function removeVig(p1, p2) {
+  const t = p1 + p2;
+  return t === 0 ? [0.5, 0.5] : [p1 / t, p2 / t];
+}
+
+export function poissonEV(odds, milestone) {
+  const p = americanToProb(odds);
+  if (p <= 0 || p >= 1) return milestone;
+  let lam = milestone;
+  for (let iter = 0; iter < 50; iter++) {
+    let cdf = 0;
+    for (let i = 0; i < milestone; i++) {
+      cdf += Math.exp(-lam) * Math.pow(lam, i) / factorial(i);
+    }
+    const target = 1 - p;
+    if (Math.abs(cdf - target) < 0.001) break;
+    let dcdf = 0;
+    for (let i = 0; i < milestone; i++) {
+      dcdf += Math.exp(-lam) * (i * Math.pow(lam, i - 1) / factorial(i) - Math.pow(lam, i) / factorial(i));
+    }
+    if (Math.abs(dcdf) < 1e-10) break;
+    lam -= (cdf - target) / dcdf;
+    lam = Math.max(0.1, Math.min(lam, 30));
+  }
+  return lam;
+}
+
+function factorial(n) {
+  if (n <= 1) return 1;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+// ============================================================
+// PROCESS MATCH ODDS → PLAYER STATS
+// ============================================================
+export function processMatch(match) {
+  const o = match.odds;
+  const [wp_a, wp_b] = removeVig(americanToProb(o.ml_a), americanToProb(o.ml_b));
+
+  // Set betting (normalize 4-way)
+  const rawSet = [o.set_a_20, o.set_a_21, o.set_b_20, o.set_b_21].map(americanToProb);
+  const setTotal = rawSet.reduce((a, b) => a + b, 0);
+  const [p_a20, p_a21, p_b20, p_b21] = rawSet.map(p => p / setTotal);
+
+  // Games won (adjust by over lean)
+  const gw_a = adjustLine(o.gw_a_line, o.gw_a_over);
+  const gw_b = adjustLine(o.gw_b_line, o.gw_b_over);
+
+  // Breaks
+  const brk_a = o.brk_a_line + (americanToProb(o.brk_a_over) > 0.6 ? 0.5 : 0);
+  const brk_b = o.brk_b_line + (americanToProb(o.brk_b_over) > 0.55 ? 0.2 : 0);
+
+  // Aces & DFs
+  const ace_a = poissonEV(o.ace_a_5plus, 5);
+  const ace_b = poissonEV(o.ace_b_5plus, 5);
+  const df_a = poissonEV(o.df_a_3plus, 3);
+  const df_b = poissonEV(o.df_b_3plus, 3);
+  const p10ace_a = americanToProb(o.ace_a_10plus);
+  const p10ace_b = americanToProb(o.ace_b_10plus);
+  const pnodf_a = Math.max(0, 1 - americanToProb(o.df_a_2plus));
+  const pnodf_b = Math.max(0, 1 - americanToProb(o.df_b_2plus));
+
+  return {
+    player_a: buildPlayerStats(wp_a, p_a20, p_b20, p_a21, p_b21, gw_a, gw_b, ace_a, df_a, brk_a, p10ace_a, pnodf_a, match.adj_a || 0),
+    player_b: buildPlayerStats(wp_b, p_b20, p_a20, p_b21, p_a21, gw_b, gw_a, ace_b, df_b, brk_b, p10ace_b, pnodf_b, match.adj_b || 0),
+  };
+}
+
+function adjustLine(line, overOdds) {
+  const p = americanToProb(overOdds);
+  if (p > 0.55) return line + 0.5;
+  if (p < 0.45) return line - 0.3;
+  return line;
+}
+
+function buildPlayerStats(wp, pStraightWin, pStraightLoss, pWin3, pLose3, gw, gl, aces, dfs, breaks, p10ace, pNoDF, adj) {
+  const p3set = 1 - pStraightWin - pStraightLoss;
+  const eSP = 2 * (1 - p3set) + 3 * p3set;
+  const eSW = 2 * pStraightWin + 2 * (wp - pStraightWin) + 1 * ((1 - wp) - pStraightLoss);
+  const eSL = eSP - eSW;
+  const cleanRate = 0.05 + 0.15 * wp;
+
+  return {
+    wp, pStraightWin, p3set, gw, gl, aces, dfs, breaks, p10ace, pNoDF, adj,
+    setsWon: eSW, setsLost: eSL, setsPlayed: eSP,
+    cleanSets: eSW * cleanRate,
+  };
+}
+
+// ============================================================
+// DK SCORING (Best of 3)
+// ============================================================
+export function dkProjection(stats) {
+  return round2(
+    30                              // match played
+    + 6 * stats.wp                  // match won
+    + 6 * stats.setsWon             // sets won
+    - 3 * stats.setsLost            // sets lost
+    + 2.5 * stats.gw                // games won
+    - 2 * stats.gl                  // games lost
+    + 0.4 * stats.aces              // aces
+    - 1 * stats.dfs                 // DFs
+    + 0.75 * stats.breaks           // breaks
+    + 6 * stats.pStraightWin        // straight sets bonus
+    + 4 * stats.cleanSets           // clean set bonus
+    + 2.5 * stats.pNoDF             // no DF bonus
+    + 2 * stats.p10ace              // 10+ ace bonus
+    + stats.adj                     // user adjustment
+  );
+}
+
+// ============================================================
+// PRIZEPICKS SCORING
+// ============================================================
+export function ppProjection(stats) {
+  return round2(
+    10                              // match played
+    + 1 * stats.gw                  // game win
+    - 1 * stats.gl                  // game loss
+    + 3 * stats.setsWon             // set won
+    - 3 * stats.setsLost            // set lost
+    + 0.5 * stats.aces              // ace
+    - 0.5 * stats.dfs               // double fault
+  );
+}
+
+// ============================================================
+// EV CALCULATION (PP)
+// ============================================================
+export function ppEV(projectedScore, ppLine) {
+  // Simple EV: projected - line. Positive = MORE has edge
+  return round2(projectedScore - ppLine);
+}
+
+// ============================================================
+// LINEUP OPTIMIZER
+// ============================================================
+export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6) {
+  // Build match pairs
+  const idx = {};
+  players.forEach((p, i) => { idx[p.name] = i; });
+  const seen = new Set();
+  const matches = [];
+  players.forEach(p => {
+    if (seen.has(p.name)) return;
+    if (p.opponent && idx[p.opponent] !== undefined) {
+      matches.push([p.name, p.opponent]);
+      seen.add(p.name); seen.add(p.opponent);
+    }
+  });
+
+  const matchOpts = matches.map(([a, b]) => [
+    { idx: idx[a], sal: players[idx[a]].salary, proj: players[idx[a]].projection },
+    { idx: idx[b], sal: players[idx[b]].salary, proj: players[idx[b]].projection },
+  ]);
+
+  // Generate all valid lineups
+  const combos = combinations(matches.length, rosterSize);
+  const allLineups = [];
+  for (const mc of combos) {
+    const bits = 1 << rosterSize;
+    for (let b = 0; b < bits; b++) {
+      let ts = 0, tp = 0;
+      const pidxs = [];
+      for (let i = 0; i < rosterSize; i++) {
+        const side = (b >> i) & 1;
+        const opt = matchOpts[mc[i]][side];
+        ts += opt.sal; tp += opt.proj; pidxs.push(opt.idx);
+      }
+      if (ts <= salaryCap) {
+        allLineups.push({ proj: round2(tp), sal: ts, players: pidxs });
+      }
+    }
+  }
+  allLineups.sort((a, b) => b.proj - a.proj);
+
+  // Exposure caps
+  const maxCaps = {}, minCaps = {};
+  const defCap = Math.floor(nLineups * 0.6);
+  players.forEach(p => {
+    if (p.maxExp != null) maxCaps[p.name] = Math.max(1, Math.round(nLineups * p.maxExp / 100));
+    if (p.minExp != null && p.minExp > 0) minCaps[p.name] = Math.max(1, Math.round(nLineups * p.minExp / 100));
+  });
+
+  const counts = new Array(players.length).fill(0);
+  const selected = [];
+  const usedKeys = new Set();
+
+  function canAdd(pidxs) {
+    for (const pid of pidxs) {
+      const cap = maxCaps[players[pid].name] ?? defCap;
+      if (counts[pid] + 1 > cap) return false;
+    }
+    return true;
+  }
+
+  function addLU(lu) {
+    const key = lu.players.join(',');
+    selected.push(lu); usedKeys.add(key);
+    lu.players.forEach(pid => counts[pid]++);
+  }
+
+  // Phase 1: Satisfy mins (scarcity first)
+  const sortedMins = Object.entries(minCaps).sort((a, b) => a[1] - b[1]);
+  for (const [name] of sortedMins) {
+    const ti = idx[name];
+    while (counts[ti] < minCaps[name] && selected.length < nLineups) {
+      let placed = false;
+      for (const lu of allLineups) {
+        const key = lu.players.join(',');
+        if (usedKeys.has(key) || !lu.players.includes(ti) || !canAdd(lu.players)) continue;
+        addLU(lu); placed = true; break;
+      }
+      if (!placed) break;
+    }
+  }
+
+  // Phase 2: Greedy fill
+  for (const lu of allLineups) {
+    if (selected.length >= nLineups) break;
+    const key = lu.players.join(',');
+    if (usedKeys.has(key) || !canAdd(lu.players)) continue;
+    addLU(lu);
+  }
+
+  selected.sort((a, b) => b.proj - a.proj);
+  return { lineups: selected, counts, total: allLineups.length };
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function round2(n) { return Math.round(n * 100) / 100; }
+
+function combinations(n, k) {
+  const result = [];
+  const combo = [];
+  function gen(start) {
+    if (combo.length === k) { result.push([...combo]); return; }
+    for (let i = start; i < n; i++) { combo.push(i); gen(i + 1); combo.pop(); }
+  }
+  gen(0);
+  return result;
+}
+
+// ============================================================
+// PP FANTASY SCORE — SCENARIO DISTRIBUTION
+// ============================================================
+export function ppScenarios(stats, ppLine) {
+  const aceNet = 0.5 * stats.aces - 0.5 * stats.dfs;
+
+  // Estimate conditional game distributions per outcome
+  // Scale based on player's actual games won line
+  const gwBase = stats.gw;
+  const glBase = stats.gl;
+  const gameRatio = gwBase / (gwBase + glBase); // player's share of games
+
+  // 2-0 win: ~20 total games, winner dominates
+  const tot20 = 19;
+  const gw20 = Math.round(tot20 * Math.max(gameRatio, 0.58) * 10) / 10;
+  const gl20 = tot20 - gw20;
+
+  // 2-1 win: ~32 total games, closer split
+  const tot21 = 32;
+  const gw21 = Math.round(tot21 * Math.min(Math.max(gameRatio, 0.52), 0.58) * 10) / 10;
+  const gl21 = tot21 - gw21;
+
+  // 0-2 loss: ~20 total games, player loses
+  const gw02 = tot20 - Math.round(tot20 * Math.max(1 - gameRatio, 0.58) * 10) / 10;
+  const gl02 = tot20 - gw02;
+
+  // 1-2 loss: ~32 total games
+  const gw12 = tot21 - Math.round(tot21 * Math.min(Math.max(1 - gameRatio, 0.52), 0.58) * 10) / 10;
+  const gl12 = tot21 - gw12;
+
+  // PP scores per outcome: 10 + GW - GL + 3*(SW - SL) + aceNet
+  const outcomes = [
+    { label: 'Win 2-0', prob: stats.pStraightWin, gw: gw20, gl: gl20, sw: 2, sl: 0 },
+    { label: 'Win 2-1', prob: Math.max(0, stats.wp - stats.pStraightWin), gw: gw21, gl: gl21, sw: 2, sl: 1 },
+    { label: 'Lose 0-2', prob: Math.max(0, (1 - stats.wp) - ((1 - stats.wp) - stats.pStraightWin > 0 ? 0 : 0)), gw: gw02, gl: gl02, sw: 0, sl: 2 },
+    { label: 'Lose 1-2', prob: 0, gw: gw12, gl: gl12, sw: 1, sl: 2 },
+  ];
+
+  // Fix lose probabilities using set betting
+  const pLoss = 1 - stats.wp;
+  // Approximate: P(lose 0-2) ≈ pLoss * (1 - stats.p3set) if player is underdog
+  // More accurately from the set betting data we already have
+  const pStraightLoss = Math.max(0, pLoss - Math.max(0, stats.p3set - (stats.wp - stats.pStraightWin)));
+  outcomes[2].prob = Math.max(0, pLoss * 0.6); // rough: 60% of losses are in straights
+  outcomes[3].prob = Math.max(0, pLoss - outcomes[2].prob);
+
+  // Actually use the simpler approach from set betting
+  // p3set = 1 - pStraightWin - pStraightLoss
+  // We have pStraightWin and p3set, so pStraightLoss = 1 - pStraightWin - p3set
+  const pSL = Math.max(0, 1 - stats.pStraightWin - stats.p3set);
+  const pW3 = Math.max(0, stats.wp - stats.pStraightWin);
+  const pL3 = Math.max(0, (1 - stats.wp) - pSL);
+
+  outcomes[0].prob = stats.pStraightWin;
+  outcomes[1].prob = pW3;
+  outcomes[2].prob = pSL;
+  outcomes[3].prob = pL3;
+
+  // Compute PP score for each
+  outcomes.forEach(o => {
+    o.ppScore = round2(10 + o.gw - o.gl + 3 * (o.sw - o.sl) + aceNet);
+  });
+
+  // Expected PP score
+  const expectedPP = round2(outcomes.reduce((sum, o) => sum + o.prob * o.ppScore, 0));
+
+  // Conditional winning PP score
+  const winProb = outcomes[0].prob + outcomes[1].prob;
+  const winningPP = winProb > 0
+    ? round2((outcomes[0].prob * outcomes[0].ppScore + outcomes[1].prob * outcomes[1].ppScore) / winProb)
+    : 0;
+
+  // P(over line)
+  const pOver = round2(outcomes.reduce((sum, o) => sum + (o.ppScore > ppLine ? o.prob : 0), 0));
+
+  // Edge vs 50/50
+  const edge = round2(pOver - 0.5);
+
+  return { outcomes, expectedPP, winningPP, pOver, edge, ppLine, aceNet: round2(aceNet) };
+}
+
+// ============================================================
+// BREAK POINTS — DEVIG BET365 vs PP IMPLIED
+// ============================================================
+export function bpComparison(bet365Over, bet365Under, ppLine, ppMult) {
+  // Devig bet365
+  const rawOver = bet365Over > 0 ? 100 / (bet365Over + 100) : Math.abs(bet365Over) / (Math.abs(bet365Over) + 100);
+  const rawUnder = bet365Under > 0 ? 100 / (bet365Under + 100) : Math.abs(bet365Under) / (Math.abs(bet365Under) + 100);
+  const total = rawOver + rawUnder;
+  const b365pOver = round2(rawOver / total);
+
+  // PP implied from multiplier (1/mult is rough implied probability)
+  let ppImplied = 0.5; // default for normal
+  if (ppMult && ppMult > 1) {
+    ppImplied = round2(1 / ppMult);
+  }
+
+  // Edge: bet365 true prob - PP implied prob
+  const edge = round2(b365pOver - ppImplied);
+
+  return {
+    b365pOver,
+    ppImplied,
+    edge,
+    play: edge > 0.03 ? 'MORE ✅' : edge < -0.03 ? 'LESS ✅' : 'SKIP',
+  };
+}
+
