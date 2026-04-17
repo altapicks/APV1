@@ -57,8 +57,9 @@ export function processMatch(match) {
   const gw_b = adjustLine(o.gw_b_line, o.gw_b_over);
 
   // Breaks
-  const brk_a = o.brk_a_line + (americanToProb(o.brk_a_over) > 0.6 ? 0.5 : 0);
-  const brk_b = o.brk_b_line + (americanToProb(o.brk_b_over) > 0.55 ? 0.2 : 0);
+  // Breaks - use Poisson like aces/DFs: convert over odds to expected value
+  const brk_a = poissonEV(o.brk_a_over, Math.ceil(o.brk_a_line));
+  const brk_b = poissonEV(o.brk_b_over, Math.ceil(o.brk_b_line));
 
   // Aces & DFs
   const ace_a = poissonEV(o.ace_a_5plus, 5);
@@ -186,7 +187,7 @@ export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize =
 
   // Exposure caps
   const maxCaps = {}, minCaps = {};
-  const defCap = Math.floor(nLineups * 0.6);
+  const defCap = nLineups; // 100% default
   players.forEach(p => {
     if (p.maxExp != null) maxCaps[p.name] = Math.max(1, Math.round(nLineups * p.maxExp / 100));
     if (p.minExp != null && p.minExp > 0) minCaps[p.name] = Math.max(1, Math.round(nLineups * p.minExp / 100));
