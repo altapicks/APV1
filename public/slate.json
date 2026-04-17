@@ -448,6 +448,70 @@
       },
       "adj_a": 0,
       "adj_b": 0
+    },
+    {
+      "player_a": "Hamad Medjedovic",
+      "player_b": "Nuno Borges",
+      "start_time": "04/17/2026 05:00AM",
+      "tournament": "ATP Munich",
+      "odds": {
+        "ml_a": -200,
+        "ml_b": 162,
+        "set_a_20": 125,
+        "set_a_21": 260,
+        "set_b_20": 400,
+        "set_b_21": 400,
+        "gw_a_line": 12.5,
+        "gw_a_over": -138,
+        "gw_b_line": 11.5,
+        "gw_b_over": -138,
+        "brk_a_line": 3.5,
+        "brk_a_over": 137,
+        "brk_b_line": 2.5,
+        "brk_b_over": 120,
+        "ace_a_5plus": -120,
+        "ace_a_10plus": 1500,
+        "ace_b_5plus": -120,
+        "ace_b_10plus": 1500,
+        "df_a_2plus": -110,
+        "df_a_3plus": 200,
+        "df_b_2plus": 120,
+        "df_b_3plus": 300
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Flavio Cobolli",
+      "player_b": "Vit Kopriva",
+      "start_time": "04/17/2026 05:00AM",
+      "tournament": "ATP Munich",
+      "odds": {
+        "ml_a": -250,
+        "ml_b": 200,
+        "set_a_20": 100,
+        "set_a_21": 300,
+        "set_b_20": 450,
+        "set_b_21": 450,
+        "gw_a_line": 12.5,
+        "gw_a_over": -120,
+        "gw_b_line": 11.5,
+        "gw_b_over": -120,
+        "brk_a_line": 3.5,
+        "brk_a_over": -120,
+        "brk_b_line": 2.5,
+        "brk_b_over": 100,
+        "ace_a_5plus": 100,
+        "ace_a_10plus": 1200,
+        "ace_b_5plus": 225,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -500,
+        "df_a_3plus": -200,
+        "df_b_2plus": -1200,
+        "df_b_3plus": -400
+      },
+      "adj_a": 0,
+      "adj_b": 0
     }
   ],
   "dk_players": [
@@ -618,6 +682,30 @@
       "id": 42667015,
       "salary": 4800,
       "avg_ppg": 25.92
+    },
+    {
+      "name": "Hamad Medjedovic",
+      "id": 0,
+      "salary": 0,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Nuno Borges",
+      "id": 0,
+      "salary": 0,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Flavio Cobolli",
+      "id": 0,
+      "salary": 0,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Vit Kopriva",
+      "id": 0,
+      "salary": 0,
+      "avg_ppg": 0
     }
   ],
   "pp_lines": [
@@ -752,5 +840,5 @@
       "mult": "normal"
     }
   ],
-  "last_updated": "2026-04-17 12:15 AM MT"
+  "last_updated": "2026-04-16 09:40 PM ET"
 }
