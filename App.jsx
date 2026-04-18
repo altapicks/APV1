@@ -1,6 +1,48 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Component, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { processMatch, dkProjection, ppProjection, ppEV, optimize } from './engine.js';
 import { processFight, dkMMAProjection, dkMMACeiling, ppMMAProjection, ppMMACeiling, optimizeMMA } from './engine-mma.js';
+
+// ═══════════════════════════════════════════════════════════════════════
+// ERROR BOUNDARY — catches any runtime crash and shows it on screen
+// ═══════════════════════════════════════════════════════════════════════
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+    this.setState({ errorInfo });
+  }
+  render() {
+    if (this.state.hasError) {
+      const errMsg = this.state.error?.message || String(this.state.error) || 'Unknown error';
+      const stack = this.state.error?.stack || '';
+      const compStack = this.state.errorInfo?.componentStack || '';
+      return (
+        <div style={{ padding: '40px 20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <h2 style={{ color: '#EF4444', margin: 0 }}>⚠️ Runtime error</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>The app crashed rendering this view. Details below — please share this with support.</p>
+          </div>
+          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, padding: 16, maxWidth: 900, margin: '0 auto', fontSize: 12, fontFamily: 'monospace', color: '#EF4444', whiteSpace: 'pre-wrap', overflow: 'auto', wordBreak: 'break-word' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>{errMsg}</div>
+            {compStack && <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 12 }}><strong style={{ color: '#F5C518' }}>Component stack:</strong>{compStack}</div>}
+            {stack && <div style={{ color: 'var(--text-dim)', fontSize: 11 }}><strong style={{ color: '#F5C518' }}>Stack trace:</strong>{'\n' + stack}</div>}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <button onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
+              style={{ background: '#F5C518', color: '#0A1628', border: 'none', borderRadius: 6, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              Reset & Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // GLOSSARIES — one per sport
@@ -108,7 +150,7 @@ function useSlateData(sport) {
 // TENNIS PROJECTION BUILDER — UNCHANGED from v5
 // ═══════════════════════════════════════════════════════════════════════
 function buildProjections(data) {
-  if (!data) return { dkPlayers: [], ppRows: [] };
+  if (!data || !data.matches || !data.dk_players) return { dkPlayers: [], ppRows: [] };
   const dkMap = {}; data.dk_players.forEach(p => { dkMap[p.name] = p; });
   const oppMap = {}; data.matches.forEach(m => { oppMap[m.player_a] = m.player_b; oppMap[m.player_b] = m.player_a; });
   const mtMap = {}; data.matches.forEach(m => { mtMap[m.player_a] = { time: m.start_time, t: m.tournament }; mtMap[m.player_b] = { time: m.start_time, t: m.tournament }; });
@@ -146,7 +188,7 @@ function buildProjections(data) {
 // MMA PROJECTION BUILDER — NEW
 // ═══════════════════════════════════════════════════════════════════════
 function buildMMAProjections(data) {
-  if (!data) return { dkPlayers: [], ppRows: [] };
+  if (!data || !data.fights || !data.dk_players) return { dkPlayers: [], ppRows: [] };
   const dkMap = {}; data.dk_players.forEach(p => { dkMap[p.name] = p; });
   const dkPlayers = [];
   data.fights.forEach(fight => {
@@ -252,9 +294,17 @@ export default function App() {
   const { data, error } = useSlateData(sport);
   const [tab, setTab] = useState('dk');
 
-  const tennisProjections = useMemo(() => sport === 'tennis' && data ? buildProjections(data) : { dkPlayers: [], ppRows: [] }, [sport, data]);
-  const mmaProjections = useMemo(() => sport === 'mma' && data ? buildMMAProjections(data) : { dkPlayers: [], ppRows: [] }, [sport, data]);
-  const { dkPlayers, ppRows } = sport === 'tennis' ? tennisProjections : mmaProjections;
+  const tennisProjections = useMemo(() => {
+    if (sport !== 'tennis' || !data || !data.matches) return { dkPlayers: [], ppRows: [] };
+    try { return buildProjections(data); }
+    catch (e) { console.error('buildProjections error:', e); return { dkPlayers: [], ppRows: [], buildError: e.message }; }
+  }, [sport, data]);
+  const mmaProjections = useMemo(() => {
+    if (sport !== 'mma' || !data || !data.fights) return { dkPlayers: [], ppRows: [] };
+    try { return buildMMAProjections(data); }
+    catch (e) { console.error('buildMMAProjections error:', e); return { dkPlayers: [], ppRows: [], buildError: e.message }; }
+  }, [sport, data]);
+  const { dkPlayers, ppRows, buildError } = sport === 'tennis' ? tennisProjections : mmaProjections;
   const ownership = useMemo(() => {
     if (dkPlayers.length === 0) return {};
     return sport === 'tennis' ? simulateOwnership(dkPlayers) : simulateMMAOwnership(dkPlayers);
@@ -302,6 +352,12 @@ export default function App() {
     <Topbar sport={sport} onSportChange={setSport} data={data} />
     <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.icon}{t.l}</button>)}</div>
     <div className="content">
+      {buildError && <div className="empty" style={{ padding: '40px 20px' }}>
+        <h2 style={{ color: '#EF4444' }}>⚠️ Projection build failed</h2>
+        <p style={{ marginTop: 12, fontFamily: 'monospace', fontSize: 13, color: 'var(--red)' }}>{buildError}</p>
+        <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>Check that slate-{sport === 'mma' ? 'mma' : ''}.json has valid odds fields for all {sport === 'mma' ? 'fights' : 'matches'}.</p>
+      </div>}
+      {!buildError && <ErrorBoundary>
       {sport === 'tennis' && (<>
         {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} />}
         {tab === 'pp' && <PPTab rows={ppRows} />}
@@ -314,6 +370,7 @@ export default function App() {
         {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
       </>)}
+      </ErrorBoundary>}
     </div>
   </div>);
 }
