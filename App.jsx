@@ -135,10 +135,12 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
 function useSlateData(sport) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const hasLoadedRef = useRef(false);
   useEffect(() => {
     setData(null); setError(null);
     const startTime = Date.now();
-    const MIN_LOAD_MS = 1200;
+    // First load plays the full splash (2800ms). Subsequent sport switches are quicker (900ms).
+    const MIN_LOAD_MS = hasLoadedRef.current ? 900 : 2800;
     const finalize = (cb) => {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, MIN_LOAD_MS - elapsed);
@@ -147,7 +149,7 @@ function useSlateData(sport) {
     const url = sport === 'mma' ? './slate-mma.json' : './slate.json';
     fetch(url)
       .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
-      .then(d => finalize(() => setData(d)))
+      .then(d => finalize(() => { hasLoadedRef.current = true; setData(d); }))
       .catch(e => finalize(() => setError(e.message)));
   }, [sport]);
   return { data, error };
@@ -294,38 +296,116 @@ const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2
 function Tip({ emoji, label }) { const [s, setS] = useState(false); return <span style={{ position: 'relative', cursor: 'help' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#E2E8F0', whiteSpace: 'nowrap', zIndex: 999, fontWeight: 500 }}>{label}</span>}</span>; }
 
 // ═══════════════════════════════════════════════════════════════════════
-// BRANDED LOADING SCREEN — pulsing logo + sport-themed progress animation
+// SPLASH SCREEN — cinematic first-load brand intro
 // ═══════════════════════════════════════════════════════════════════════
-function LoadingScreen({ sport }) {
+function SplashScreen({ sport }) {
   const isTennis = sport === 'tennis';
-  const sportLabel = sport === 'mma' ? '🥊 UFC' : '🎾 Tennis';
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 50% 40%, #0F1D35 0%, #0A1628 40%, #060F1F 100%)', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', overflow: 'hidden' }}>
+      <style>{`
+        @keyframes oo-logo-enter  { 0% { opacity: 0; transform: scale(0.55); filter: blur(8px); } 60% { opacity: 1; filter: blur(0); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
+        @keyframes oo-halo-burst  { 0% { opacity: 0; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0.65; transform: scale(1); } }
+        @keyframes oo-halo-pulse  { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.08); } }
+        @keyframes oo-ring-fade   { to { opacity: 1; } }
+        @keyframes oo-ring-spin   { to { transform: rotate(360deg); } }
+        @keyframes oo-breathe     { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        @keyframes oo-fade-up     { to { opacity: 1; transform: translateY(0); } }
+        @keyframes oo-fade-in     { to { opacity: 1; } }
+        @keyframes oo-preserve    { 0%, 100% { transform: translateY(0) scaleX(1.18) scaleY(0.82); } 10% { transform: translateY(-8px) scaleX(1.04) scaleY(0.96); } 50% { transform: translateY(-58px) scaleX(0.95) scaleY(1.05); } 90% { transform: translateY(-8px) scaleX(1.04) scaleY(0.96); } }
+        @keyframes oo-shadow-beat { 0%, 100% { opacity: 0.65; transform: translateX(-50%) scaleX(1); } 50% { opacity: 0.18; transform: translateX(-50%) scaleX(0.5); } }
+        @keyframes oo-dot-blink   { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+        @keyframes oo-drift       { 0%, 100% { opacity: 0; transform: translateY(0); } 25% { opacity: 0.8; } 50% { transform: translateY(-20px); opacity: 0.4; } 75% { opacity: 0.7; } }
+      `}</style>
+
+      {/* Drifting particles */}
+      {[{t:'20%',l:'15%',d:'0.5s',dur:'8s'},{t:'30%',l:'85%',d:'1.2s',dur:'7s'},{t:'65%',l:'10%',d:'0.8s',dur:'9s'},{t:'75%',l:'78%',d:'2s',dur:'6s'},{t:'45%',l:'92%',d:'1.5s',dur:'7.5s'},{t:'55%',l:'5%',d:'0.3s',dur:'8.5s'}].map((p, i) => (
+        <div key={i} style={{ position: 'absolute', top: p.t, left: p.l, width: 2, height: 2, borderRadius: '50%', background: '#F5C518', opacity: 0, boxShadow: '0 0 4px #F5C518', animation: `oo-drift ${p.dur} ease-in-out ${p.d} infinite` }} />
+      ))}
+
+      {/* Logo with halo + rotating ring */}
+      <div style={{ position: 'relative', width: 140, height: 140, marginBottom: 32, opacity: 0, transform: 'scale(0.55)', animation: 'oo-logo-enter 1.1s cubic-bezier(0.34, 1.35, 0.64, 1) 0.25s forwards' }}>
+        <div style={{ position: 'absolute', inset: -40, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,197,24,0.5) 0%, rgba(245,197,24,0.15) 40%, transparent 70%)', opacity: 0, animation: 'oo-halo-burst 1.4s ease-out 0.35s forwards, oo-halo-pulse 3.2s ease-in-out 1.7s infinite' }} />
+        <div style={{ position: 'absolute', inset: -8, border: '1px solid rgba(245,197,24,0.25)', borderTopColor: '#F5C518', borderRadius: '50%', opacity: 0, animation: 'oo-ring-fade 0.6s ease-out 0.9s forwards, oo-ring-spin 4s linear 0.9s infinite' }} />
+        <img src="./logo.png" alt="OverOwned" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} style={{ position: 'relative', width: '100%', height: '100%', filter: 'drop-shadow(0 8px 32px rgba(245,197,24,0.35))', animation: 'oo-breathe 3.2s ease-in-out 1.7s infinite' }} />
+      </div>
+
+      {/* Wordmark */}
+      <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 48, letterSpacing: '-0.03em', color: '#F8FAFC', marginBottom: 24, opacity: 0, transform: 'translateY(12px)', animation: 'oo-fade-up 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.95s forwards' }}>
+        Over<span style={{ color: '#F5C518', display: 'inline-block', textShadow: '0 0 20px rgba(245,197,24,0.4)' }}>O</span>wned
+      </div>
+
+      {/* Tagline */}
+      <div style={{ fontFamily: "'Instrument Serif', 'Georgia', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 22, letterSpacing: '0.01em', color: 'rgba(248,250,252,0.75)', maxWidth: 580, textAlign: 'center', lineHeight: 1.4, marginBottom: 48, opacity: 0, transform: 'translateY(8px)', animation: 'oo-fade-up 1s cubic-bezier(0.2, 0.8, 0.2, 1) 1.55s forwards' }}>
+        <span style={{ color: '#F5C518', opacity: 0.6, marginRight: 14, fontFamily: "'Inter', sans-serif" }}>•</span>
+        The only place to get <span style={{ color: '#F5C518', fontStyle: 'normal', fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: '-0.01em' }}>accurate</span> DraftKings projections.
+        <span style={{ color: '#F5C518', opacity: 0.6, marginLeft: 14, fontFamily: "'Inter', sans-serif" }}>•</span>
+      </div>
+
+      {/* Tennis ball pre-serve bounce */}
+      {isTennis && (
+        <div style={{ position: 'relative', width: 120, height: 90, marginBottom: 24, opacity: 0, animation: 'oo-fade-in 0.6s ease-out 2.1s forwards' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 80, height: 2, background: 'linear-gradient(90deg, transparent 0%, rgba(245,197,24,0.55) 50%, transparent 100%)' }} />
+          <div style={{ position: 'absolute', bottom: 2, left: '50%', marginLeft: -16, width: 32, height: 32 }}>
+            <div style={{ position: 'absolute', bottom: -4, left: '50%', width: 28, height: 5, background: 'rgba(0,0,0,0.6)', borderRadius: '50%', filter: 'blur(2.5px)', transform: 'translateX(-50%)', animation: 'oo-shadow-beat 1.4s cubic-bezier(0.5, 0, 0.5, 1) 2.5s infinite' }} />
+            <div style={{ transformOrigin: '50% 100%', animation: 'oo-preserve 1.4s cubic-bezier(0.5, 0, 0.5, 1) 2.5s infinite' }}>
+              <svg width="32" height="32" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="ballGrad" cx="0.35" cy="0.3" r="0.75">
+                    <stop offset="0%" stopColor="#F0FF7A"/>
+                    <stop offset="60%" stopColor="#DDFF4F"/>
+                    <stop offset="100%" stopColor="#B8D438"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r="18" fill="url(#ballGrad)" stroke="#8BA132" strokeWidth="0.6"/>
+                <path d="M 4 14 Q 20 26 36 14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M 4 26 Q 20 14 36 26" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+      {!isTennis && (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20, opacity: 0, animation: 'oo-fade-in 0.6s ease-out 2.1s forwards' }}>
+          {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: '#F5C518', animation: `oo-dot-blink 1.2s ease-in-out ${i * 0.18}s infinite` }} />)}
+        </div>
+      )}
+
+      {/* Loader text */}
+      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: 'rgba(248,250,252,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0, animation: 'oo-fade-in 0.6s ease-out 2.4s forwards' }}>
+        Loading {isTennis ? 'Tennis' : 'UFC'} slate
+        <span style={{ marginLeft: 10 }}>
+          {[0, 1, 2].map(i => <span key={i} style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: '#F5C518', margin: '0 1px', animation: `oo-dot-blink 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
+        </span>
+      </div>
+
+      {/* Vignette */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)', pointerEvents: 'none' }} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SPORT SWITCH LOADER — simple, clean, quick (used after first load)
+// ═══════════════════════════════════════════════════════════════════════
+function SportSwitchLoader({ sport }) {
+  const isTennis = sport === 'tennis';
   return (
     <div style={{ padding: '80px 20px 60px', textAlign: 'center' }}>
       <style>{`
-        @keyframes oo-pulse  { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
-        @keyframes oo-glow   { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
-        @keyframes oo-dot    { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.85); } 40% { opacity: 1; transform: scale(1); } }
-        @keyframes oo-sweep  { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-        @keyframes tball-x   { 0% { left: 0; } 50% { left: calc(100% - 28px); } 100% { left: 0; } }
-        @keyframes tball-y   { 0%, 50%, 100% { transform: translateY(0) scaleX(1.15) scaleY(0.85); } 25% { transform: translateY(-38px) scaleX(0.95) scaleY(1.05) rotate(360deg); } 75% { transform: translateY(-38px) scaleX(0.95) scaleY(1.05) rotate(-360deg); } }
-        @keyframes tball-shadow { 0%, 50%, 100% { opacity: 0.55; transform: translateX(-50%) scaleX(1); } 25%, 75% { opacity: 0.15; transform: translateX(-50%) scaleX(0.35); } }
+        @keyframes sw-fade      { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes sw-preserve  { 0%, 100% { transform: translateY(0) scaleX(1.18) scaleY(0.82); } 10% { transform: translateY(-8px) scaleX(1.04) scaleY(0.96); } 50% { transform: translateY(-44px) scaleX(0.95) scaleY(1.05); } 90% { transform: translateY(-8px) scaleX(1.04) scaleY(0.96); } }
+        @keyframes sw-shadow    { 0%, 100% { opacity: 0.5; transform: translateX(-50%) scaleX(1); } 50% { opacity: 0.15; transform: translateX(-50%) scaleX(0.4); } }
+        @keyframes sw-dot       { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
       `}</style>
-      <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 24px' }}>
-        <div style={{ position: 'absolute', inset: -30, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,197,24,0.35), transparent 70%)', animation: 'oo-glow 1.8s ease-in-out infinite' }} />
-        <img src="./logo.png" alt="OverOwned" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} style={{ width: 120, height: 120, position: 'relative', animation: 'oo-pulse 1.8s ease-in-out infinite', filter: 'drop-shadow(0 0 20px rgba(245,197,24,0.4))' }} />
-      </div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6, letterSpacing: 0.3 }}>
-        Loading {sportLabel} slate
-      </div>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 28 }}>
-        Crunching projections · Simulating ownership
+      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 24, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.1s forwards' }}>
+        Switching to {isTennis ? '🎾 Tennis' : '🥊 UFC'}
       </div>
       {isTennis ? (
-        <div style={{ position: 'relative', width: 280, height: 60, margin: '0 auto' }}>
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, rgba(245,197,24,0.5), transparent)' }} />
-          <div style={{ position: 'absolute', bottom: 2, width: 28, height: 28, animation: 'tball-x 1.8s ease-in-out infinite' }}>
-            <div style={{ position: 'absolute', bottom: -5, left: '50%', width: 22, height: 4, background: 'rgba(0,0,0,0.6)', borderRadius: '50%', filter: 'blur(2px)', animation: 'tball-shadow 1.8s ease-in-out infinite' }} />
-            <div style={{ animation: 'tball-y 1.8s ease-in-out infinite', transformOrigin: '50% 100%' }}>
+        <div style={{ position: 'relative', width: 100, height: 70, margin: '0 auto 20px', opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 64, height: 2, background: 'linear-gradient(90deg, transparent, rgba(245,197,24,0.5), transparent)' }} />
+          <div style={{ position: 'absolute', bottom: 2, left: '50%', marginLeft: -14, width: 28, height: 28 }}>
+            <div style={{ position: 'absolute', bottom: -3, left: '50%', width: 22, height: 4, background: 'rgba(0,0,0,0.55)', borderRadius: '50%', filter: 'blur(2px)', transform: 'translateX(-50%)', animation: 'sw-shadow 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite' }} />
+            <div style={{ transformOrigin: '50% 100%', animation: 'sw-preserve 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite' }}>
               <svg width="28" height="28" viewBox="0 0 40 40">
                 <circle cx="20" cy="20" r="18" fill="#DDFF4F" stroke="#95A835" strokeWidth="0.8" />
                 <path d="M 4 14 Q 20 26 36 14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
@@ -335,14 +415,9 @@ function LoadingScreen({ sport }) {
           </div>
         </div>
       ) : (
-        <>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
-            {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)', animation: `oo-dot 1.4s ease-in-out ${i * 0.18}s infinite` }} />)}
-          </div>
-          <div style={{ position: 'relative', width: 240, height: 3, margin: '0 auto', background: 'rgba(245,197,24,0.1)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '25%', height: '100%', background: 'linear-gradient(90deg, transparent, var(--primary), transparent)', animation: 'oo-sweep 1.6s ease-in-out infinite' }} />
-          </div>
-        </>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
+          {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)', animation: `sw-dot 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
+        </div>
       )}
     </div>
   );
@@ -355,6 +430,16 @@ export default function App() {
   const [sport, setSport] = useState('tennis');
   const { data, error } = useSlateData(sport);
   const [tab, setTab] = useState('dk');
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  useEffect(() => { if (data) setHasLoadedOnce(true); }, [data]);
+  // Preload Instrument Serif (for the splash tagline) — runs once
+  useEffect(() => {
+    if (document.querySelector('link[href*="Instrument+Serif"]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap';
+    document.head.appendChild(link);
+  }, []);
 
   const tennisProjections = useMemo(() => {
     if (sport !== 'tennis' || !data || !data.matches) return { dkPlayers: [], ppRows: [] };
@@ -394,8 +479,8 @@ export default function App() {
     </div>;
   }
   if (!data) return <div className="app">
-    <Topbar sport={sport} onSportChange={setSport} data={null} />
-    <LoadingScreen sport={sport} />
+    {hasLoadedOnce && <Topbar sport={sport} onSportChange={setSport} data={null} />}
+    {hasLoadedOnce ? <SportSwitchLoader sport={sport} /> : <SplashScreen sport={sport} />}
   </div>;
 
   const tabs = sport === 'tennis' ? [
