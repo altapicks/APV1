@@ -236,6 +236,8 @@ function buildMMAProjections(data) {
         sigStr: s.sigStr, takedowns: s.takedowns, ctMin: s.ctSec / 60,
         knockdowns: s.knockdowns, subAttempts: s.subAttempts,
         ppProj, ppCeil, fightTime, stats: s,
+        // Source tag — determines PP SS tab inclusion (only fighters with Bet365 O/U SS line)
+        ssSource: side === 'fighter_a' ? fight.ss_source_a : fight.ss_source_b,
         // Combined fight-level round probabilities (needed for bimodal Fight Time edge)
         fightPR1: fighter_a.pR1 + fighter_b.pR1,
         fightPR2: fighter_a.pR2 + fighter_b.pR2,
@@ -271,6 +273,9 @@ function buildMMAProjections(data) {
       if (!player) { ppRows.push({ player: line.player, stat: line.stat, line: line.line, projected: 0, ev: 0, opponent: '?', wp: 0, direction: '-', mult: line.mult || '' }); return; }
       let projected = 0, ev = 0, direction = '-';
       if (line.stat === 'Significant Strikes') {
+        // NEW RULE: only include PP SS rows for fighters with Bet365 direct O/U line.
+        // Without Bet365 data, projection would equal PP line → no edge → drop.
+        if (player.ssSource !== 'bet365') return;
         projected = player.sigStr;
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
@@ -279,10 +284,11 @@ function buildMMAProjections(data) {
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
       } else if (line.stat === 'Fight Time') {
-        // Bimodal distribution — use probability-based edge, not mean-minus-line
+        // Projected = expected minutes from round-betting odds (intuitive)
+        // Edge = probability advantage (correct direction for bimodal distribution)
+        projected = player.fightTime;
         const pOver = pFightTimeOver(player, line.line);
-        projected = Math.round(pOver * 100 * 10) / 10;  // show as % probability of OVER
-        ev = Math.round((pOver - 0.5) * 100 * 100) / 100;  // edge in percentage points
+        ev = Math.round((pOver - 0.5) * 100 * 100) / 100;  // percentage-point edge
         direction = pOver > 0.5 ? 'MORE' : pOver < 0.5 ? 'LESS' : '-';
       } else if (line.stat === 'Takedowns') {
         projected = player.takedowns;
@@ -877,9 +883,9 @@ function MMAPPTab({ rows }) {
         <td className="muted">{i+1}</td>
         <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
-        <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}{isFT && <Tip emoji=" ⓘ" label="Probability-based — projected shows P(OVER), edge is % advantage vs 50%" />}</td>
+        <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}{isFT && <Tip emoji=" ⓘ" label="Projected = expected minutes. Edge = probability advantage (P(OVER)−50%). Fight time is bimodal so direction uses probability." />}</td>
         <td className="num">{fmt(r.line, 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</td>
-        <td className="num"><span className="cell-proj">{fmt(r.projected, isFT ? 1 : 2)}{isFT && <span style={{ fontSize: 10, marginLeft: 1 }}>%</span>}</span></td>
+        <td className="num"><span className="cell-proj">{fmt(r.projected, isFT ? 2 : 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</span></td>
         <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, isFT ? 1 : 2)}{isFT && <span style={{ fontSize: 10, marginLeft: 1 }}>%</span>}</span></td>
         <td><span style={{color: playDir === 'MORE' ? 'var(--green)' : playDir === 'LESS' ? 'var(--red)' : 'var(--text-dim)', fontWeight:600}}>{playDir}</span></td>
         <td style={{color:'var(--amber)',fontSize:11}}>{r.mult || ''}</td>
