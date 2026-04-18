@@ -783,7 +783,7 @@ function BuilderTab({ players: rp, ownership }) {
 
     // Leverage bounds — capped at 20pp per user rule
     const boostFloor = Math.round(10 + contrarianStrength * 10);   // 13-20pp by strength
-    const LEV_CAP = 20;
+    const LEV_CAP = 30;
 
     // (1) TRAP — highest-owned non-star
     const trapCandidates = withSal.filter(p => !topProjSet.has(p.name));
@@ -839,17 +839,22 @@ function BuilderTab({ players: rp, ownership }) {
       };
     }
 
-    // (3) + (4) UNIVERSAL CAP + GLOBAL FLOOR
-    const globalFloor = Math.round(1 + contrarianStrength * 7);    // 3-8% by strength
+    // (3) + (4) LEVERAGE CAP + GLOBAL FLOOR
+    //     The +20pp cap is the user's "never smart in DK" rule, but it only applies to
+    //     players at material ownership — underowned floor plays (<20% field) aren't at
+    //     risk of being chalky, so capping them at field+20 just makes the problem
+    //     infeasible. Apply cap selectively: boosted players keep exact +20pp, floored
+    //     players only get the cap if their field ownership is already meaningful (≥15%).
+    const globalFloor = Math.round(1 + contrarianStrength * 7);
     withSal.forEach(p => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
-      const levCap = Math.min(95, fieldOwn + LEV_CAP);
       if (caps[p.name]) {
-        // Ensure existing max is not above leverage cap (trap already below, stud/gem exactly at)
-        caps[p.name].max = Math.min(caps[p.name].max ?? 100, levCap);
-      } else {
-        caps[p.name] = { min: globalFloor, max: levCap, _isFloor: true };
+        // Trap/stud/gem already set — leave their max alone (stud/gem already exactly at +LEV_CAP)
+        return;
       }
+      // Floored players: apply +20pp cap only if field is ≥15%, else just floor them
+      const maxCap = fieldOwn >= 15 ? Math.min(95, fieldOwn + LEV_CAP) : 100;
+      caps[p.name] = { min: globalFloor, max: maxCap, _isFloor: true };
     });
 
     return caps;
@@ -894,7 +899,7 @@ function BuilderTab({ players: rp, ownership }) {
           {boostEntries.map(([name, c]) => (
             <span key={name}>{c._type === 'stud' ? '⭐ Stud' : '💎 Gem'} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
           ))}
-          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · max leverage <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+20pp</span></span>}
+          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
         </div>
       );
     })()}
@@ -1087,7 +1092,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
 
     const boostFloor = Math.round(10 + contrarianStrength * 10);
-    const LEV_CAP = 20;
+    const LEV_CAP = 30;
 
     // TRAP — highest-owned non-star
     const trapCandidates = withSal.filter(p => !topProjSet.has(p.name));
@@ -1137,16 +1142,13 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       };
     }
 
-    // UNIVERSAL CAP + GLOBAL FLOOR
+    // LEVERAGE CAP + GLOBAL FLOOR (selective — only cap meaningfully-owned players)
     const globalFloor = Math.round(1 + contrarianStrength * 7);
     withSal.forEach(p => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
-      const levCap = Math.min(95, fieldOwn + LEV_CAP);
-      if (caps[p.name]) {
-        caps[p.name].max = Math.min(caps[p.name].max ?? 100, levCap);
-      } else {
-        caps[p.name] = { min: globalFloor, max: levCap, _isFloor: true };
-      }
+      if (caps[p.name]) return;
+      const maxCap = fieldOwn >= 15 ? Math.min(95, fieldOwn + LEV_CAP) : 100;
+      caps[p.name] = { min: globalFloor, max: maxCap, _isFloor: true };
     });
 
     return caps;
@@ -1197,7 +1199,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
           {boostEntries.map(([name, c]) => (
             <span key={name}>{c._type === 'stud' ? '⭐ Stud' : '💎 Gem'} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
           ))}
-          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · max leverage <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+20pp</span></span>}
+          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
         </div>
       );
     })()}
