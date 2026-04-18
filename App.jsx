@@ -818,18 +818,26 @@ function BuilderTab({ players: rp, ownership }) {
       };
     }
 
-    // (2b) GEM — below-avg val + underowned by fair_own. DK prices low-val plays for a
-    //      reason and the field correctly avoids them — but that's exactly where massive
-    //      leverage lives when they hit. Cobolli-style: DK-priced-down play the field
-    //      writes off, boosted into the portfolio for differentiation.
-    const gem = [...withSal]
-      .filter(p => {
-        if (p.name === trap?.name || p.name === stud?.name) return false;
-        if ((p.val || 0) >= avgVal) return false;
-        const fieldOwn = ownership[p.name] || 0;
-        return fieldOwn < computeFairOwn(p.val || 0, avgVal);
-      })
-      .sort((a, b) => b.proj - a.proj)[0];
+    // (2b) GEM — below-avg val + most underowned (relative to fair). DK-priced-down play
+    //      the field writes off, boosted into the portfolio for differentiation. Primary:
+    //      strict filter (field < fair). Fallback: any below-avg-val player with highest
+    //      under-fair gap, so the gem always gets populated if any low-val play exists.
+    const gemPool = [...withSal].filter(p => {
+      if (p.name === trap?.name || p.name === stud?.name) return false;
+      return (p.val || 0) < avgVal;
+    });
+    const strictGem = gemPool.filter(p => {
+      const fieldOwn = ownership[p.name] || 0;
+      return fieldOwn < computeFairOwn(p.val || 0, avgVal);
+    }).sort((a, b) => b.proj - a.proj)[0];
+    // Fallback: pick below-avg-val play with biggest gap below fair (most "field-avoided")
+    const fallbackGem = gemPool.sort((a, b) => {
+      const aGap = computeFairOwn(a.val || 0, avgVal) - (ownership[a.name] || 0);
+      const bGap = computeFairOwn(b.val || 0, avgVal) - (ownership[b.name] || 0);
+      if (Math.abs(bGap - aGap) > 1) return bGap - aGap;     // bigger gap first
+      return b.proj - a.proj;                                 // break ties by projection
+    })[0];
+    const gem = strictGem || fallbackGem;
     if (gem) {
       const fieldOwn = Math.round(ownership[gem.name] || 0);
       caps[gem.name] = {
@@ -1124,15 +1132,22 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       };
     }
 
-    // GEM — below-avg val + underowned by fair_own (DK-priced-down differentiation)
-    const gem = [...withSal]
-      .filter(p => {
-        if (p.name === trap?.name || p.name === stud?.name) return false;
-        if ((p[valKey] || 0) >= avgVal) return false;
-        const fieldOwn = ownership[p.name] || 0;
-        return fieldOwn < computeFairOwn(p[valKey] || 0, avgVal);
-      })
-      .sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
+    // GEM — below-avg val + most underowned (with fallback)
+    const gemPool = [...withSal].filter(p => {
+      if (p.name === trap?.name || p.name === stud?.name) return false;
+      return (p[valKey] || 0) < avgVal;
+    });
+    const strictGem = gemPool.filter(p => {
+      const fieldOwn = ownership[p.name] || 0;
+      return fieldOwn < computeFairOwn(p[valKey] || 0, avgVal);
+    }).sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
+    const fallbackGem = gemPool.sort((a, b) => {
+      const aGap = computeFairOwn(a[valKey] || 0, avgVal) - (ownership[a.name] || 0);
+      const bGap = computeFairOwn(b[valKey] || 0, avgVal) - (ownership[b.name] || 0);
+      if (Math.abs(bGap - aGap) > 1) return bGap - aGap;
+      return (b[projKey] || 0) - (a[projKey] || 0);
+    })[0];
+    const gem = strictGem || fallbackGem;
     if (gem) {
       const fieldOwn = Math.round(ownership[gem.name] || 0);
       caps[gem.name] = {
