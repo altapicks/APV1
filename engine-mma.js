@@ -164,10 +164,10 @@ export function processFight(fight) {
   const tsA = o.ts_a_tiers ? expectedFromTiers(o.ts_a_tiers) : null;
   const tsB = o.ts_b_tiers ? expectedFromTiers(o.ts_b_tiers) : null;
 
-  // Prefer Underdog/PP line as primary SS estimate (it's the market median, no tier-ladder vig inflation)
-  // Use tier ladder only for p80 (ceiling) calculations
-  const sigA = fight.ss_line_a ?? ssA?.ev ?? 40;
-  const sigB = fight.ss_line_b ?? ssB?.ev ?? 40;
+  // Prefer Bet365 tier ladder EV when available (it's the real market for this fight).
+  // Fall back to PP/Underdog line for prelims where no tier data exists.
+  const sigA = ssA?.ev ?? fight.ss_line_a ?? 40;
+  const sigB = ssB?.ev ?? fight.ss_line_b ?? 40;
   const sig80A = ssA?.p80 ?? (sigA * 1.45);
   const sig80B = ssB?.p80 ?? (sigB * 1.45);
 
