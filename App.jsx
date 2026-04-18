@@ -145,7 +145,7 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
           </span>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>
-          Fades weighted by value — chalky studs get minor fades (lobby needs them), chalky mid-price traps get heavy fades, underowned studs get the biggest boosts.
+          Fade good value, take bad value — DK prices things for a reason. The chalky trap gets capped, below-avg-value underowned plays get boosted (differentiation), and every player gets a floor so nobody is tunneled out.
         </div>
       </>)}
     </div>
@@ -584,6 +584,18 @@ export default function App() {
   ];
 
   return (<div className="app">
+    <style>{`
+      /* Hide number input spinners in builder rows (desktop only — mobile already clean) */
+      .ctrl-row input[type="number"]::-webkit-outer-spin-button,
+      .ctrl-row input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .ctrl-row input[type="number"] {
+        -moz-appearance: textfield;
+        text-align: center;
+      }
+    `}</style>
     <Topbar sport={sport} onSportChange={setSport} data={data} />
     <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.icon}{t.l}</button>)}</div>
     <div className="content">
@@ -752,16 +764,21 @@ function BuilderTab({ players: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => p.val || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp]);
-  // Contrarian mode: (1) fade the identified trap, (2) boost the top value underowned play.
-  // Both pieces are essential — the optimizer won't naturally push underowned value high
-  // enough without an explicit floor.
+  // CONTRARIAN MODE — "fade good value, take bad value" theory
+  //  DK prices plays for a reason. Top-value plays are obvious → field converges → low ROI.
+  //  Below-avg value underowned plays = differentiation. If they hit proj, massive leverage.
+  //  (1) Cap the trap (highest field ownership) — hard fade
+  //  (2) Boost highest-projection BELOW-AVG-VALUE UNDEROWNED plays — the "bad value" gems
+  //      Fallback: if nobody qualifies, any underowned by projection
+  //  (3) Global floor for EVERYONE — so nobody is fully excluded and low-salary plays
+  //      don't get tunneled out by DK's salary algo
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
     const caps = {};
 
-    // (1) TRAP fade — same logic as DKTab (highest-owned)
+    // (1) TRAP — highest field ownership
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
     const byOwn = hasOwn
       ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
@@ -773,28 +790,43 @@ function BuilderTab({ players: rp, ownership }) {
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
-    // (2) BOOST the top underowned value plays. Scales with slate size:
-    //     ≤12 players: boost 1 · 13-24: boost 2 · ≥25: boost 3
-    //     Each boost gets full leverage at default strength.
-    const byValue = [...withSal]
+    // (2) BAD VALUE BOOST — below-avg value + underowned, ranked by projection
+    const eligible = withSal.filter(p => p.name !== trap?.name);
+    const badValueUnderowned = eligible
       .filter(p => {
-        if (p.name === trap?.name) return false;
+        if ((p.val || 0) >= avgVal) return false;                     // BELOW avg value only
         const fieldOwn = ownership[p.name] || 0;
         const fairOwn = computeFairOwn(p.val || 0, avgVal);
-        return fieldOwn < fairOwn;  // underowned vs what value deserves
+        return fieldOwn < fairOwn;                                    // underowned vs fair
       })
-      .sort((a, b) => (b.val || 0) - (a.val || 0));
+      .sort((a, b) => b.proj - a.proj);                               // highest proj first
+
+    // Fallback: if nobody qualifies, use any underowned sorted by projection
+    let boostPool = badValueUnderowned;
+    if (boostPool.length === 0) {
+      boostPool = eligible
+        .filter(p => (ownership[p.name] || 0) < computeFairOwn(p.val || 0, avgVal))
+        .sort((a, b) => b.proj - a.proj);
+    }
+
     const slateSize = withSal.length;
     const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
     const leverage = Math.round(contrarianStrength * 42);
-    for (let i = 0; i < Math.min(boostCount, byValue.length); i++) {
-      const p = byValue[i];
+    for (let i = 0; i < Math.min(boostCount, boostPool.length); i++) {
+      const p = boostPool[i];
       const topFieldOwn = Math.round(ownership[p.name] || 0);
-      // Scale leverage down slightly for 2nd/3rd boost so top pick is still the headline
       const scaledLev = Math.round(leverage * (1 - i * 0.2));
       const minFloor = Math.min(85, topFieldOwn + scaledLev);
       caps[p.name] = { min: minFloor, _isBoost: true, _leverage: scaledLev, _rank: i + 1 };
     }
+
+    // (3) GLOBAL FLOOR — everyone else gets baseline min so DK salary-algo can't tunnel
+    //     the field into the same 1-2 cheap plays. Forces coverage across full pool.
+    const globalFloor = Math.round(1 + contrarianStrength * 7);       // 3% @ 0.3 · 5% @ 0.6 · 8% @ 1.0
+    withSal.forEach(p => {
+      if (caps[p.name]) return;                                       // skip trap + boosted
+      caps[p.name] = { min: globalFloor, _isFloor: true };
+    });
 
     return caps;
   }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
@@ -827,12 +859,15 @@ function BuilderTab({ players: rp, ownership }) {
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
       const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost).sort((a, b) => (a[1]._rank || 0) - (b[1]._rank || 0));
+      const floorEntry = Object.entries(contrarianCaps).find(([, c]) => c._isFloor);
+      const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
           {boostEntries.map(([name, c]) => (
             <span key={name}>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
           ))}
+          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} floored at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span></span>}
         </div>
       );
     })()}
@@ -1030,24 +1065,40 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
-    const byValue = [...withSal]
+    const badValueUnderowned = withSal
       .filter(p => {
         if (p.name === trap?.name) return false;
+        if ((p[valKey] || 0) >= avgVal) return false;
         const fieldOwn = ownership[p.name] || 0;
         const fairOwn = computeFairOwn(p[valKey] || 0, avgVal);
         return fieldOwn < fairOwn;
       })
-      .sort((a, b) => (b[valKey] || 0) - (a[valKey] || 0));
+      .sort((a, b) => b.proj - a.proj);
+
+    let boostPool = badValueUnderowned;
+    if (boostPool.length === 0) {
+      boostPool = withSal
+        .filter(p => p.name !== trap?.name && (ownership[p.name] || 0) < computeFairOwn(p[valKey] || 0, avgVal))
+        .sort((a, b) => b.proj - a.proj);
+    }
+
     const slateSize = withSal.length;
     const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
     const leverage = Math.round(contrarianStrength * 42);
-    for (let i = 0; i < Math.min(boostCount, byValue.length); i++) {
-      const p = byValue[i];
+    for (let i = 0; i < Math.min(boostCount, boostPool.length); i++) {
+      const p = boostPool[i];
       const topFieldOwn = Math.round(ownership[p.name] || 0);
       const scaledLev = Math.round(leverage * (1 - i * 0.2));
       const minFloor = Math.min(85, topFieldOwn + scaledLev);
       caps[p.name] = { min: minFloor, _isBoost: true, _leverage: scaledLev, _rank: i + 1 };
     }
+
+    // Global floor so DK salary logic doesn't funnel field into same cheap plays
+    const globalFloor = Math.round(1 + contrarianStrength * 7);
+    withSal.forEach(p => {
+      if (caps[p.name]) return;
+      caps[p.name] = { min: globalFloor, _isFloor: true };
+    });
 
     return caps;
   }, [rp, ownership, contrarianOn, contrarianStrength, mode, avgVal]);
@@ -1086,12 +1137,15 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
       const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost).sort((a, b) => (a[1]._rank || 0) - (b[1]._rank || 0));
+      const floorEntry = Object.entries(contrarianCaps).find(([, c]) => c._isFloor);
+      const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
           {boostEntries.map(([name, c]) => (
             <span key={name}>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
           ))}
+          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} floored at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span></span>}
         </div>
       );
     })()}
