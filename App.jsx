@@ -779,7 +779,7 @@ function MMADKTab({ fighters, fc, own }) {
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="name" /><th>Opp</th>
       <S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" />
-      <S label="Median" colKey="proj" /><S label="Ceiling" colKey="ceil" /><S label="Finish%" colKey="finishProb" />
+      <S label="Proj" colKey="proj" /><S label="Ceiling" colKey="ceil" /><S label="Finish%" colKey="finishProb" />
       <S label="Val" colKey="val" /><S label="CVal" colKey="cval" />
       <S label="SS" colKey="sigStr" /><S label="TD" colKey="takedowns" /><S label="CT" colKey="ctMin" />
       <th>Time</th>
