@@ -250,6 +250,24 @@ function buildMMAProjections(data) {
     });
   });
 
+  // Helper: median fight time — where 50% of outcomes fall below
+  // This is what PP uses to set lines (not mean, which is pulled up by decisions)
+  function medianFightTime(p) {
+    const rounds = [p.fightPR1, p.fightPR2, p.fightPR3, p.fightPR4, p.fightPR5];
+    const maxRounds = p.fightMaxMin / 5;
+    let cum = 0;
+    for (let i = 0; i < maxRounds; i++) {
+      const newCum = cum + rounds[i];
+      if (newCum >= 0.5) {
+        const frac = (0.5 - cum) / rounds[i];
+        return Math.round((i * 5 + frac * 5) * 100) / 100;
+      }
+      cum = newCum;
+    }
+    // Decision dominates (finishes < 50%) → median is at decision time
+    return p.fightMaxMin;
+  }
+
   // Helper: P(fight time > line) computed from combined round distribution
   function pFightTimeOver(p, line) {
     const rounds = [p.fightPR1, p.fightPR2, p.fightPR3, p.fightPR4, p.fightPR5];
@@ -284,9 +302,9 @@ function buildMMAProjections(data) {
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
       } else if (line.stat === 'Fight Time') {
-        // Projected = expected minutes from round-betting odds devigged
-        // Edge = projected minutes − PP line, straightforward
-        projected = player.fightTime;
+        // Projected = MEDIAN fight time (where 50% of outcomes land below)
+        // PP sets their lines at median, not mean — mean gets pulled up by decisions
+        projected = medianFightTime(player);
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
       } else if (line.stat === 'Takedowns') {
