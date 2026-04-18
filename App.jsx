@@ -284,12 +284,11 @@ function buildMMAProjections(data) {
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
       } else if (line.stat === 'Fight Time') {
-        // Projected = expected minutes from round-betting odds (intuitive)
-        // Edge = probability advantage (correct direction for bimodal distribution)
+        // Projected = expected minutes from round-betting odds devigged
+        // Edge = projected minutes − PP line, straightforward
         projected = player.fightTime;
-        const pOver = pFightTimeOver(player, line.line);
-        ev = Math.round((pOver - 0.5) * 100 * 100) / 100;  // percentage-point edge
-        direction = pOver > 0.5 ? 'MORE' : pOver < 0.5 ? 'LESS' : '-';
+        ev = Math.round((projected - line.line) * 100) / 100;
+        direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
       } else if (line.stat === 'Takedowns') {
         projected = player.takedowns;
         ev = Math.round((projected - line.line) * 100) / 100;
@@ -883,10 +882,10 @@ function MMAPPTab({ rows }) {
         <td className="muted">{i+1}</td>
         <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
-        <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}{isFT && <Tip emoji=" ⓘ" label="Projected = expected minutes. Edge = probability advantage (P(OVER)−50%). Fight time is bimodal so direction uses probability." />}</td>
+        <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}</td>
         <td className="num">{fmt(r.line, 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</td>
-        <td className="num"><span className="cell-proj">{fmt(r.projected, isFT ? 2 : 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</span></td>
-        <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, isFT ? 1 : 2)}{isFT && <span style={{ fontSize: 10, marginLeft: 1 }}>%</span>}</span></td>
+        <td className="num"><span className="cell-proj">{fmt(r.projected, 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</span></td>
+        <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span></td>
         <td><span style={{color: playDir === 'MORE' ? 'var(--green)' : playDir === 'LESS' ? 'var(--red)' : 'var(--text-dim)', fontWeight:600}}>{playDir}</span></td>
         <td style={{color:'var(--amber)',fontSize:11}}>{r.mult || ''}</td>
         <td className="num muted">{fmtPct(r.wp)}</td>
