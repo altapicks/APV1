@@ -287,6 +287,39 @@ const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2
 function Tip({ emoji, label }) { const [s, setS] = useState(false); return <span style={{ position: 'relative', cursor: 'help' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#E2E8F0', whiteSpace: 'nowrap', zIndex: 999, fontWeight: 500 }}>{label}</span>}</span>; }
 
 // ═══════════════════════════════════════════════════════════════════════
+// BRANDED LOADING SCREEN — pulsing logo + sport-aware copy
+// ═══════════════════════════════════════════════════════════════════════
+function LoadingScreen({ sport }) {
+  const sportLabel = sport === 'mma' ? '🥊 UFC' : '🎾 Tennis';
+  return (
+    <div style={{ padding: '80px 20px 60px', textAlign: 'center' }}>
+      <style>{`
+        @keyframes oo-pulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+        @keyframes oo-glow  { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
+        @keyframes oo-dot   { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.85); } 40% { opacity: 1; transform: scale(1); } }
+        @keyframes oo-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+      `}</style>
+      <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 24px' }}>
+        <div style={{ position: 'absolute', inset: -30, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,197,24,0.35), transparent 70%)', animation: 'oo-glow 1.8s ease-in-out infinite' }} />
+        <img src="./logo.png" alt="OverOwned" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} style={{ width: 120, height: 120, position: 'relative', animation: 'oo-pulse 1.8s ease-in-out infinite', filter: 'drop-shadow(0 0 20px rgba(245,197,24,0.4))' }} />
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6, letterSpacing: 0.3 }}>
+        Loading {sportLabel} slate
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+        Crunching projections · Simulating ownership
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 24 }}>
+        {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)', animation: `oo-dot 1.4s ease-in-out ${i * 0.18}s infinite` }} />)}
+      </div>
+      <div style={{ position: 'relative', width: 240, height: 3, margin: '0 auto', background: 'rgba(245,197,24,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '25%', height: '100%', background: 'linear-gradient(90deg, transparent, var(--primary), transparent)', animation: 'oo-sweep 1.6s ease-in-out infinite' }} />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // MAIN APP — adds sport toggle on top of existing structure
 // ═══════════════════════════════════════════════════════════════════════
 export default function App() {
@@ -333,7 +366,7 @@ export default function App() {
   }
   if (!data) return <div className="app">
     <Topbar sport={sport} onSportChange={setSport} data={null} />
-    <div className="empty"><h2>Loading {sport === 'mma' ? 'UFC slate' : 'tennis slate'}...</h2></div>
+    <LoadingScreen sport={sport} />
   </div>;
 
   const tabs = sport === 'tennis' ? [
@@ -472,8 +505,8 @@ function PPTab({ rows }) {
       <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Hint:</strong> PrizePicks bad value will typically reverse</span>
     </div>
     <div className="metrics">
-      <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '15px' : '12px', color: 'var(--green)' }}>{r.player} · {r.stat} <span style={{fontSize:11}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color:'var(--amber)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
-      <div className="metric"><div className="metric-label">📉 Biggest Fade</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '15px' : '12px', color: 'var(--red)' }}>{r.player} · {r.stat} <span style={{fontSize:11}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
+      <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
+      <div className="metric"><div className="metric-label">📉 Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><S label="Stat" colKey="stat" />
@@ -545,7 +578,7 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
-    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name">{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj">{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" /></div>)}</div>
+    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj">{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" /></div>)}</div>
     <button className="btn btn-primary" onClick={run}>⚡ Build {nL} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} />}
   </>);
@@ -670,8 +703,8 @@ function MMAPPTab({ rows }) {
       <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Hint:</strong> PrizePicks bad value will typically reverse</span>
     </div>
     <div className="metrics">
-      <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '15px' : '12px', color: 'var(--green)' }}>{r.player} · {r.stat} <span style={{fontSize:11}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color:'var(--amber)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
-      <div className="metric"><div className="metric-label">📉 Biggest Fade</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '15px' : '12px', color: 'var(--red)' }}>{r.player} · {r.stat} <span style={{fontSize:11}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
+      <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
+      <div className="metric"><div className="metric-label">📉 Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="player" /><S label="Stat" colKey="stat" />
@@ -748,7 +781,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     <div className="section-head">⚡ Lineup Builder</div>
     <div className="section-sub">UFC: 6 fighters, $50K cap · No opponent-vs-opponent enforced · Export to DK</div>
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
-    <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+    <div style={{ display: 'flex', gap: 12, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
       <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border-light)', borderRadius: 6, overflow: 'hidden' }}>
         <button onClick={() => setMode('proj')} style={{ background: mode === 'proj' ? 'var(--primary)' : 'transparent', color: mode === 'proj' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>💰 Cash (median)</button>
         <button onClick={() => setMode('ceiling')} style={{ background: mode === 'ceiling' ? 'var(--primary)' : 'transparent', color: mode === 'ceiling' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>🚀 GPP (ceiling)</button>
@@ -759,8 +792,14 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
+    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 14, marginLeft: 2 }}>
+      {mode === 'ceiling'
+        ? <>🚀 <strong style={{ color: 'var(--primary)' }}>GPP:</strong> Builds for ceiling — best for big tournaments with many entries (your 39.6K-entry contest is GPP)</>
+        : <>💰 <strong style={{ color: 'var(--primary)' }}>Cash:</strong> Builds for consistent median — best for 50/50s and head-to-heads</>
+      }
+    </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
-      <span className="ctrl-name">{p.name}</span>
+      <span className="ctrl-name" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
       <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55 }}>{fmtSal(p.salary)}</span>
       <span className="ctrl-proj">{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
       <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 38, textAlign: 'right' }}>{fmt(ownership[p.name] || 0, 0)}%</span>
