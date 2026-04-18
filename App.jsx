@@ -82,10 +82,32 @@ export default function App() {
   const ownership = useMemo(() => dkPlayers.length > 0 ? simulateOwnership(dkPlayers) : {}, [dkPlayers]);
   if (error) return <div className="app"><div className="empty"><h2>No Slate Loaded</h2><p>Push slate.json and redeploy.</p></div></div>;
   if (!data) return <div className="app"><div className="empty"><h2>Loading...</h2></div></div>;
-  const tabs = [{ id: 'dk', l: 'DK Projections' }, { id: 'pp', l: 'PP Projections' }, { id: 'build', l: 'Lineup Builder' }, { id: 'leverage', l: 'Live Leverage' }];
+  const tabs = [
+    { id: 'dk', l: 'DK Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 L4 21 L20 21 Z M12 3 L12 21"/></svg> },
+    { id: 'pp', l: 'PP Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg> },
+    { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 Z"/></svg> },
+    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 L9 6 L13 10 L21 4"/><path d="M21 4 L21 10"/><path d="M21 4 L15 4"/><path d="M3 20 L21 20"/></svg> }
+  ];
   return (<div className="app">
-    <div className="topbar"><div className="topbar-brand"><img src="./logo.png" alt="DD" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} /><span>DeuceData</span></div><div className="topbar-date">{data.date} · {data.matches.length} matches{data.last_updated && <> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></>}</div></div>
-    <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.l}</button>)}</div>
+    <div className="topbar">
+      <div className="topbar-brand">
+        <img src="./logo.png" alt="OverOwned" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} />
+        <span>Over<span className="brand-o">O</span>wned</span>
+      </div>
+      <div className="topbar-right">
+        <div className="topbar-date">{data.date} · {data.matches.length} matches{data.last_updated && <> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></>}</div>
+        <a href="https://x.com/OverOwnedDFS" target="_blank" rel="noopener noreferrer" className="twitter-btn" title="@OverOwnedDFS">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+      <svg className="mountain-watermark" viewBox="0 0 340 68" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+        <path d="M0,68 L40,30 L90,50 L150,20 L210,42 L260,28 L310,38 L340,32 L340,68 Z" fill="#F5C518" opacity="0.55"/>
+        <path d="M0,68 L30,50 L85,58 L140,40 L200,52 L250,46 L305,54 L340,50 L340,68 Z" fill="#F5C518" opacity="0.35"/>
+        <path d="M146,22 L150,20 L154,24 L150,25 Z" fill="#FFFFFF" opacity="0.9"/>
+        <path d="M206,44 L210,42 L214,46 L210,47 Z" fill="#FFFFFF" opacity="0.75"/>
+      </svg>
+    </div>
+    <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.icon}{t.l}</button>)}</div>
     <div className="content">
       {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches.length} own={ownership} />}
       {tab === 'pp' && <PPTab rows={ppRows} />}
