@@ -752,20 +752,43 @@ function BuilderTab({ players: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => p.val || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp]);
-  const adjRp = useMemo(() => {
-    if (!contrarianOn) return rp;
-    return rp.map(p => {
-      const fairOwn = computeFairOwn(p.val || 0, avgVal);
-      const adjProj = applyContrarian(p.proj, ownership[p.name] || 20, contrarianStrength, fairOwn, p.val, avgVal);
-      const adjVal = p.salary > 0 ? Math.round(adjProj / (p.salary / 1000) * 100) / 100 : 0;
-      return { ...p, proj: Math.round(adjProj * 100) / 100, val: adjVal };
-    });
-  }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
+  // Contrarian mode: fade the identified trap (highest-owned player) only.
+  // Optimizer handles finding replacements within salary constraints naturally.
+  // Strength 0.3 → ~21% cap · 0.6 → ~12% · 1.0 → ~5% (hard floor)
+  const contrarianCaps = useMemo(() => {
+    if (!contrarianOn) return {};
+    const withSal = rp.filter(p => p.salary > 0);
+    if (withSal.length === 0) return {};
+    // Pick trap using same logic as DKTab: highest owned (fallback: highest proj)
+    const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
+    const sorted = hasOwn
+      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
+      : [...withSal].sort((a, b) => b.proj - a.proj);
+    const trap = sorted[0];
+    if (!trap) return {};
+    const trapFieldOwn = ownership[trap.name] || 0;
+    const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
+    return { [trap.name]: { max: maxCap, _isTrap: true } };
+  }, [rp, ownership, contrarianOn, contrarianStrength]);
+
+  // Projections untouched when contrarian is on (caps do the work now)
+  const adjRp = rp;
 
   const sp = useMemo(() => [...adjRp].filter(p => p.salary > 0).sort((a, b) => b.val - a.val), [adjRp]);
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
-  const run = () => { const pd = sp.map(p => ({ name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: exp[p.name]?.max ?? globalMax, minExp: exp[p.name]?.min ?? globalMin })); const r = optimize(pd, nL, 50000, 6); setRes({ ...r, pData: pd }); };
+  const run = () => {
+    const pd = sp.map(p => {
+      const cap = contrarianCaps[p.name] || {};
+      const userSet = exp[p.name] || {};
+      // Priority: explicit user > contrarian cap > global
+      const effMin = userSet.min !== undefined ? userSet.min : (cap.min !== undefined ? cap.min : globalMin);
+      const effMax = userSet.max !== undefined ? userSet.max : (cap.max !== undefined ? cap.max : globalMax);
+      return { name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: effMax, minExp: effMin };
+    });
+    const r = optimize(pd, nL, 50000, 6);
+    setRes({ ...r, pData: pd });
+  };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
   const exportDK = () => { if (!res) return; let c = 'P,P,P,P,P,P\n'; res.lineups.forEach(lu => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload.csv'); };
   const exportReadable = () => { if (!res) return; let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6\n'; res.lineups.forEach((lu, i) => { const ps = lu.players.map(j => res.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups.csv'); };
@@ -773,6 +796,16 @@ function BuilderTab({ players: rp, ownership }) {
   return (<>
     <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
+    {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
+      const trapName = Object.keys(contrarianCaps)[0];
+      const cap = contrarianCaps[trapName];
+      const fieldOwn = ownership[trapName] || 0;
+      return (
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '8px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+          💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapName}</span> · field {fieldOwn.toFixed(1)}% → capped at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{cap.max}%</span>
+        </div>
+      );
+    })()}
     <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
@@ -948,30 +981,41 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => (mode === 'ceiling' ? p.cval : p.val) || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp, mode]);
-  const adjRp = useMemo(() => {
-    if (!contrarianOn) return rp;
-    return rp.map(p => {
-      const valueRef = mode === 'ceiling' ? (p.cval || 0) : (p.val || 0);
-      const fairOwn = computeFairOwn(valueRef, avgVal);
-      const adjProj = applyContrarian(p.proj, ownership[p.name] || 20, contrarianStrength, fairOwn, valueRef, avgVal);
-      const adjCeil = applyContrarian(p.ceil, ownership[p.name] || 20, contrarianStrength, fairOwn, valueRef, avgVal);
-      const adjVal = p.salary > 0 ? Math.round(adjProj / (p.salary / 1000) * 100) / 100 : 0;
-      const adjCval = p.salary > 0 ? Math.round(adjCeil / (p.salary / 1000) * 100) / 100 : 0;
-      return { ...p, proj: Math.round(adjProj * 100) / 100, ceil: Math.round(adjCeil * 100) / 100, val: adjVal, cval: adjCval };
-    });
-  }, [rp, ownership, contrarianOn, contrarianStrength, avgVal, mode]);
+  // Contrarian mode: fade the identified trap only (see tennis for details)
+  const contrarianCaps = useMemo(() => {
+    if (!contrarianOn) return {};
+    const withSal = rp.filter(p => p.salary > 0);
+    if (withSal.length === 0) return {};
+    const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
+    const sorted = hasOwn
+      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
+      : [...withSal].sort((a, b) => b.proj - a.proj);
+    const trap = sorted[0];
+    if (!trap) return {};
+    const trapFieldOwn = ownership[trap.name] || 0;
+    const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
+    return { [trap.name]: { max: maxCap, _isTrap: true } };
+  }, [rp, ownership, contrarianOn, contrarianStrength]);
+
+  const adjRp = rp;
 
   const sortField = mode === 'ceiling' ? 'cval' : 'val';
   const sp = useMemo(() => [...adjRp].filter(p => p.salary > 0).sort((a, b) => b[sortField] - a[sortField]), [adjRp, sortField]);
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const run = () => {
-    const pd = sp.map(p => ({
-      name: p.name, salary: p.salary, id: p.id,
-      projection: p.proj, ceiling: p.ceil,
-      opponent: p.opponent,
-      maxExp: exp[p.name]?.max ?? globalMax, minExp: exp[p.name]?.min ?? globalMin
-    }));
+    const pd = sp.map(p => {
+      const cap = contrarianCaps[p.name] || {};
+      const userSet = exp[p.name] || {};
+      const effMin = userSet.min !== undefined ? userSet.min : (cap.min !== undefined ? cap.min : globalMin);
+      const effMax = userSet.max !== undefined ? userSet.max : (cap.max !== undefined ? cap.max : globalMax);
+      return {
+        name: p.name, salary: p.salary, id: p.id,
+        projection: p.proj, ceiling: p.ceil,
+        opponent: p.opponent,
+        maxExp: effMax, minExp: effMin
+      };
+    });
     const r = optimizeMMA(pd, nL, 50000, 6, mode);
     setRes({ ...r, pData: pd, mode });
   };
@@ -984,6 +1028,16 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     <div className="section-head">⚡ Lineup Builder</div>
     <div className="section-sub">UFC: 6 fighters, $50K cap · No opponent-vs-opponent enforced · Export to DK</div>
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
+    {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
+      const trapName = Object.keys(contrarianCaps)[0];
+      const cap = contrarianCaps[trapName];
+      const fieldOwn = ownership[trapName] || 0;
+      return (
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '8px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+          💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapName}</span> · field {fieldOwn.toFixed(1)}% → capped at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{cap.max}%</span>
+        </div>
+      );
+    })()}
     <div style={{ display: 'flex', gap: 12, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
       <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border-light)', borderRadius: 6, overflow: 'hidden' }}>
         <button onClick={() => setMode('proj')} style={{ background: mode === 'proj' ? 'var(--primary)' : 'transparent', color: mode === 'proj' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>💰 Cash (median)</button>
