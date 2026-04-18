@@ -773,22 +773,31 @@ function BuilderTab({ players: rp, ownership }) {
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
-    // (2) BOOST the top value play that ISN'T the trap and is underowned vs its value.
-    // Target: 0.6 strength → ~70% min for top value. 1.0 → 80%. 0.3 → 35%.
+    // (2) BOOST the top underowned value plays. Scales with slate size:
+    //     ≤12 players: boost 1 · 13-24: boost 2 · ≥25: boost 3
+    //     Each boost gets full leverage at default strength.
     const byValue = [...withSal]
-      .filter(p => p.name !== trap?.name && (ownership[p.name] || 0) < 40)
+      .filter(p => {
+        if (p.name === trap?.name) return false;
+        const fieldOwn = ownership[p.name] || 0;
+        const fairOwn = computeFairOwn(p.val || 0, avgVal);
+        return fieldOwn < fairOwn;  // underowned vs what value deserves
+      })
       .sort((a, b) => (b.val || 0) - (a.val || 0));
-    const topValue = byValue[0];
-    if (topValue) {
-      // Leverage ABOVE field: +25pp at default strength 0.6, +42pp at 1.0, +13pp at 0.3
-      const topFieldOwn = ownership[topValue.name] || 0;
-      const leverage = Math.round(contrarianStrength * 42);
-      const minFloor = Math.min(85, topFieldOwn + leverage);
-      caps[topValue.name] = { min: minFloor, _isBoost: true, _leverage: leverage };
+    const slateSize = withSal.length;
+    const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
+    const leverage = Math.round(contrarianStrength * 42);
+    for (let i = 0; i < Math.min(boostCount, byValue.length); i++) {
+      const p = byValue[i];
+      const topFieldOwn = Math.round(ownership[p.name] || 0);
+      // Scale leverage down slightly for 2nd/3rd boost so top pick is still the headline
+      const scaledLev = Math.round(leverage * (1 - i * 0.2));
+      const minFloor = Math.min(85, topFieldOwn + scaledLev);
+      caps[p.name] = { min: minFloor, _isBoost: true, _leverage: scaledLev, _rank: i + 1 };
     }
 
     return caps;
-  }, [rp, ownership, contrarianOn, contrarianStrength]);
+  }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
 
   // Projections untouched when contrarian is on (caps do the work now)
   const adjRp = rp;
@@ -817,11 +826,13 @@ function BuilderTab({ players: rp, ownership }) {
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
-      const boostEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost);
+      const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost).sort((a, b) => (a[1]._rank || 0) - (b[1]._rank || 0));
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
-          {boostEntry && <span>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{boostEntry[0]}</span> · field {(ownership[boostEntry[0]] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1]._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1].min}%</span></span>}
+          {boostEntries.map(([name, c]) => (
+            <span key={name}>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
+          ))}
         </div>
       );
     })()}
@@ -832,7 +843,7 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
-    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0 }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" /></div>)}</div>
+    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
     <button className="btn btn-primary" onClick={run}>⚡ Build {nL} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} />}
   </>);
@@ -1020,18 +1031,26 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     }
 
     const byValue = [...withSal]
-      .filter(p => p.name !== trap?.name && (ownership[p.name] || 0) < 40)
+      .filter(p => {
+        if (p.name === trap?.name) return false;
+        const fieldOwn = ownership[p.name] || 0;
+        const fairOwn = computeFairOwn(p[valKey] || 0, avgVal);
+        return fieldOwn < fairOwn;
+      })
       .sort((a, b) => (b[valKey] || 0) - (a[valKey] || 0));
-    const topValue = byValue[0];
-    if (topValue) {
-      const topFieldOwn = ownership[topValue.name] || 0;
-      const leverage = Math.round(contrarianStrength * 42);
-      const minFloor = Math.min(85, topFieldOwn + leverage);
-      caps[topValue.name] = { min: minFloor, _isBoost: true, _leverage: leverage };
+    const slateSize = withSal.length;
+    const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
+    const leverage = Math.round(contrarianStrength * 42);
+    for (let i = 0; i < Math.min(boostCount, byValue.length); i++) {
+      const p = byValue[i];
+      const topFieldOwn = Math.round(ownership[p.name] || 0);
+      const scaledLev = Math.round(leverage * (1 - i * 0.2));
+      const minFloor = Math.min(85, topFieldOwn + scaledLev);
+      caps[p.name] = { min: minFloor, _isBoost: true, _leverage: scaledLev, _rank: i + 1 };
     }
 
     return caps;
-  }, [rp, ownership, contrarianOn, contrarianStrength, mode]);
+  }, [rp, ownership, contrarianOn, contrarianStrength, mode, avgVal]);
 
   const adjRp = rp;
 
@@ -1066,11 +1085,13 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
-      const boostEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost);
+      const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost).sort((a, b) => (a[1]._rank || 0) - (b[1]._rank || 0));
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
-          {boostEntry && <span>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{boostEntry[0]}</span> · field {(ownership[boostEntry[0]] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1]._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1].min}%</span></span>}
+          {boostEntries.map(([name, c]) => (
+            <span key={name}>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
+          ))}
         </div>
       );
     })()}
@@ -1092,12 +1113,12 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       }
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
-      <span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-      <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
-      <span className="ctrl-proj" style={{ flexShrink: 0 }}>{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
-      <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 38, textAlign: 'right', flexShrink: 0 }}>{fmt(ownership[p.name] || 0, 0)}%</span>
-      <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" />
-      <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" />
+      <span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+      <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
+      <span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
+      <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 30, textAlign: 'right', flexShrink: 0 }}>{fmt(ownership[p.name] || 0, 0)}%</span>
+      <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} />
+      <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} />
     </div>)}</div>
     <button className="btn btn-primary" onClick={run}>⚡ Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
     {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} />}
