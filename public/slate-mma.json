@@ -12,17 +12,33 @@
       "start_time": "04/18/2026 05:00PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": -260, "ml_b": 210,
-        "method_a_ko": 600, "method_a_sub": 175, "method_a_dec": 210,
-        "method_b_ko": 500, "method_b_sub": 2500, "method_b_dec": 475,
+        "ml_a": -260,
+        "ml_b": 210,
+        "method_a_ko": 600,
+        "method_a_sub": 175,
+        "method_a_dec": 210,
+        "method_b_ko": 500,
+        "method_b_sub": 2500,
+        "method_b_dec": 475,
         "method_draw": 8000,
-        "a_r1": 320, "a_r2": 500, "a_r3": 800, "a_points": 210,
-        "b_r1": 950, "b_r2": 1300, "b_r3": 2200, "b_points": 475,
-        "total_rounds_line": 2.5, "total_rounds_over": -105, "total_rounds_under": -125
+        "a_r1": 320,
+        "a_r2": 500,
+        "a_r3": 800,
+        "a_points": 210,
+        "b_r1": 950,
+        "b_r2": 1300,
+        "b_r3": 2200,
+        "b_points": 475,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -105,
+        "total_rounds_under": -125
       },
-      "ct_a": 3.5, "ct_b": 3.0,
-      "ss_line_a": 28.5, "ss_line_b": 27.5,
-      "adj_a": 0, "adj_b": 0,
+      "ct_a": 3.5,
+      "ct_b": 3.0,
+      "ss_line_a": 28.5,
+      "ss_line_b": 27.5,
+      "adj_a": 0,
+      "adj_b": 0,
       "notes": "Both debuts, grappling-heavy fight projected"
     },
     {
@@ -31,17 +47,33 @@
       "start_time": "04/18/2026 05:20PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": -150, "ml_b": 125,
-        "method_a_ko": 525, "method_a_sub": 525, "method_a_dec": 170,
-        "method_b_ko": 400, "method_b_sub": 2200, "method_b_dec": 265,
+        "ml_a": -150,
+        "ml_b": 125,
+        "method_a_ko": 525,
+        "method_a_sub": 525,
+        "method_a_dec": 170,
+        "method_b_ko": 400,
+        "method_b_sub": 2200,
+        "method_b_dec": 265,
         "method_draw": 8000,
-        "a_r1": 575, "a_r2": 850, "a_r3": 1300, "a_points": 170,
-        "b_r1": 750, "b_r2": 1100, "b_r3": 1800, "b_points": 265,
-        "total_rounds_line": 2.5, "total_rounds_over": -170, "total_rounds_under": 135
+        "a_r1": 575,
+        "a_r2": 850,
+        "a_r3": 1300,
+        "a_points": 170,
+        "b_r1": 750,
+        "b_r2": 1100,
+        "b_r3": 1800,
+        "b_points": 265,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -170,
+        "total_rounds_under": 135
       },
-      "ct_a": 2.5, "ct_b": 1.5,
-      "ss_line_a": 51.5, "ss_line_b": 54.5,
-      "adj_a": 0, "adj_b": 0,
+      "ct_a": 2.5,
+      "ct_b": 1.5,
+      "ss_line_a": 51.5,
+      "ss_line_b": 54.5,
+      "adj_a": 0,
+      "adj_b": 0,
       "notes": "Vologdin UFC debut, expected to go distance"
     },
     {
@@ -50,18 +82,34 @@
       "start_time": "04/18/2026 05:40PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": 145, "ml_b": -170,
-        "method_a_ko": 1650, "method_a_sub": 1650, "method_a_dec": 170,
-        "method_b_ko": 750, "method_b_sub": 1100, "method_b_dec": -110,
+        "ml_a": 145,
+        "ml_b": -170,
+        "method_a_ko": 1650,
+        "method_a_sub": 1650,
+        "method_a_dec": 170,
+        "method_b_ko": 750,
+        "method_b_sub": 1100,
+        "method_b_dec": -110,
         "method_draw": 8000,
-        "a_r1": 2000, "a_r2": 2500, "a_r3": 3300, "a_points": 170,
-        "b_r1": 1000, "b_r2": 1300, "b_r3": 1800, "b_points": -110,
-        "total_rounds_line": 2.5, "total_rounds_over": -550, "total_rounds_under": 375
+        "a_r1": 2000,
+        "a_r2": 2500,
+        "a_r3": 3300,
+        "a_points": 170,
+        "b_r1": 1000,
+        "b_r2": 1300,
+        "b_r3": 1800,
+        "b_points": -110,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -550,
+        "total_rounds_under": 375
       },
-      "ct_a": 2.5, "ct_b": 2.5,
-      "ss_line_a": 45.5, "ss_line_b": 57.5,
-      "adj_a": 0, "adj_b": 0,
-      "notes": "Book 85%+ likely goes distance — low ceiling pure volume fight"
+      "ct_a": 2.5,
+      "ct_b": 2.5,
+      "ss_line_a": 45.5,
+      "ss_line_b": 57.5,
+      "adj_a": 0,
+      "adj_b": 0,
+      "notes": "Book 85%+ likely goes distance \u2014 low ceiling pure volume fight"
     },
     {
       "fighter_a": "Melissa Croden",
@@ -69,18 +117,36 @@
       "start_time": "04/18/2026 06:00PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": -135, "ml_b": 115,
-        "method_a_ko": 550, "method_a_sub": 600, "method_a_dec": 175,
-        "method_b_ko": 550, "method_b_sub": 2200, "method_b_dec": 195,
+        "ml_a": -135,
+        "ml_b": 115,
+        "method_a_ko": 550,
+        "method_a_sub": 600,
+        "method_a_dec": 175,
+        "method_b_ko": 550,
+        "method_b_sub": 2200,
+        "method_b_dec": 195,
         "method_draw": 8000,
-        "a_r1": 625, "a_r2": 900, "a_r3": 1400, "a_points": 175,
-        "b_r1": 1000, "b_r2": 1400, "b_r3": 2200, "b_points": 195,
-        "total_rounds_line": 2.5, "total_rounds_over": -220, "total_rounds_under": 170,
-        "td_a_line": 1.5, "td_a_over": -140, "td_a_under": 100
+        "a_r1": 625,
+        "a_r2": 900,
+        "a_r3": 1400,
+        "a_points": 175,
+        "b_r1": 1000,
+        "b_r2": 1400,
+        "b_r3": 2200,
+        "b_points": 195,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -220,
+        "total_rounds_under": 170,
+        "td_a_line": 1.5,
+        "td_a_over": -140,
+        "td_a_under": 100
       },
-      "ct_a": 3.5, "ct_b": 2.0,
-      "ss_line_a": 52.5, "ss_line_b": 50.5,
-      "adj_a": 0, "adj_b": 0
+      "ct_a": 3.5,
+      "ct_b": 2.0,
+      "ss_line_a": 52.5,
+      "ss_line_b": 50.5,
+      "adj_a": 0,
+      "adj_b": 0
     },
     {
       "fighter_a": "Tanner Boser",
@@ -88,17 +154,33 @@
       "start_time": "04/18/2026 06:20PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": 125, "ml_b": -150,
-        "method_a_ko": 450, "method_a_sub": 2800, "method_a_dec": 235,
-        "method_b_ko": 235, "method_b_sub": 1100, "method_b_dec": 220,
+        "ml_a": 125,
+        "ml_b": -150,
+        "method_a_ko": 450,
+        "method_a_sub": 2800,
+        "method_a_dec": 235,
+        "method_b_ko": 235,
+        "method_b_sub": 1100,
+        "method_b_dec": 220,
         "method_draw": 8000,
-        "a_r1": 900, "a_r2": 1300, "a_r3": 2000, "a_points": 235,
-        "b_r1": 450, "b_r2": 700, "b_r3": 1100, "b_points": 220,
-        "total_rounds_line": 2.5, "total_rounds_over": -150, "total_rounds_under": 120
+        "a_r1": 900,
+        "a_r2": 1300,
+        "a_r3": 2000,
+        "a_points": 235,
+        "b_r1": 450,
+        "b_r2": 700,
+        "b_r3": 1100,
+        "b_points": 220,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -150,
+        "total_rounds_under": 120
       },
-      "ct_a": 1.0, "ct_b": 0.5,
-      "ss_line_a": 39.5, "ss_line_b": 40.5,
-      "adj_a": 0, "adj_b": 0,
+      "ct_a": 1.0,
+      "ct_b": 0.5,
+      "ss_line_a": 39.5,
+      "ss_line_b": 40.5,
+      "adj_a": 0,
+      "adj_b": 0,
       "notes": "HW kickboxer fight, finish upside both sides"
     },
     {
@@ -107,18 +189,34 @@
       "start_time": "04/18/2026 06:40PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": 135, "ml_b": -160,
-        "method_a_ko": 750, "method_a_sub": 700, "method_a_dec": 300,
-        "method_b_ko": 375, "method_b_sub": 195, "method_b_dec": 525,
+        "ml_a": 135,
+        "ml_b": -160,
+        "method_a_ko": 750,
+        "method_a_sub": 700,
+        "method_a_dec": 300,
+        "method_b_ko": 375,
+        "method_b_sub": 195,
+        "method_b_dec": 525,
         "method_draw": 8000,
-        "a_r1": 800, "a_r2": 1100, "a_r3": 1800, "a_points": 300,
-        "b_r1": 290, "b_r2": 450, "b_r3": 750, "b_points": 525,
-        "total_rounds_line": 1.5, "total_rounds_over": -155, "total_rounds_under": 122
+        "a_r1": 800,
+        "a_r2": 1100,
+        "a_r3": 1800,
+        "a_points": 300,
+        "b_r1": 290,
+        "b_r2": 450,
+        "b_r3": 750,
+        "b_points": 525,
+        "total_rounds_line": 1.5,
+        "total_rounds_over": -155,
+        "total_rounds_under": 122
       },
-      "ct_a": 1.5, "ct_b": 1.5,
-      "ss_line_a": 25.5, "ss_line_b": 29.5,
-      "adj_a": 0, "adj_b": 0,
-      "notes": "Valentin Sub +195 — book sees fast sub finish. Elite GPP play"
+      "ct_a": 1.5,
+      "ct_b": 1.5,
+      "ss_line_a": 25.5,
+      "ss_line_b": 29.5,
+      "adj_a": 0,
+      "adj_b": 0,
+      "notes": "Valentin Sub +195 \u2014 book sees fast sub finish. Elite GPP play"
     },
     {
       "fighter_a": "Dennis Buzukja",
@@ -126,17 +224,33 @@
       "start_time": "04/18/2026 07:00PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": 325, "ml_b": -425,
-        "method_a_ko": 750, "method_a_sub": 1500, "method_a_dec": 750,
-        "method_b_ko": -200, "method_b_sub": 650, "method_b_dec": 850,
+        "ml_a": 325,
+        "ml_b": -425,
+        "method_a_ko": 750,
+        "method_a_sub": 1500,
+        "method_a_dec": 750,
+        "method_b_ko": -200,
+        "method_b_sub": 650,
+        "method_b_dec": 850,
         "method_draw": 8000,
-        "a_r1": 1300, "a_r2": 1600, "a_r3": 2000, "a_points": 750,
-        "b_r1": 110, "b_r2": 310, "b_r3": 850, "b_points": 850,
-        "total_rounds_line": 1.5, "total_rounds_over": 135, "total_rounds_under": -170
+        "a_r1": 1300,
+        "a_r2": 1600,
+        "a_r3": 2000,
+        "a_points": 750,
+        "b_r1": 110,
+        "b_r2": 310,
+        "b_r3": 850,
+        "b_points": 850,
+        "total_rounds_line": 1.5,
+        "total_rounds_over": 135,
+        "total_rounds_under": -170
       },
-      "ct_a": 0.5, "ct_b": 1.0,
-      "ss_line_a": 22.5, "ss_line_b": 30.5,
-      "adj_a": 0, "adj_b": 0,
+      "ct_a": 0.5,
+      "ct_b": 1.0,
+      "ss_line_a": 22.5,
+      "ss_line_b": 30.5,
+      "adj_a": 0,
+      "adj_b": 0,
       "notes": "Barbosa R1 KO +110 = ~48% implied. Highest finish prob on slate"
     },
     {
@@ -145,17 +259,33 @@
       "start_time": "04/18/2026 08:00PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": 135, "ml_b": -160,
-        "method_a_ko": 1300, "method_a_sub": 550, "method_a_dec": 255,
-        "method_b_ko": 255, "method_b_sub": 2000, "method_b_dec": 170,
+        "ml_a": 135,
+        "ml_b": -160,
+        "method_a_ko": 1300,
+        "method_a_sub": 550,
+        "method_a_dec": 255,
+        "method_b_ko": 255,
+        "method_b_sub": 2000,
+        "method_b_dec": 170,
         "method_draw": 8000,
-        "a_r1": 900, "a_r2": 1250, "a_r3": 2000, "a_points": 255,
-        "b_r1": 550, "b_r2": 800, "b_r3": 1250, "b_points": 170,
-        "total_rounds_line": 2.5, "total_rounds_over": -180, "total_rounds_under": 140
+        "a_r1": 900,
+        "a_r2": 1250,
+        "a_r3": 2000,
+        "a_points": 255,
+        "b_r1": 550,
+        "b_r2": 800,
+        "b_r3": 1250,
+        "b_points": 170,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -180,
+        "total_rounds_under": 140
       },
-      "ct_a": 4.5, "ct_b": 1.5,
-      "ss_line_a": 31.5, "ss_line_b": 52.5,
-      "adj_a": 0, "adj_b": 0,
+      "ct_a": 4.5,
+      "ct_b": 1.5,
+      "ss_line_a": 31.5,
+      "ss_line_b": 52.5,
+      "adj_a": 0,
+      "adj_b": 0,
       "notes": "Grappler vs Striker. Moises CT 4:30 = huge DK upside if wins"
     },
     {
@@ -164,24 +294,162 @@
       "start_time": "04/18/2026 08:20PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": -315, "ml_b": 255,
-        "method_a_ko": 1100, "method_a_sub": 500, "method_a_dec": -150,
-        "method_b_ko": 1300, "method_b_sub": 650, "method_b_dec": 575,
+        "ml_a": -315,
+        "ml_b": 255,
+        "method_a_ko": 1100,
+        "method_a_sub": 500,
+        "method_a_dec": -150,
+        "method_b_ko": 1300,
+        "method_b_sub": 650,
+        "method_b_dec": 575,
         "method_draw": 8000,
-        "a_r1": 900, "a_r2": 1000, "a_r3": 1400, "a_points": -150,
-        "b_r1": 950, "b_r2": 1400, "b_r3": 2200, "b_points": 575,
-        "total_rounds_line": 2.5, "total_rounds_over": -280, "total_rounds_under": 210,
-        "td_a_line": 2.5, "td_a_over": -140, "td_a_under": 100,
-        "td_b_line": 0.5, "td_b_over": -200, "td_b_under": 150,
-        "td_total_line": 3.5, "td_total_over": -135, "td_total_under": -105,
-        "ss_a_tiers": [[25, -235], [50, -105], [75, 240], [100, 450], [125, 750], [150, 1000]],
-        "ss_b_tiers": [[25, -135], [50, 205], [75, 450], [100, 800], [125, 1000]],
-        "ts_a_tiers": [[25, -750], [50, -330], [75, -175], [100, -105], [125, 180], [150, 290], [175, 450], [200, 700], [225, 900], [250, 1000]],
-        "ts_b_tiers": [[25, -425], [50, -165], [75, 125], [100, 250], [125, 425], [150, 700], [175, 1000]]
+        "a_r1": 900,
+        "a_r2": 1000,
+        "a_r3": 1400,
+        "a_points": -150,
+        "b_r1": 950,
+        "b_r2": 1400,
+        "b_r3": 2200,
+        "b_points": 575,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -280,
+        "total_rounds_under": 210,
+        "td_a_line": 2.5,
+        "td_a_over": -140,
+        "td_a_under": 100,
+        "td_b_line": 0.5,
+        "td_b_over": -200,
+        "td_b_under": 150,
+        "td_total_line": 3.5,
+        "td_total_over": -135,
+        "td_total_under": -105,
+        "ss_a_tiers": [
+          [
+            25,
+            -235
+          ],
+          [
+            50,
+            -105
+          ],
+          [
+            75,
+            240
+          ],
+          [
+            100,
+            450
+          ],
+          [
+            125,
+            750
+          ],
+          [
+            150,
+            1000
+          ]
+        ],
+        "ss_b_tiers": [
+          [
+            25,
+            -135
+          ],
+          [
+            50,
+            205
+          ],
+          [
+            75,
+            450
+          ],
+          [
+            100,
+            800
+          ],
+          [
+            125,
+            1000
+          ]
+        ],
+        "ts_a_tiers": [
+          [
+            25,
+            -750
+          ],
+          [
+            50,
+            -330
+          ],
+          [
+            75,
+            -175
+          ],
+          [
+            100,
+            -105
+          ],
+          [
+            125,
+            180
+          ],
+          [
+            150,
+            290
+          ],
+          [
+            175,
+            450
+          ],
+          [
+            200,
+            700
+          ],
+          [
+            225,
+            900
+          ],
+          [
+            250,
+            1000
+          ]
+        ],
+        "ts_b_tiers": [
+          [
+            25,
+            -425
+          ],
+          [
+            50,
+            -165
+          ],
+          [
+            75,
+            125
+          ],
+          [
+            100,
+            250
+          ],
+          [
+            125,
+            425
+          ],
+          [
+            150,
+            700
+          ],
+          [
+            175,
+            1000
+          ]
+        ]
       },
-      "ct_a": 7.5, "ct_b": 1.5,
-      "ss_line_a": 43.5, "ss_line_b": 27.5,
-      "adj_a": 0, "adj_b": 0,
+      "ct_a": 7.5,
+      "ct_b": 1.5,
+      "ss_line_a": 43.5,
+      "ss_line_b": 27.5,
+      "adj_a": 0,
+      "adj_b": 0,
       "notes": "Jasud CT 7:30 + 2.5 TD line = elite grappler stat line. DK monster"
     },
     {
@@ -190,25 +458,159 @@
       "start_time": "04/18/2026 08:40PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": -170, "ml_b": 145,
-        "method_a_ko": 220, "method_a_sub": 375, "method_a_dec": 400,
-        "method_b_ko": 390, "method_b_sub": 1650, "method_b_dec": 350,
+        "ml_a": -170,
+        "ml_b": 145,
+        "method_a_ko": 220,
+        "method_a_sub": 375,
+        "method_a_dec": 400,
+        "method_b_ko": 390,
+        "method_b_sub": 1650,
+        "method_b_dec": 350,
         "method_draw": 8000,
-        "a_r1": 310, "a_r2": 475, "a_r3": 800, "a_points": 400,
-        "b_r1": 750, "b_r2": 1100, "b_r3": 1650, "b_points": 350,
-        "total_rounds_line": 2.5, "total_rounds_over": 122, "total_rounds_under": -155,
-        "td_a_line": 0.5, "td_a_over": 155, "td_a_under": -210,
-        "td_b_line": 0.5, "td_b_over": 182, "td_b_under": -245,
-        "td_total_line": 0.5, "td_total_over": -155, "td_total_under": 115,
-        "ss_a_tiers": [[25, -200], [50, 115], [75, 260], [100, 475], [125, 800], [150, 1000]],
-        "ss_b_tiers": [[25, -160], [50, 150], [75, 300], [100, 600], [125, 850], [150, 1000]],
-        "ts_a_tiers": [[25, -340], [50, -155], [75, 125], [100, 230], [125, 400], [150, 625], [175, 850], [200, 1000]],
-        "ts_b_tiers": [[25, -230], [50, -115], [75, 195], [100, 350], [125, 600], [150, 850], [175, 1000]]
+        "a_r1": 310,
+        "a_r2": 475,
+        "a_r3": 800,
+        "a_points": 400,
+        "b_r1": 750,
+        "b_r2": 1100,
+        "b_r3": 1650,
+        "b_points": 350,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": 122,
+        "total_rounds_under": -155,
+        "td_a_line": 0.5,
+        "td_a_over": 155,
+        "td_a_under": -210,
+        "td_b_line": 0.5,
+        "td_b_over": 182,
+        "td_b_under": -245,
+        "td_total_line": 0.5,
+        "td_total_over": -155,
+        "td_total_under": 115,
+        "ss_a_tiers": [
+          [
+            25,
+            -200
+          ],
+          [
+            50,
+            115
+          ],
+          [
+            75,
+            260
+          ],
+          [
+            100,
+            475
+          ],
+          [
+            125,
+            800
+          ],
+          [
+            150,
+            1000
+          ]
+        ],
+        "ss_b_tiers": [
+          [
+            25,
+            -160
+          ],
+          [
+            50,
+            150
+          ],
+          [
+            75,
+            300
+          ],
+          [
+            100,
+            600
+          ],
+          [
+            125,
+            850
+          ],
+          [
+            150,
+            1000
+          ]
+        ],
+        "ts_a_tiers": [
+          [
+            25,
+            -340
+          ],
+          [
+            50,
+            -155
+          ],
+          [
+            75,
+            125
+          ],
+          [
+            100,
+            230
+          ],
+          [
+            125,
+            400
+          ],
+          [
+            150,
+            625
+          ],
+          [
+            175,
+            850
+          ],
+          [
+            200,
+            1000
+          ]
+        ],
+        "ts_b_tiers": [
+          [
+            25,
+            -230
+          ],
+          [
+            50,
+            -115
+          ],
+          [
+            75,
+            195
+          ],
+          [
+            100,
+            350
+          ],
+          [
+            125,
+            600
+          ],
+          [
+            150,
+            850
+          ],
+          [
+            175,
+            1000
+          ]
+        ]
       },
-      "ct_a": 1.5, "ct_b": 1.0,
-      "ss_line_a": 35.5, "ss_line_b": 37.5,
-      "adj_a": 0, "adj_b": 0,
-      "notes": "Nallo R1 +310 → ~24% R1 finish. High KO upside"
+      "ct_a": 1.5,
+      "ct_b": 1.0,
+      "ss_line_a": 35.5,
+      "ss_line_b": 37.5,
+      "adj_a": 0,
+      "adj_b": 0,
+      "notes": "Nallo R1 +310 \u2192 ~24% R1 finish. High KO upside"
     },
     {
       "fighter_a": "Kyler Phillips",
@@ -216,25 +618,171 @@
       "start_time": "04/18/2026 09:00PM ET",
       "rounds": 3,
       "odds": {
-        "ml_a": 115, "ml_b": -135,
-        "method_a_ko": 600, "method_a_sub": 750, "method_a_dec": 250,
-        "method_b_ko": 500, "method_b_sub": 600, "method_b_dec": 185,
+        "ml_a": 115,
+        "ml_b": -135,
+        "method_a_ko": 600,
+        "method_a_sub": 750,
+        "method_a_dec": 250,
+        "method_b_ko": 500,
+        "method_b_sub": 600,
+        "method_b_dec": 185,
         "method_draw": 8000,
-        "a_r1": 750, "a_r2": 1100, "a_r3": 1650, "a_points": 250,
-        "b_r1": 600, "b_r2": 850, "b_r3": 1400, "b_points": 185,
-        "total_rounds_line": 2.5, "total_rounds_over": -170, "total_rounds_under": 135,
-        "td_a_line": 1.5, "td_a_over": -135, "td_a_under": -105,
-        "td_b_line": 0.5, "td_b_over": 140, "td_b_under": -190,
-        "td_total_line": 2.5, "td_total_over": 135, "td_total_under": -180,
-        "ss_a_tiers": [[25, -240], [50, -115], [75, 210], [100, 400], [125, 700], [150, 1000]],
-        "ss_b_tiers": [[25, -280], [50, -125], [75, 175], [100, 330], [125, 575], [150, 825], [175, 1000]],
-        "ts_a_tiers": [[25, -365], [50, -160], [75, 125], [100, 230], [125, 400], [150, 625], [175, 900], [200, 1000]],
-        "ts_b_tiers": [[25, -500], [50, -220], [75, -125], [100, 155], [125, 270], [150, 425], [175, 650], [200, 900], [225, 1000]]
+        "a_r1": 750,
+        "a_r2": 1100,
+        "a_r3": 1650,
+        "a_points": 250,
+        "b_r1": 600,
+        "b_r2": 850,
+        "b_r3": 1400,
+        "b_points": 185,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -170,
+        "total_rounds_under": 135,
+        "td_a_line": 1.5,
+        "td_a_over": -135,
+        "td_a_under": -105,
+        "td_b_line": 0.5,
+        "td_b_over": 140,
+        "td_b_under": -190,
+        "td_total_line": 2.5,
+        "td_total_over": 135,
+        "td_total_under": -180,
+        "ss_a_tiers": [
+          [
+            25,
+            -240
+          ],
+          [
+            50,
+            -115
+          ],
+          [
+            75,
+            210
+          ],
+          [
+            100,
+            400
+          ],
+          [
+            125,
+            700
+          ],
+          [
+            150,
+            1000
+          ]
+        ],
+        "ss_b_tiers": [
+          [
+            25,
+            -280
+          ],
+          [
+            50,
+            -125
+          ],
+          [
+            75,
+            175
+          ],
+          [
+            100,
+            330
+          ],
+          [
+            125,
+            575
+          ],
+          [
+            150,
+            825
+          ],
+          [
+            175,
+            1000
+          ]
+        ],
+        "ts_a_tiers": [
+          [
+            25,
+            -365
+          ],
+          [
+            50,
+            -160
+          ],
+          [
+            75,
+            125
+          ],
+          [
+            100,
+            230
+          ],
+          [
+            125,
+            400
+          ],
+          [
+            150,
+            625
+          ],
+          [
+            175,
+            900
+          ],
+          [
+            200,
+            1000
+          ]
+        ],
+        "ts_b_tiers": [
+          [
+            25,
+            -500
+          ],
+          [
+            50,
+            -220
+          ],
+          [
+            75,
+            -125
+          ],
+          [
+            100,
+            155
+          ],
+          [
+            125,
+            270
+          ],
+          [
+            150,
+            425
+          ],
+          [
+            175,
+            650
+          ],
+          [
+            200,
+            900
+          ],
+          [
+            225,
+            1000
+          ]
+        ]
       },
-      "ct_a": 2.5, "ct_b": 1.5,
-      "ss_line_a": 50.5, "ss_line_b": 55.5,
-      "adj_a": 0, "adj_b": 0,
-      "notes": "Phillips 1.5 TD line + 2.5 CT — mixed style edge for DK"
+      "ct_a": 2.5,
+      "ct_b": 1.5,
+      "ss_line_a": 50.5,
+      "ss_line_b": 55.5,
+      "adj_a": 0,
+      "adj_b": 0,
+      "notes": "Phillips 1.5 TD line + 2.5 CT \u2014 mixed style edge for DK"
     },
     {
       "fighter_a": "Gilbert Burns",
@@ -242,89 +790,414 @@
       "start_time": "04/18/2026 09:20PM ET",
       "rounds": 5,
       "odds": {
-        "ml_a": 225, "ml_b": -275,
-        "method_a_ko": 700, "method_a_sub": 625, "method_a_dec": 800,
-        "method_b_ko": -110, "method_b_sub": 600, "method_b_dec": 525,
+        "ml_a": 225,
+        "ml_b": -275,
+        "method_a_ko": 700,
+        "method_a_sub": 625,
+        "method_a_dec": 800,
+        "method_b_ko": -110,
+        "method_b_sub": 600,
+        "method_b_dec": 525,
         "method_draw": 8000,
-        "a_r1": 1100, "a_r2": 1400, "a_r3": 1800, "a_r4": 2500, "a_r5": 3300, "a_points": 800,
-        "b_r1": 350, "b_r2": 450, "b_r3": 600, "b_r4": 850, "b_r5": 1200, "b_points": 525,
-        "total_rounds_line": 2.5, "total_rounds_over": -105, "total_rounds_under": -125,
-        "td_a_line": 0.5, "td_a_over": -190, "td_a_under": 140,
-        "td_b_line": 0.5, "td_b_over": 110, "td_b_under": -150,
-        "td_total_line": 1.5, "td_total_over": 105, "td_total_under": -145,
-        "ss_a_tiers": [[25, -145], [50, 200], [75, 425], [100, 800], [125, 1000]],
-        "ss_b_tiers": [[25, -225], [50, 105], [75, 255], [100, 475], [125, 800], [150, 1000]],
-        "ts_a_tiers": [[25, -240], [50, 100], [75, 240], [100, 450], [125, 750], [150, 1000]],
-        "ts_b_tiers": [[25, -340], [50, -140], [75, 160], [100, 300], [125, 550], [150, 825], [175, 1000]]
+        "a_r1": 1100,
+        "a_r2": 1400,
+        "a_r3": 1800,
+        "a_r4": 2500,
+        "a_r5": 3300,
+        "a_points": 800,
+        "b_r1": 350,
+        "b_r2": 450,
+        "b_r3": 600,
+        "b_r4": 850,
+        "b_r5": 1200,
+        "b_points": 525,
+        "total_rounds_line": 2.5,
+        "total_rounds_over": -105,
+        "total_rounds_under": -125,
+        "td_a_line": 0.5,
+        "td_a_over": -190,
+        "td_a_under": 140,
+        "td_b_line": 0.5,
+        "td_b_over": 110,
+        "td_b_under": -150,
+        "td_total_line": 1.5,
+        "td_total_over": 105,
+        "td_total_under": -145,
+        "ss_a_tiers": [
+          [
+            25,
+            -145
+          ],
+          [
+            50,
+            200
+          ],
+          [
+            75,
+            425
+          ],
+          [
+            100,
+            800
+          ],
+          [
+            125,
+            1000
+          ]
+        ],
+        "ss_b_tiers": [
+          [
+            25,
+            -225
+          ],
+          [
+            50,
+            105
+          ],
+          [
+            75,
+            255
+          ],
+          [
+            100,
+            475
+          ],
+          [
+            125,
+            800
+          ],
+          [
+            150,
+            1000
+          ]
+        ],
+        "ts_a_tiers": [
+          [
+            25,
+            -240
+          ],
+          [
+            50,
+            100
+          ],
+          [
+            75,
+            240
+          ],
+          [
+            100,
+            450
+          ],
+          [
+            125,
+            750
+          ],
+          [
+            150,
+            1000
+          ]
+        ],
+        "ts_b_tiers": [
+          [
+            25,
+            -340
+          ],
+          [
+            50,
+            -140
+          ],
+          [
+            75,
+            160
+          ],
+          [
+            100,
+            300
+          ],
+          [
+            125,
+            550
+          ],
+          [
+            150,
+            825
+          ],
+          [
+            175,
+            1000
+          ]
+        ]
       },
-      "ct_a": 2.5, "ct_b": 1.5,
-      "ss_line_a": 33.5, "ss_line_b": 41.5,
-      "adj_a": 0, "adj_b": 0,
-      "notes": "Main event 5R. Malott KO -110 = ~52% KO prob. Massive ceiling — 90pt R1 bonus path"
+      "ct_a": 2.5,
+      "ct_b": 1.5,
+      "ss_line_a": 33.5,
+      "ss_line_b": 41.5,
+      "adj_a": 0,
+      "adj_b": 0,
+      "notes": "Main event 5R. Malott KO -110 = ~52% KO prob. Massive ceiling \u2014 90pt R1 bonus path"
     }
   ],
   "dk_players": [
-    { "name": "Marcio Barbosa", "id": 42633573, "salary": 9400, "avg_ppg": 0 },
-    { "name": "Mike Malott", "id": 42633554, "salary": 9300, "avg_ppg": 84.66 },
-    { "name": "Jasmine Jasudavicius", "id": 42633557, "salary": 9200, "avg_ppg": 83.42 },
-    { "name": "Jamie Siraj", "id": 42633579, "salary": 9100, "avg_ppg": 0 },
-    { "name": "Jamey-Lyn Horth", "id": 42633566, "salary": 8900, "avg_ppg": 63.19 },
-    { "name": "Mandel Nallo", "id": 42633571, "salary": 8800, "avg_ppg": 0 },
-    { "name": "Charles Jourdain", "id": 42633568, "salary": 8700, "avg_ppg": 68.78 },
-    { "name": "Melissa Croden", "id": 42633558, "salary": 8600, "avg_ppg": 72.74 },
-    { "name": "Gokhan Saricam", "id": 42633562, "salary": 8500, "avg_ppg": 0 },
-    { "name": "Gauge Young", "id": 42633575, "salary": 8400, "avg_ppg": 66.50 },
-    { "name": "Robert Valentin", "id": 42633560, "salary": 8300, "avg_ppg": 12.87 },
-    { "name": "Mark Vologdin", "id": 42633576, "salary": 8200, "avg_ppg": 0 },
-    { "name": "John Castaneda", "id": 42633577, "salary": 8000, "avg_ppg": 66.28 },
-    { "name": "Julien Leblanc", "id": 42633561, "salary": 7900, "avg_ppg": 0 },
-    { "name": "Thiago Moises", "id": 42633574, "salary": 7800, "avg_ppg": 49.17 },
-    { "name": "Tanner Boser", "id": 42633563, "salary": 7700, "avg_ppg": 56.79 },
-    { "name": "Daria Zhelezniakova", "id": 42633559, "salary": 7600, "avg_ppg": 45.33 },
-    { "name": "Kyler Phillips", "id": 42633569, "salary": 7500, "avg_ppg": 72.69 },
-    { "name": "Jai Herbert", "id": 42633570, "salary": 7400, "avg_ppg": 44.86 },
-    { "name": "JJ Aldrich", "id": 42633567, "salary": 7300, "avg_ppg": 54.26 },
-    { "name": "John Yannis", "id": 42633578, "salary": 7100, "avg_ppg": 0.4 },
-    { "name": "Karine Silva", "id": 42633556, "salary": 7000, "avg_ppg": 79.02 },
-    { "name": "Gilbert Burns", "id": 42633555, "salary": 6900, "avg_ppg": 69.15 },
-    { "name": "Dennis Buzukja", "id": 42633572, "salary": 6800, "avg_ppg": 36.38 }
+    {
+      "name": "Marcio Barbosa",
+      "id": 42633573,
+      "salary": 9400,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Mike Malott",
+      "id": 42633554,
+      "salary": 9300,
+      "avg_ppg": 84.66
+    },
+    {
+      "name": "Jasmine Jasudavicius",
+      "id": 42633557,
+      "salary": 9200,
+      "avg_ppg": 83.42
+    },
+    {
+      "name": "Jamie Siraj",
+      "id": 42633579,
+      "salary": 9100,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Jamey-Lyn Horth",
+      "id": 42633566,
+      "salary": 8900,
+      "avg_ppg": 63.19
+    },
+    {
+      "name": "Mandel Nallo",
+      "id": 42633571,
+      "salary": 8800,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Charles Jourdain",
+      "id": 42633568,
+      "salary": 8700,
+      "avg_ppg": 68.78
+    },
+    {
+      "name": "Melissa Croden",
+      "id": 42633558,
+      "salary": 8600,
+      "avg_ppg": 72.74
+    },
+    {
+      "name": "Gokhan Saricam",
+      "id": 42633562,
+      "salary": 8500,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Gauge Young",
+      "id": 42633575,
+      "salary": 8400,
+      "avg_ppg": 66.5
+    },
+    {
+      "name": "Robert Valentin",
+      "id": 42633560,
+      "salary": 8300,
+      "avg_ppg": 12.87
+    },
+    {
+      "name": "Mark Vologdin",
+      "id": 42633576,
+      "salary": 8200,
+      "avg_ppg": 0
+    },
+    {
+      "name": "John Castaneda",
+      "id": 42633577,
+      "salary": 8000,
+      "avg_ppg": 66.28
+    },
+    {
+      "name": "Julien Leblanc",
+      "id": 42633561,
+      "salary": 7900,
+      "avg_ppg": 0
+    },
+    {
+      "name": "Thiago Moises",
+      "id": 42633574,
+      "salary": 7800,
+      "avg_ppg": 49.17
+    },
+    {
+      "name": "Tanner Boser",
+      "id": 42633563,
+      "salary": 7700,
+      "avg_ppg": 56.79
+    },
+    {
+      "name": "Daria Zhelezniakova",
+      "id": 42633559,
+      "salary": 7600,
+      "avg_ppg": 45.33
+    },
+    {
+      "name": "Kyler Phillips",
+      "id": 42633569,
+      "salary": 7500,
+      "avg_ppg": 72.69
+    },
+    {
+      "name": "Jai Herbert",
+      "id": 42633570,
+      "salary": 7400,
+      "avg_ppg": 44.86
+    },
+    {
+      "name": "JJ Aldrich",
+      "id": 42633567,
+      "salary": 7300,
+      "avg_ppg": 54.26
+    },
+    {
+      "name": "John Yannis",
+      "id": 42633578,
+      "salary": 7100,
+      "avg_ppg": 0.4
+    },
+    {
+      "name": "Karine Silva",
+      "id": 42633556,
+      "salary": 7000,
+      "avg_ppg": 79.02
+    },
+    {
+      "name": "Gilbert Burns",
+      "id": 42633555,
+      "salary": 6900,
+      "avg_ppg": 69.15
+    },
+    {
+      "name": "Dennis Buzukja",
+      "id": 42633572,
+      "salary": 6800,
+      "avg_ppg": 36.38
+    }
   ],
   "pp_lines": [
-    { "player": "Gauge Young", "stat": "Significant Strikes", "line": 52.5, "mult": "normal" },
-    { "player": "Jamie Siraj", "stat": "Significant Strikes", "line": 28.5, "mult": "normal" },
-    { "player": "John Yannis", "stat": "Significant Strikes", "line": 27.5, "mult": "normal" },
-    { "player": "Mark Vologdin", "stat": "Significant Strikes", "line": 54.5, "mult": "normal" },
-    { "player": "John Castaneda", "stat": "Significant Strikes", "line": 51.5, "mult": "normal" },
-    { "player": "Jamey-Lyn Horth", "stat": "Significant Strikes", "line": 57.5, "mult": "normal" },
-    { "player": "JJ Aldrich", "stat": "Significant Strikes", "line": 45.5, "mult": "normal" },
-    { "player": "Melissa Croden", "stat": "Significant Strikes", "line": 52.5, "mult": "normal" },
-    { "player": "Daria Zhelezniakova", "stat": "Significant Strikes", "line": 50.5, "mult": "normal" },
-    { "player": "Gokhan Saricam", "stat": "Significant Strikes", "line": 40.5, "mult": "normal" },
-    { "player": "Tanner Boser", "stat": "Significant Strikes", "line": 39.5, "mult": "normal" },
-    { "player": "Julien Leblanc", "stat": "Significant Strikes", "line": 25.5, "mult": "normal" },
-    { "player": "Robert Valentin", "stat": "Significant Strikes", "line": 29.5, "mult": "normal" },
-    { "player": "Marcio Barbosa", "stat": "Significant Strikes", "line": 30.5, "mult": "normal" },
-    { "player": "Dennis Buzukja", "stat": "Significant Strikes", "line": 22.5, "mult": "normal" },
-    { "player": "Thiago Moises", "stat": "Significant Strikes", "line": 31.5, "mult": "normal" },
-    { "player": "Jasmine Jasudavicius", "stat": "Significant Strikes", "line": 43.5, "mult": "normal" },
-    { "player": "Karine Silva", "stat": "Significant Strikes", "line": 27.5, "mult": "normal" },
-    { "player": "Jai Herbert", "stat": "Significant Strikes", "line": 37.5, "mult": "normal" },
-    { "player": "Mandel Nallo", "stat": "Significant Strikes", "line": 35.5, "mult": "normal" },
-    { "player": "Charles Jourdain", "stat": "Significant Strikes", "line": 55.5, "mult": "normal" },
-    { "player": "Kyler Phillips", "stat": "Significant Strikes", "line": 50.5, "mult": "normal" },
-    { "player": "Mike Malott", "stat": "Significant Strikes", "line": 41.5, "mult": "normal" },
-    { "player": "Gilbert Burns", "stat": "Significant Strikes", "line": 33.5, "mult": "normal" },
-    { "player": "Gauge Young", "stat": "Fantasy Score", "line": 44.55, "mult": "normal" },
-    { "player": "Jasmine Jasudavicius", "stat": "Fantasy Score", "line": 48.55, "mult": "normal" },
-    { "player": "Mandel Nallo", "stat": "Fantasy Score", "line": 56.55, "mult": "normal" },
-    { "player": "Charles Jourdain", "stat": "Fantasy Score", "line": 46.55, "mult": "normal" },
-    { "player": "Mike Malott", "stat": "Fantasy Score", "line": 56.55, "mult": "normal" },
-    { "player": "Mark Vologdin", "stat": "Fight Time", "line": 14.99, "mult": "normal" },
-    { "player": "Gokhan Saricam", "stat": "Fight Time", "line": 14.99, "mult": "normal" },
-    { "player": "Marcio Barbosa", "stat": "Fight Time", "line": 5.25, "mult": "normal" },
-    { "player": "Robert Valentin", "stat": "Fight Time", "line": 9.75, "mult": "normal" },
-    { "player": "Mandel Nallo", "stat": "Fight Time", "line": 10.25, "mult": "normal" },
-    { "player": "Mike Malott", "stat": "Fight Time", "line": 12.25, "mult": "normal" }
+    {
+      "player": "Jasmine Jasudavicius",
+      "stat": "Significant Strikes",
+      "line": 43.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Karine Silva",
+      "stat": "Significant Strikes",
+      "line": 27.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Jai Herbert",
+      "stat": "Significant Strikes",
+      "line": 37.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Mandel Nallo",
+      "stat": "Significant Strikes",
+      "line": 35.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Charles Jourdain",
+      "stat": "Significant Strikes",
+      "line": 55.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Kyler Phillips",
+      "stat": "Significant Strikes",
+      "line": 50.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Mike Malott",
+      "stat": "Significant Strikes",
+      "line": 41.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Gilbert Burns",
+      "stat": "Significant Strikes",
+      "line": 33.5,
+      "mult": "normal"
+    },
+    {
+      "player": "Gauge Young",
+      "stat": "Fantasy Score",
+      "line": 44.55,
+      "mult": "normal"
+    },
+    {
+      "player": "Jasmine Jasudavicius",
+      "stat": "Fantasy Score",
+      "line": 48.55,
+      "mult": "normal"
+    },
+    {
+      "player": "Mandel Nallo",
+      "stat": "Fantasy Score",
+      "line": 56.55,
+      "mult": "normal"
+    },
+    {
+      "player": "Charles Jourdain",
+      "stat": "Fantasy Score",
+      "line": 46.55,
+      "mult": "normal"
+    },
+    {
+      "player": "Mike Malott",
+      "stat": "Fantasy Score",
+      "line": 56.55,
+      "mult": "normal"
+    },
+    {
+      "player": "Mark Vologdin",
+      "stat": "Fight Time",
+      "line": 14.99,
+      "mult": "normal"
+    },
+    {
+      "player": "Gokhan Saricam",
+      "stat": "Fight Time",
+      "line": 14.99,
+      "mult": "normal"
+    },
+    {
+      "player": "Marcio Barbosa",
+      "stat": "Fight Time",
+      "line": 5.25,
+      "mult": "normal"
+    },
+    {
+      "player": "Robert Valentin",
+      "stat": "Fight Time",
+      "line": 9.75,
+      "mult": "normal"
+    },
+    {
+      "player": "Mandel Nallo",
+      "stat": "Fight Time",
+      "line": 10.25,
+      "mult": "normal"
+    },
+    {
+      "player": "Mike Malott",
+      "stat": "Fight Time",
+      "line": 12.25,
+      "mult": "normal"
+    }
   ],
   "last_updated": "2026-04-18 11:00 AM MT"
 }
