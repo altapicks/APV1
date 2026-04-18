@@ -811,7 +811,8 @@ function BuilderTab({ players: rp, ownership }) {
 
     const slateSize = withSal.length;
     const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
-    const leverage = Math.round(contrarianStrength * 42);
+    // Leverage: +10pp minimum floor (bare minimum above field), scales to +50pp at max strength
+    const leverage = Math.max(10, Math.round(contrarianStrength * 50));
     for (let i = 0; i < Math.min(boostCount, boostPool.length); i++) {
       const p = boostPool[i];
       const topFieldOwn = Math.round(ownership[p.name] || 0);
@@ -841,9 +842,12 @@ function BuilderTab({ players: rp, ownership }) {
     const pd = sp.map(p => {
       const cap = contrarianCaps[p.name] || {};
       const userSet = exp[p.name] || {};
-      // Priority: explicit user > contrarian cap > global
-      const effMin = userSet.min !== undefined ? userSet.min : (cap.min !== undefined ? cap.min : globalMin);
-      const effMax = userSet.max !== undefined ? userSet.max : (cap.max !== undefined ? cap.max : globalMax);
+      // Contrarian is MORE-RESTRICTIVE than user: cap.min lifts user.min, cap.max lowers user.max.
+      // This way Apply Globals (which sets min:0/max:100 for all) can't silently override boosts/fades.
+      const userMin = userSet.min !== undefined ? userSet.min : globalMin;
+      const userMax = userSet.max !== undefined ? userSet.max : globalMax;
+      const effMin = Math.max(userMin, cap.min || 0);
+      const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     const r = optimize(pd, nL, 50000, 6);
@@ -1084,7 +1088,8 @@ function MMABuilderTab({ fighters: rp, ownership }) {
 
     const slateSize = withSal.length;
     const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
-    const leverage = Math.round(contrarianStrength * 42);
+    // Leverage: +10pp minimum floor (bare minimum above field), scales to +50pp at max strength
+    const leverage = Math.max(10, Math.round(contrarianStrength * 50));
     for (let i = 0; i < Math.min(boostCount, boostPool.length); i++) {
       const p = boostPool[i];
       const topFieldOwn = Math.round(ownership[p.name] || 0);
@@ -1113,8 +1118,11 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const pd = sp.map(p => {
       const cap = contrarianCaps[p.name] || {};
       const userSet = exp[p.name] || {};
-      const effMin = userSet.min !== undefined ? userSet.min : (cap.min !== undefined ? cap.min : globalMin);
-      const effMax = userSet.max !== undefined ? userSet.max : (cap.max !== undefined ? cap.max : globalMax);
+      // Contrarian is MORE-RESTRICTIVE than user: lifts user.min, lowers user.max
+      const userMin = userSet.min !== undefined ? userSet.min : globalMin;
+      const userMax = userSet.max !== undefined ? userSet.max : globalMax;
+      const effMin = Math.max(userMin, cap.min || 0);
+      const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
       return {
         name: p.name, salary: p.salary, id: p.id,
         projection: p.proj, ceiling: p.ceil,
