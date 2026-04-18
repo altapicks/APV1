@@ -764,69 +764,92 @@ function BuilderTab({ players: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => p.val || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp]);
-  // CONTRARIAN MODE — "fade good value, take bad value" theory
-  //  DK prices plays for a reason. Top-value plays are obvious → field converges → low ROI.
-  //  Below-avg value underowned plays = differentiation. If they hit proj, massive leverage.
-  //  (1) Cap the trap (highest field ownership) — hard fade
-  //  (2) Boost highest-projection BELOW-AVG-VALUE UNDEROWNED plays — the "bad value" gems
-  //      Fallback: if nobody qualifies, any underowned by projection
-  //  (3) Global floor for EVERYONE — so nobody is fully excluded and low-salary plays
-  //      don't get tunneled out by DK's salary algo
+  // CONTRARIAN MODE
+  //  (1) TRAP — highest-owned MID/LOW-TIER play (stars excluded, they aren't traps)
+  //  (2a) ⭐ STUD BOOST — highest-owned top-projection play (leverage the good chalk)
+  //  (2b) 💎 GEM BOOST — below-avg-val underowned (DK-priced-down, field avoiding)
+  //  (3) UNIVERSAL LEVERAGE CAP — no player above field+20pp (user rule: never smart in DK)
+  //  (4) GLOBAL FLOOR — everyone has min exposure, prevents DK-salary tunneling
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
     const caps = {};
 
-    // (1) TRAP — highest field ownership
+    // Stars (top 30% by projection) — excluded from trap candidates
+    const byProj = [...withSal].sort((a, b) => b.proj - a.proj);
+    const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
+    const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
+
+    // Leverage bounds — capped at 20pp per user rule
+    const boostFloor = Math.round(10 + contrarianStrength * 10);   // 13-20pp by strength
+    const LEV_CAP = 20;
+
+    // (1) TRAP — highest-owned non-star
+    const trapCandidates = withSal.filter(p => !topProjSet.has(p.name));
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const byOwn = hasOwn
-      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
-      : [...withSal].sort((a, b) => b.proj - a.proj);
-    const trap = byOwn[0];
+    const trap = trapCandidates.length && hasOwn
+      ? [...trapCandidates].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
+      : byProj[0];  // fallback if no ownership data
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
       const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
-    // (2) BAD VALUE BOOST — below-avg value + underowned, ranked by projection
-    const eligible = withSal.filter(p => p.name !== trap?.name);
-    const badValueUnderowned = eligible
+    // (2a) STUD — overowned star (field > fair_own + 5pp) with WORST value
+    //      This picks the chalkiest star that DK underpriced least — same "bad value"
+    //      principle applied to stars. If two stars are equally overowned but one has
+    //      worse pts/dollar, that's the one DK overpriced and the field is still piling into.
+    const overownedStars = withSal.filter(p => {
+      if (p.name === trap?.name) return false;
+      if (!topProjSet.has(p.name)) return false;
+      const fieldOwn = ownership[p.name] || 0;
+      const fairOwn = computeFairOwn(p.val || 0, avgVal);
+      return fieldOwn > fairOwn + 5 && fieldOwn >= 25;
+    });
+    const stud = overownedStars.sort((a, b) => (a.val || 0) - (b.val || 0))[0];
+    if (stud) {
+      const fieldOwn = Math.round(ownership[stud.name] || 0);
+      caps[stud.name] = {
+        min: Math.min(85, fieldOwn + boostFloor),
+        max: Math.min(95, fieldOwn + LEV_CAP),
+        _isBoost: true, _leverage: boostFloor, _type: 'stud'
+      };
+    }
+
+    // (2b) GEM — below-avg val + underowned by fair_own. DK prices low-val plays for a
+    //      reason and the field correctly avoids them — but that's exactly where massive
+    //      leverage lives when they hit. Cobolli-style: DK-priced-down play the field
+    //      writes off, boosted into the portfolio for differentiation.
+    const gem = [...withSal]
       .filter(p => {
-        if ((p.val || 0) >= avgVal) return false;                     // BELOW avg value only
+        if (p.name === trap?.name || p.name === stud?.name) return false;
+        if ((p.val || 0) >= avgVal) return false;
         const fieldOwn = ownership[p.name] || 0;
-        const fairOwn = computeFairOwn(p.val || 0, avgVal);
-        return fieldOwn < fairOwn;                                    // underowned vs fair
+        return fieldOwn < computeFairOwn(p.val || 0, avgVal);
       })
-      .sort((a, b) => b.proj - a.proj);                               // highest proj first
-
-    // Fallback: if nobody qualifies, use any underowned sorted by projection
-    let boostPool = badValueUnderowned;
-    if (boostPool.length === 0) {
-      boostPool = eligible
-        .filter(p => (ownership[p.name] || 0) < computeFairOwn(p.val || 0, avgVal))
-        .sort((a, b) => b.proj - a.proj);
+      .sort((a, b) => b.proj - a.proj)[0];
+    if (gem) {
+      const fieldOwn = Math.round(ownership[gem.name] || 0);
+      caps[gem.name] = {
+        min: Math.min(85, fieldOwn + boostFloor),
+        max: Math.min(95, fieldOwn + LEV_CAP),
+        _isBoost: true, _leverage: boostFloor, _type: 'gem'
+      };
     }
 
-    const slateSize = withSal.length;
-    const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
-    // Leverage: +10pp minimum floor (bare minimum above field), scales to +50pp at max strength
-    const leverage = Math.max(10, Math.round(contrarianStrength * 50));
-    for (let i = 0; i < Math.min(boostCount, boostPool.length); i++) {
-      const p = boostPool[i];
-      const topFieldOwn = Math.round(ownership[p.name] || 0);
-      const scaledLev = Math.round(leverage * (1 - i * 0.2));
-      const minFloor = Math.min(85, topFieldOwn + scaledLev);
-      caps[p.name] = { min: minFloor, _isBoost: true, _leverage: scaledLev, _rank: i + 1 };
-    }
-
-    // (3) GLOBAL FLOOR — everyone else gets baseline min so DK salary-algo can't tunnel
-    //     the field into the same 1-2 cheap plays. Forces coverage across full pool.
-    const globalFloor = Math.round(1 + contrarianStrength * 7);       // 3% @ 0.3 · 5% @ 0.6 · 8% @ 1.0
+    // (3) + (4) UNIVERSAL CAP + GLOBAL FLOOR
+    const globalFloor = Math.round(1 + contrarianStrength * 7);    // 3-8% by strength
     withSal.forEach(p => {
-      if (caps[p.name]) return;                                       // skip trap + boosted
-      caps[p.name] = { min: globalFloor, _isFloor: true };
+      const fieldOwn = Math.round(ownership[p.name] || 0);
+      const levCap = Math.min(95, fieldOwn + LEV_CAP);
+      if (caps[p.name]) {
+        // Ensure existing max is not above leverage cap (trap already below, stud/gem exactly at)
+        caps[p.name].max = Math.min(caps[p.name].max ?? 100, levCap);
+      } else {
+        caps[p.name] = { min: globalFloor, max: levCap, _isFloor: true };
+      }
     });
 
     return caps;
@@ -869,9 +892,9 @@ function BuilderTab({ players: rp, ownership }) {
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
           {boostEntries.map(([name, c]) => (
-            <span key={name}>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
+            <span key={name}>{c._type === 'stud' ? '⭐ Stud' : '💎 Gem'} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
           ))}
-          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} floored at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span></span>}
+          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · max leverage <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+20pp</span></span>}
         </div>
       );
     })()}
@@ -1050,59 +1073,80 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => (mode === 'ceiling' ? p.cval : p.val) || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp, mode]);
-  // Contrarian mode: fade trap + boost top value underowned play (same as tennis)
+  // CONTRARIAN MODE (MMA) — same design as tennis
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
     const caps = {};
     const valKey = mode === 'ceiling' ? 'cval' : 'val';
+    const projKey = mode === 'ceiling' ? 'ceil' : 'proj';
 
+    const byProj = [...withSal].sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0));
+    const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
+    const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
+
+    const boostFloor = Math.round(10 + contrarianStrength * 10);
+    const LEV_CAP = 20;
+
+    // TRAP — highest-owned non-star
+    const trapCandidates = withSal.filter(p => !topProjSet.has(p.name));
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const byOwn = hasOwn
-      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
-      : [...withSal].sort((a, b) => b.proj - a.proj);
-    const trap = byOwn[0];
+    const trap = trapCandidates.length && hasOwn
+      ? [...trapCandidates].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
+      : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
       const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
-    const badValueUnderowned = withSal
+    // STUD — overowned star with worst value (most "DK-overpriced chalky star")
+    const overownedStars = withSal.filter(p => {
+      if (p.name === trap?.name) return false;
+      if (!topProjSet.has(p.name)) return false;
+      const fieldOwn = ownership[p.name] || 0;
+      const fairOwn = computeFairOwn(p[valKey] || 0, avgVal);
+      return fieldOwn > fairOwn + 5 && fieldOwn >= 25;
+    });
+    const stud = overownedStars.sort((a, b) => (a[valKey] || 0) - (b[valKey] || 0))[0];
+    if (stud) {
+      const fieldOwn = Math.round(ownership[stud.name] || 0);
+      caps[stud.name] = {
+        min: Math.min(85, fieldOwn + boostFloor),
+        max: Math.min(95, fieldOwn + LEV_CAP),
+        _isBoost: true, _leverage: boostFloor, _type: 'stud'
+      };
+    }
+
+    // GEM — below-avg val + underowned by fair_own (DK-priced-down differentiation)
+    const gem = [...withSal]
       .filter(p => {
-        if (p.name === trap?.name) return false;
+        if (p.name === trap?.name || p.name === stud?.name) return false;
         if ((p[valKey] || 0) >= avgVal) return false;
         const fieldOwn = ownership[p.name] || 0;
-        const fairOwn = computeFairOwn(p[valKey] || 0, avgVal);
-        return fieldOwn < fairOwn;
+        return fieldOwn < computeFairOwn(p[valKey] || 0, avgVal);
       })
-      .sort((a, b) => b.proj - a.proj);
-
-    let boostPool = badValueUnderowned;
-    if (boostPool.length === 0) {
-      boostPool = withSal
-        .filter(p => p.name !== trap?.name && (ownership[p.name] || 0) < computeFairOwn(p[valKey] || 0, avgVal))
-        .sort((a, b) => b.proj - a.proj);
+      .sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
+    if (gem) {
+      const fieldOwn = Math.round(ownership[gem.name] || 0);
+      caps[gem.name] = {
+        min: Math.min(85, fieldOwn + boostFloor),
+        max: Math.min(95, fieldOwn + LEV_CAP),
+        _isBoost: true, _leverage: boostFloor, _type: 'gem'
+      };
     }
 
-    const slateSize = withSal.length;
-    const boostCount = slateSize <= 12 ? 1 : slateSize <= 24 ? 2 : 3;
-    // Leverage: +10pp minimum floor (bare minimum above field), scales to +50pp at max strength
-    const leverage = Math.max(10, Math.round(contrarianStrength * 50));
-    for (let i = 0; i < Math.min(boostCount, boostPool.length); i++) {
-      const p = boostPool[i];
-      const topFieldOwn = Math.round(ownership[p.name] || 0);
-      const scaledLev = Math.round(leverage * (1 - i * 0.2));
-      const minFloor = Math.min(85, topFieldOwn + scaledLev);
-      caps[p.name] = { min: minFloor, _isBoost: true, _leverage: scaledLev, _rank: i + 1 };
-    }
-
-    // Global floor so DK salary logic doesn't funnel field into same cheap plays
+    // UNIVERSAL CAP + GLOBAL FLOOR
     const globalFloor = Math.round(1 + contrarianStrength * 7);
     withSal.forEach(p => {
-      if (caps[p.name]) return;
-      caps[p.name] = { min: globalFloor, _isFloor: true };
+      const fieldOwn = Math.round(ownership[p.name] || 0);
+      const levCap = Math.min(95, fieldOwn + LEV_CAP);
+      if (caps[p.name]) {
+        caps[p.name].max = Math.min(caps[p.name].max ?? 100, levCap);
+      } else {
+        caps[p.name] = { min: globalFloor, max: levCap, _isFloor: true };
+      }
     });
 
     return caps;
@@ -1151,9 +1195,9 @@ function MMABuilderTab({ fighters: rp, ownership }) {
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
           {boostEntries.map(([name, c]) => (
-            <span key={name}>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
+            <span key={name}>{c._type === 'stud' ? '⭐ Stud' : '💎 Gem'} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
           ))}
-          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} floored at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span></span>}
+          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · max leverage <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+20pp</span></span>}
         </div>
       );
     })()}
