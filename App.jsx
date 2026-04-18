@@ -260,13 +260,30 @@ export default function App() {
     return sport === 'tennis' ? simulateOwnership(dkPlayers) : simulateMMAOwnership(dkPlayers);
   }, [dkPlayers, sport]);
 
-  if (error) return <div className="app">
-    <Topbar sport={sport} onSportChange={setSport} data={null} />
-    <div className="empty"><h2>No Slate Loaded</h2><p>Push {sport === 'mma' ? 'slate-mma.json' : 'slate.json'} and redeploy.</p></div>
-  </div>;
+  if (error) {
+    const expectedUrl = sport === 'mma' ? './slate-mma.json' : './slate.json';
+    const expectedPath = sport === 'mma' ? 'public/slate-mma.json' : 'public/slate.json';
+    return <div className="app">
+      <Topbar sport={sport} onSportChange={setSport} data={null} />
+      <div className="empty" style={{ padding: '40px 20px' }}>
+        <h2>⚠️ Slate not loaded</h2>
+        <p style={{ marginTop: 12 }}>Fetch failed for <code style={{ background: 'var(--card)', padding: '2px 8px', borderRadius: 4, color: 'var(--primary)' }}>{expectedUrl}</code></p>
+        <p style={{ marginTop: 8, fontSize: 13 }}>Error: <span style={{ color: 'var(--red)' }}>{error}</span></p>
+        <div style={{ marginTop: 20, padding: '16px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, maxWidth: 600, margin: '20px auto', textAlign: 'left', fontSize: 13 }}>
+          <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: 8 }}>Troubleshooting checklist:</div>
+          <div style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
+            1. File must be at <code style={{ color: 'var(--primary-light)' }}>{expectedPath}</code> in your repo<br/>
+            2. Confirm the file is committed + pushed to GitHub<br/>
+            3. Wait 30–60s for Vercel to redeploy, then hard-refresh (Cmd+Shift+R / Ctrl+F5)<br/>
+            4. Open browser DevTools → Network tab → click this sport again → check slate-mma.json status code
+          </div>
+        </div>
+      </div>
+    </div>;
+  }
   if (!data) return <div className="app">
     <Topbar sport={sport} onSportChange={setSport} data={null} />
-    <div className="empty"><h2>Loading...</h2></div>
+    <div className="empty"><h2>Loading {sport === 'mma' ? 'UFC slate' : 'tennis slate'}...</h2></div>
   </div>;
 
   const tabs = sport === 'tennis' ? [
@@ -395,7 +412,7 @@ function PPTab({ rows }) {
     <div className="section-sub">All plays sorted by edge · Edge = Projected - PP Line</div>
     <div style={{ background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
       <span style={{ fontSize: 18 }}>📉</span>
-      <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Heads up:</strong> PrizePicks bad value will typically reverse</span>
+      <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Hint:</strong> PrizePicks bad value will typically reverse</span>
     </div>
     <div className="metrics">
       <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '15px' : '12px', color: 'var(--green)' }}>{r.player} · {r.stat} <span style={{fontSize:11}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color:'var(--amber)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
@@ -593,7 +610,7 @@ function MMAPPTab({ rows }) {
     <div className="section-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
     <div style={{ background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
       <span style={{ fontSize: 18 }}>📉</span>
-      <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Heads up:</strong> PrizePicks bad value will typically reverse</span>
+      <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Hint:</strong> PrizePicks bad value will typically reverse</span>
     </div>
     <div className="metrics">
       <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '15px' : '12px', color: 'var(--green)' }}>{r.player} · {r.stat} <span style={{fontSize:11}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color:'var(--amber)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
