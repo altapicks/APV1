@@ -752,23 +752,42 @@ function BuilderTab({ players: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => p.val || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp]);
-  // Contrarian mode: fade the identified trap (highest-owned player) only.
-  // Optimizer handles finding replacements within salary constraints naturally.
-  // Strength 0.3 → ~21% cap · 0.6 → ~12% · 1.0 → ~5% (hard floor)
+  // Contrarian mode: (1) fade the identified trap, (2) boost the top value underowned play.
+  // Both pieces are essential — the optimizer won't naturally push underowned value high
+  // enough without an explicit floor.
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
-    // Pick trap using same logic as DKTab: highest owned (fallback: highest proj)
+    const caps = {};
+
+    // (1) TRAP fade — same logic as DKTab (highest-owned)
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const sorted = hasOwn
+    const byOwn = hasOwn
       ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
       : [...withSal].sort((a, b) => b.proj - a.proj);
-    const trap = sorted[0];
-    if (!trap) return {};
-    const trapFieldOwn = ownership[trap.name] || 0;
-    const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
-    return { [trap.name]: { max: maxCap, _isTrap: true } };
+    const trap = byOwn[0];
+    if (trap) {
+      const trapFieldOwn = ownership[trap.name] || 0;
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
+      caps[trap.name] = { max: maxCap, _isTrap: true };
+    }
+
+    // (2) BOOST the top value play that ISN'T the trap and is underowned vs its value.
+    // Target: 0.6 strength → ~70% min for top value. 1.0 → 80%. 0.3 → 35%.
+    const byValue = [...withSal]
+      .filter(p => p.name !== trap?.name && (ownership[p.name] || 0) < 40)
+      .sort((a, b) => (b.val || 0) - (a.val || 0));
+    const topValue = byValue[0];
+    if (topValue) {
+      // Leverage ABOVE field: +25pp at default strength 0.6, +42pp at 1.0, +13pp at 0.3
+      const topFieldOwn = ownership[topValue.name] || 0;
+      const leverage = Math.round(contrarianStrength * 42);
+      const minFloor = Math.min(85, topFieldOwn + leverage);
+      caps[topValue.name] = { min: minFloor, _isBoost: true, _leverage: leverage };
+    }
+
+    return caps;
   }, [rp, ownership, contrarianOn, contrarianStrength]);
 
   // Projections untouched when contrarian is on (caps do the work now)
@@ -797,12 +816,12 @@ function BuilderTab({ players: rp, ownership }) {
     <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
-      const trapName = Object.keys(contrarianCaps)[0];
-      const cap = contrarianCaps[trapName];
-      const fieldOwn = ownership[trapName] || 0;
+      const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
+      const boostEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost);
       return (
-        <div style={{ marginTop: -12, marginBottom: 16, padding: '8px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-          💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapName}</span> · field {fieldOwn.toFixed(1)}% → capped at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{cap.max}%</span>
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
+          {boostEntry && <span>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{boostEntry[0]}</span> · field {(ownership[boostEntry[0]] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1]._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1].min}%</span></span>}
         </div>
       );
     })()}
@@ -813,7 +832,7 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
-    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj">{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" /></div>)}</div>
+    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0 }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" /></div>)}</div>
     <button className="btn btn-primary" onClick={run}>⚡ Build {nL} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} />}
   </>);
@@ -981,21 +1000,38 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const vals = rp.filter(p => p.salary > 0).map(p => (mode === 'ceiling' ? p.cval : p.val) || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp, mode]);
-  // Contrarian mode: fade the identified trap only (see tennis for details)
+  // Contrarian mode: fade trap + boost top value underowned play (same as tennis)
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
+    const caps = {};
+    const valKey = mode === 'ceiling' ? 'cval' : 'val';
+
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const sorted = hasOwn
+    const byOwn = hasOwn
       ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))
       : [...withSal].sort((a, b) => b.proj - a.proj);
-    const trap = sorted[0];
-    if (!trap) return {};
-    const trapFieldOwn = ownership[trap.name] || 0;
-    const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
-    return { [trap.name]: { max: maxCap, _isTrap: true } };
-  }, [rp, ownership, contrarianOn, contrarianStrength]);
+    const trap = byOwn[0];
+    if (trap) {
+      const trapFieldOwn = ownership[trap.name] || 0;
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
+      caps[trap.name] = { max: maxCap, _isTrap: true };
+    }
+
+    const byValue = [...withSal]
+      .filter(p => p.name !== trap?.name && (ownership[p.name] || 0) < 40)
+      .sort((a, b) => (b[valKey] || 0) - (a[valKey] || 0));
+    const topValue = byValue[0];
+    if (topValue) {
+      const topFieldOwn = ownership[topValue.name] || 0;
+      const leverage = Math.round(contrarianStrength * 42);
+      const minFloor = Math.min(85, topFieldOwn + leverage);
+      caps[topValue.name] = { min: minFloor, _isBoost: true, _leverage: leverage };
+    }
+
+    return caps;
+  }, [rp, ownership, contrarianOn, contrarianStrength, mode]);
 
   const adjRp = rp;
 
@@ -1029,12 +1065,12 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     <div className="section-sub">UFC: 6 fighters, $50K cap · No opponent-vs-opponent enforced · Export to DK</div>
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
-      const trapName = Object.keys(contrarianCaps)[0];
-      const cap = contrarianCaps[trapName];
-      const fieldOwn = ownership[trapName] || 0;
+      const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
+      const boostEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost);
       return (
-        <div style={{ marginTop: -12, marginBottom: 16, padding: '8px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-          💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapName}</span> · field {fieldOwn.toFixed(1)}% → capped at <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{cap.max}%</span>
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
+          {boostEntry && <span>💎 Boosting <span style={{ color: 'var(--green)', fontWeight: 600 }}>{boostEntry[0]}</span> · field {(ownership[boostEntry[0]] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1]._leverage}pp</span> → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{boostEntry[1].min}%</span></span>}
         </div>
       );
     })()}
@@ -1056,10 +1092,10 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       }
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
-      <span className="ctrl-name" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-      <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55 }}>{fmtSal(p.salary)}</span>
-      <span className="ctrl-proj">{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
-      <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 38, textAlign: 'right' }}>{fmt(ownership[p.name] || 0, 0)}%</span>
+      <span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+      <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 55, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
+      <span className="ctrl-proj" style={{ flexShrink: 0 }}>{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
+      <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 38, textAlign: 'right', flexShrink: 0 }}>{fmt(ownership[p.name] || 0, 0)}%</span>
       <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" />
       <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" />
     </div>)}</div>
