@@ -211,8 +211,8 @@ export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize =
     lu.players.forEach(pid => counts[pid]++);
   }
 
-  // Phase 1: Satisfy mins (scarcity first)
-  const sortedMins = Object.entries(minCaps).sort((a, b) => a[1] - b[1]);
+  // Phase 1: Satisfy mins (highest-min first — boosted players need the richest pool)
+  const sortedMins = Object.entries(minCaps).sort((a, b) => b[1] - a[1]);
   for (const [name] of sortedMins) {
     const ti = idx[name];
     while (counts[ti] < minCaps[name] && selected.length < nLineups) {
