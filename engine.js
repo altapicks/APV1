@@ -1,426 +1,217 @@
 // ============================================================
-// OVEROWNED — MMA ENGINE
-// Completely separate from tennis engine.js. Shares only pure helpers.
+// ODDS HELPERS
 // ============================================================
-
-// ---------- ODDS HELPERS ----------
 export function americanToProb(odds) {
   if (!odds || odds === 0) return 0.5;
   return odds > 0 ? 100 / (odds + 100) : Math.abs(odds) / (Math.abs(odds) + 100);
 }
 
-export function removeVig(probs) {
-  const sum = probs.reduce((a, b) => a + b, 0);
-  if (sum === 0) return probs.map(() => 1 / probs.length);
-  return probs.map(p => p / sum);
+export function removeVig(p1, p2) {
+  const t = p1 + p2;
+  return t === 0 ? [0.5, 0.5] : [p1 / t, p2 / t];
 }
 
-function round2(n) { return Math.round(n * 100) / 100; }
-function round1(n) { return Math.round(n * 10) / 10; }
-
-// ---------- METHOD & ROUND PARSERS ----------
-// Devig 7-way method market: KO_a, Sub_a, Dec_a, KO_b, Sub_b, Dec_b, Draw
-function parseMethodOdds(o) {
-  const raw = [
-    americanToProb(o.method_a_ko),
-    americanToProb(o.method_a_sub),
-    americanToProb(o.method_a_dec),
-    americanToProb(o.method_b_ko),
-    americanToProb(o.method_b_sub),
-    americanToProb(o.method_b_dec),
-    americanToProb(o.method_draw || 8000),
-  ];
-  const [ka, sa, da, kb, sb, db, dr] = removeVig(raw);
-  return {
-    a: { ko: ka, sub: sa, dec: da, win: ka + sa + da },
-    b: { ko: kb, sub: sb, dec: db, win: kb + sb + db },
-    draw: dr,
-  };
-}
-
-// Devig round market. 3-round fights have R1/R2/R3 for each side + Points (=decision).
-// 5-round fights add R4/R5.
-function parseRoundOdds(o, rounds) {
-  const aRounds = [o.a_r1, o.a_r2, o.a_r3];
-  const bRounds = [o.b_r1, o.b_r2, o.b_r3];
-  if (rounds === 5) {
-    aRounds.push(o.a_r4, o.a_r5);
-    bRounds.push(o.b_r4, o.b_r5);
-  }
-  const aPts = o.a_points;  // A wins by decision
-  const bPts = o.b_points;
-  const draw = o.method_draw || 8000;
-
-  const raw = [
-    ...aRounds.map(americanToProb),
-    ...bRounds.map(americanToProb),
-    americanToProb(aPts),
-    americanToProb(bPts),
-    americanToProb(draw),
-  ];
-  const devigged = removeVig(raw);
-  const n = aRounds.length;
-  return {
-    a: {
-      rounds: devigged.slice(0, n),
-      dec: devigged[2 * n],
-      win: devigged.slice(0, n).reduce((s, p) => s + p, 0) + devigged[2 * n],
-    },
-    b: {
-      rounds: devigged.slice(n, 2 * n),
-      dec: devigged[2 * n + 1],
-      win: devigged.slice(n, 2 * n).reduce((s, p) => s + p, 0) + devigged[2 * n + 1],
-    },
-  };
-}
-
-// ---------- EXPECTED VALUE FROM TIER LADDER ----------
-// Bet365 sig-strike tier odds: [[25, -235], [50, -105], [75, +240], ...]
-// Devig each tier (with its complement), get P(X >= k), compute E[X] and 80th %ile.
-function expectedFromTiers(tiers) {
-  if (!tiers || tiers.length === 0) return null;
-  // Devig each tier independently using 2-way no-vig via the next tier as proxy
-  // Simpler: use implied prob directly (slight over-estimate, fine for our purposes)
-  const survival = tiers.map(([k, odds]) => [k, americanToProb(odds)]);
-  // Sort ascending by k (should already be)
-  survival.sort((a, b) => a[0] - b[0]);
-
-  // E[X] = sum over tiers of (tier_k - prev_k) * P(X >= tier_k)
-  // plus baseline contribution from P(X < first tier)
-  let ev = 0;
-  let prevK = 0;
-  let prevP = 1.0;
-  for (const [k, p] of survival) {
-    ev += (k - prevK) * prevP;
-    prevK = k;
-    prevP = p;
-  }
-  // Tail contribution: assume mean of tail is ~20% above last tier when p is small
-  ev += prevP * 20;
-
-  // 80th percentile: find the tier where P(X >= k) drops below 0.2
-  let p80 = survival[survival.length - 1][0];
-  for (let i = 0; i < survival.length; i++) {
-    if (survival[i][1] < 0.2) {
-      p80 = i > 0 ? survival[i - 1][0] + 5 : survival[i][0];
-      break;
+export function poissonEV(odds, milestone) {
+  const p = americanToProb(odds);
+  if (p <= 0 || p >= 1) return milestone;
+  let lam = milestone;
+  for (let iter = 0; iter < 50; iter++) {
+    let cdf = 0;
+    for (let i = 0; i < milestone; i++) {
+      cdf += Math.exp(-lam) * Math.pow(lam, i) / factorial(i);
     }
-    p80 = survival[i][0] + 10;
+    const target = 1 - p;
+    if (Math.abs(cdf - target) < 0.001) break;
+    let dcdf = 0;
+    for (let i = 0; i < milestone; i++) {
+      dcdf += Math.exp(-lam) * (i * Math.pow(lam, i - 1) / factorial(i) - Math.pow(lam, i) / factorial(i));
+    }
+    if (Math.abs(dcdf) < 1e-10) break;
+    lam -= (cdf - target) / dcdf;
+    lam = Math.max(0.1, Math.min(lam, 30));
   }
-  return { ev: round1(ev), p80: round1(p80), tiers: survival };
+  return lam;
 }
 
-// ---------- TAKEDOWN PARSER ----------
-// Fighter TD O/U line + over odds → expected TDs
-function parseTDs(line, overOdds, underOdds) {
-  if (line == null) return null;
-  const pOver = americanToProb(overOdds);
-  const pUnder = americanToProb(underOdds);
-  const total = pOver + pUnder;
-  const trueOver = total > 0 ? pOver / total : pOver;
-  // EV approximation: line + 0.6 if over is favored, line - 0.4 if under
-  if (trueOver > 0.55) return round1(line + 0.7);
-  if (trueOver < 0.45) return round1(line - 0.3);
-  return round1(line + 0.2);
+function factorial(n) {
+  if (n <= 1) return 1;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
 }
 
-// ---------- PROCESS FIGHT ----------
-export function processFight(fight) {
-  const o = fight.odds;
-  const rounds = fight.rounds || 3;
-  const method = parseMethodOdds(o);
-  const round = parseRoundOdds(o, rounds);
+// ============================================================
+// PROCESS MATCH ODDS → PLAYER STATS
+// ============================================================
+export function processMatch(match) {
+  const o = match.odds;
+  const [wp_a, wp_b] = removeVig(americanToProb(o.ml_a), americanToProb(o.ml_b));
 
-  // Reconcile win% from ML vs round market vs method (use ML as anchor)
-  const mlProbs = removeVig([americanToProb(o.ml_a), americanToProb(o.ml_b)]);
-  const wpA = mlProbs[0];
-  const wpB = mlProbs[1];
+  // Set betting (normalize 4-way)
+  const rawSet = [o.set_a_20, o.set_a_21, o.set_b_20, o.set_b_21].map(americanToProb);
+  const setTotal = rawSet.reduce((a, b) => a + b, 0);
+  const [p_a20, p_a21, p_b20, p_b21] = rawSet.map(p => p / setTotal);
 
-  // Rebase round probabilities to match ML
-  const roundProbsA = round.a.win > 0
-    ? round.a.rounds.map(p => p * (wpA / round.a.win))
-    : round.a.rounds;
-  const decA = round.a.win > 0 ? round.a.dec * (wpA / round.a.win) : round.a.dec;
-  const roundProbsB = round.b.win > 0
-    ? round.b.rounds.map(p => p * (wpB / round.b.win))
-    : round.b.rounds;
-  const decB = round.b.win > 0 ? round.b.dec * (wpB / round.b.win) : round.b.dec;
+  // Games won (adjust by over lean)
+  const gw_a = adjustLine(o.gw_a_line, o.gw_a_over);
+  const gw_b = adjustLine(o.gw_b_line, o.gw_b_over);
 
-  // Method probs rebased to ML
-  const methodA = method.a.win > 0 ? {
-    ko: method.a.ko * (wpA / method.a.win),
-    sub: method.a.sub * (wpA / method.a.win),
-    dec: method.a.dec * (wpA / method.a.win),
-  } : method.a;
-  const methodB = method.b.win > 0 ? {
-    ko: method.b.ko * (wpB / method.b.win),
-    sub: method.b.sub * (wpB / method.b.win),
-    dec: method.b.dec * (wpB / method.b.win),
-  } : method.b;
+  // Breaks
+  // Breaks - use Poisson like aces/DFs: convert over odds to expected value
+  const brk_a = poissonEV(o.brk_a_over, Math.ceil(o.brk_a_line));
+  const brk_b = poissonEV(o.brk_b_over, Math.ceil(o.brk_b_line));
 
-  // Sig strikes + total strikes — prefer Bet365 tiers, fallback to PP/Underdog line
-  const ssA = o.ss_a_tiers ? expectedFromTiers(o.ss_a_tiers) : null;
-  const ssB = o.ss_b_tiers ? expectedFromTiers(o.ss_b_tiers) : null;
-  const tsA = o.ts_a_tiers ? expectedFromTiers(o.ts_a_tiers) : null;
-  const tsB = o.ts_b_tiers ? expectedFromTiers(o.ts_b_tiers) : null;
-
-  // Prefer Bet365 tier ladder EV when available (it's the real market for this fight).
-  // Fall back to PP/Underdog line for prelims where no tier data exists.
-  const sigA = ssA?.ev ?? fight.ss_line_a ?? 40;
-  const sigB = ssB?.ev ?? fight.ss_line_b ?? 40;
-  const sig80A = ssA?.p80 ?? (sigA * 1.45);
-  const sig80B = ssB?.p80 ?? (sigB * 1.45);
-
-  // Total strikes: derive from sig × 1.5 unless we have explicit tier data
-  const totA = tsA?.ev ? Math.max(tsA.ev * 0.75, sigA * 1.4) : sigA * 1.5;
-  const totB = tsB?.ev ? Math.max(tsB.ev * 0.75, sigB * 1.4) : sigB * 1.5;
-  const tot80A = tsA?.p80 ? tsA.p80 * 0.85 : (totA * 1.4);
-  const tot80B = tsB?.p80 ? tsB.p80 * 0.85 : (totB * 1.4);
-
-  // Takedowns
-  const tdA = parseTDs(o.td_a_line, o.td_a_over, o.td_a_under);
-  const tdB = parseTDs(o.td_b_line, o.td_b_over, o.td_b_under);
-  // Fallback: derive from CT + ML (grapplers with high CT get more TDs)
-  const tdEstA = tdA ?? round1(Math.min((fight.ct_a || 1.5) / 2 + wpA * 0.5, 3));
-  const tdEstB = tdB ?? round1(Math.min((fight.ct_b || 1.5) / 2 + wpB * 0.5, 3));
-
-  // Control time (seconds)
-  const ctSecA = (fight.ct_a || 1.5) * 60;
-  const ctSecB = (fight.ct_b || 1.5) * 60;
-
-  // Knockdowns: ~0.4 per KO win (not every KO has a KD, some have multiple)
-  const kdA = round1(methodA.ko * 0.6);
-  const kdB = round1(methodB.ko * 0.6);
-
-  // Submission attempts: ~2.5 per submission win + ~0.5 baseline if grappler
-  const subAttA = round1(methodA.sub * 3 + (tdEstA > 1 ? 0.5 : 0));
-  const subAttB = round1(methodB.sub * 3 + (tdEstB > 1 ? 0.5 : 0));
+  // Aces & DFs
+  const ace_a = poissonEV(o.ace_a_5plus, 5);
+  const ace_b = poissonEV(o.ace_b_5plus, 5);
+  const df_a = poissonEV(o.df_a_3plus, 3);
+  const df_b = poissonEV(o.df_b_3plus, 3);
+  const p10ace_a = americanToProb(o.ace_a_10plus);
+  const p10ace_b = americanToProb(o.ace_b_10plus);
+  const pnodf_a = Math.max(0, 1 - americanToProb(o.df_a_2plus));
+  const pnodf_b = Math.max(0, 1 - americanToProb(o.df_b_2plus));
 
   return {
-    fighter_a: buildStats({
-      name: fight.fighter_a, wp: wpA, method: methodA, rounds: roundProbsA, dec: decA,
-      sig: sigA, sig80: sig80A, tot: totA, tot80: tot80A,
-      td: tdEstA, td80: tdEstA + 1, ct: ctSecA, kd: kdA, subAtt: subAttA,
-      adj: fight.adj_a || 0, roundsMax: rounds,
-    }),
-    fighter_b: buildStats({
-      name: fight.fighter_b, wp: wpB, method: methodB, rounds: roundProbsB, dec: decB,
-      sig: sigB, sig80: sig80B, tot: totB, tot80: tot80B,
-      td: tdEstB, td80: tdEstB + 1, ct: ctSecB, kd: kdB, subAtt: subAttB,
-      adj: fight.adj_b || 0, roundsMax: rounds,
-    }),
+    player_a: buildPlayerStats(wp_a, p_a20, p_b20, p_a21, p_b21, gw_a, gw_b, ace_a, df_a, brk_a, p10ace_a, pnodf_a, match.adj_a || 0),
+    player_b: buildPlayerStats(wp_b, p_b20, p_a20, p_b21, p_a21, gw_b, gw_a, ace_b, df_b, brk_b, p10ace_b, pnodf_b, match.adj_b || 0),
   };
 }
 
-function buildStats({ name, wp, method, rounds, dec, sig, sig80, tot, tot80, td, td80, ct, kd, subAtt, adj, roundsMax }) {
+function adjustLine(line, overOdds) {
+  const p = americanToProb(overOdds);
+  if (p > 0.55) return line + 0.5;
+  if (p < 0.45) return line - 0.3;
+  return line;
+}
+
+function buildPlayerStats(wp, pStraightWin, pStraightLoss, pWin3, pLose3, gw, gl, aces, dfs, breaks, p10ace, pNoDF, adj) {
+  const p3set = 1 - pStraightWin - pStraightLoss;
+  const eSP = 2 * (1 - p3set) + 3 * p3set;
+  const eSW = 2 * pStraightWin + 2 * (wp - pStraightWin) + 1 * ((1 - wp) - pStraightLoss);
+  const eSL = eSP - eSW;
+  const cleanRate = 0.05 + 0.15 * wp;
+
   return {
-    name, wp, adj, roundsMax,
-    pKO: method.ko, pSub: method.sub, pDec: dec,
-    pR1: rounds[0] || 0,
-    pR2: rounds[1] || 0,
-    pR3: rounds[2] || 0,
-    pR4: rounds[3] || 0,
-    pR5: rounds[4] || 0,
-    pFinish: method.ko + method.sub,
-    sigStr: sig, sigStr80: sig80,
-    totStr: tot, totStr80: tot80,
-    takedowns: td, takedowns80: td80,
-    ctSec: ct,
-    knockdowns: kd,
-    subAttempts: subAtt,
+    wp, pStraightWin, p3set, gw, gl, aces, dfs, breaks, p10ace, pNoDF, adj,
+    setsWon: eSW, setsLost: eSL, setsPlayed: eSP,
+    cleanSets: eSW * cleanRate,
   };
 }
 
 // ============================================================
-// DK SCORING (MMA Classic: 6 fighters, $50K cap)
+// DK SCORING (Best of 3)
 // ============================================================
-// Strike: +0.2 | Sig strike stacks +0.2 (total 0.4) | CT: +0.03/sec
-// TD: +5 | Reversal: +5 | KD: +10
-// R1 win: +90 | R2: +70 | R3: +45 | R4: +40 | R5: +40 | Dec: +30
-// Quick win (R1 ≤ 60s): +25
-// ============================================================
-export function dkMMAProjection(s) {
-  const roundBonus =
-    90 * s.pR1 + 70 * s.pR2 + 45 * s.pR3 + 40 * s.pR4 + 40 * s.pR5 + 30 * s.pDec;
-  const strikeScore = 0.2 * s.totStr + 0.2 * s.sigStr;  // sig stacks
-  const ctScore = 0.03 * s.ctSec;
-  const quickWin = 25 * s.pR1 * 0.08;  // ~8% of R1 wins are ≤60s
+export function dkProjection(stats) {
   return round2(
-    roundBonus
-    + strikeScore
-    + ctScore
-    + 5 * s.takedowns
-    + 10 * s.knockdowns
-    + quickWin
-    + s.adj
+    30                              // match played
+    + 6 * stats.wp                  // match won
+    + 6 * stats.setsWon             // sets won
+    - 3 * stats.setsLost            // sets lost
+    + 2.5 * stats.gw                // games won
+    - 2 * stats.gl                  // games lost
+    + 0.4 * stats.aces              // aces
+    - 1 * stats.dfs                 // DFs
+    + 0.75 * stats.breaks           // breaks
+    + 6 * stats.pStraightWin        // straight sets bonus
+    + 4 * stats.cleanSets           // clean set bonus
+    + 2.5 * stats.pNoDF             // no DF bonus
+    + 2 * stats.p10ace              // 10+ ace bonus
+    + stats.adj                     // user adjustment
   );
-}
-
-// Ceiling: best-case realistic outcome for GPP tournament play
-// If fighter has real finish prob → finish path (R1 or R2 bonus + strikes before finish + KD + TDs)
-// Else → dominant decision path (80th %ile strikes, TDs, full CT)
-export function dkMMACeiling(s) {
-  // Decision ceiling — full fight, 80th percentile everything
-  const decCeil =
-    30  // decision bonus (assume win)
-    + 0.2 * s.totStr80 + 0.2 * s.sigStr80
-    + 0.03 * s.ctSec * 1.3  // 80th %ile CT
-    + 5 * s.takedowns80
-    + 10 * Math.max(s.knockdowns, s.pFinish > 0.2 ? 1 : 0)
-    + s.adj;
-
-  // Finish ceiling — R1 or R2 finish (use most likely finish round)
-  const finishProb = s.pFinish;
-  let finishCeil = 0;
-  if (finishProb > 0.1) {
-    // Weight R1 vs R2 finish by their relative likelihood
-    const pR1Finish = s.pR1 * (s.pKO + s.pSub) / Math.max(s.pR1 + s.pR2, 0.01);
-    const pR2Finish = s.pR2 * (s.pKO + s.pSub) / Math.max(s.pR1 + s.pR2, 0.01);
-    const bestBonus = pR1Finish > pR2Finish ? 90 : 70;
-    const bestCtFrac = pR1Finish > pR2Finish ? 0.3 : 0.6;  // partial fight time
-
-    finishCeil =
-      bestBonus
-      + 0.2 * s.totStr80 * 0.55  // partial strikes before finish
-      + 0.2 * s.sigStr80 * 0.55
-      + 0.03 * s.ctSec * bestCtFrac
-      + 5 * Math.min(s.takedowns80, 2)  // harder to get multiple TDs in short fight
-      + 10 * (s.pKO > 0.15 ? 1.3 : 0.3)  // high KO prob → likely a KD too
-      + (bestBonus === 90 ? 25 * 0.15 : 0)  // small quick-win contribution
-      + s.adj;
-  }
-
-  return round2(Math.max(decCeil, finishCeil));
 }
 
 // ============================================================
 // PRIZEPICKS SCORING
 // ============================================================
-// Sig strike: +0.5 | Sub att: +4 | TD: +5 | KD: +10
-// R1 win: +50 | R2: +40 | R3: +30 | R4: +20 | R5: +20 | Dec: +10
-// ============================================================
-export function ppMMAProjection(s) {
-  const roundBonus =
-    50 * s.pR1 + 40 * s.pR2 + 30 * s.pR3 + 20 * s.pR4 + 20 * s.pR5 + 10 * s.pDec;
+export function ppProjection(stats) {
   return round2(
-    roundBonus
-    + 0.5 * s.sigStr
-    + 4 * s.subAttempts
-    + 5 * s.takedowns
-    + 10 * s.knockdowns
-    + s.adj
+    10                              // match played
+    + 1 * stats.gw                  // game win
+    - 1 * stats.gl                  // game loss
+    + 3 * stats.setsWon             // set won
+    - 3 * stats.setsLost            // set lost
+    + 0.5 * stats.aces              // ace
+    - 0.5 * stats.dfs               // double fault
   );
 }
 
-export function ppMMACeiling(s) {
-  const decCeil =
-    10
-    + 0.5 * s.sigStr80
-    + 4 * s.subAttempts * 1.4
-    + 5 * s.takedowns80
-    + 10 * Math.max(s.knockdowns, s.pFinish > 0.2 ? 1 : 0)
-    + s.adj;
-
-  const finishProb = s.pFinish;
-  let finishCeil = 0;
-  if (finishProb > 0.1) {
-    const pR1Finish = s.pR1 * (s.pKO + s.pSub) / Math.max(s.pR1 + s.pR2, 0.01);
-    const pR2Finish = s.pR2 * (s.pKO + s.pSub) / Math.max(s.pR1 + s.pR2, 0.01);
-    const bestBonus = pR1Finish > pR2Finish ? 50 : 40;
-
-    finishCeil =
-      bestBonus
-      + 0.5 * s.sigStr80 * 0.55
-      + 4 * Math.max(s.subAttempts, s.pSub > 0.15 ? 2 : 0)
-      + 5 * Math.min(s.takedowns80, 2)
-      + 10 * (s.pKO > 0.15 ? 1.3 : 0.3)
-      + s.adj;
-  }
-
-  return round2(Math.max(decCeil, finishCeil));
+// ============================================================
+// EV CALCULATION (PP)
+// ============================================================
+export function ppEV(projectedScore, ppLine) {
+  // Simple EV: projected - line. Positive = MORE has edge
+  return round2(projectedScore - ppLine);
 }
 
 // ============================================================
-// PP EDGE (projected vs line)
+// LINEUP OPTIMIZER
 // ============================================================
-export function ppMMAEdge(projected, ppLine, mult) {
-  const edge = projected - ppLine;
-  // Demon multipliers pay more but require over; normal is straight over/under
-  return round2(edge);
-}
-
-// ============================================================
-// LINEUP OPTIMIZER — same logic as tennis (one side per match, no opp vs opp)
-// ============================================================
-export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterSize = 6, mode = 'ceiling') {
+export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6) {
+  // Build match pairs
   const idx = {};
-  fighters.forEach((f, i) => { idx[f.name] = i; });
-
-  // Build fight pairs (one side each)
+  players.forEach((p, i) => { idx[p.name] = i; });
   const seen = new Set();
-  const fights = [];
-  fighters.forEach(f => {
-    if (seen.has(f.name)) return;
-    if (f.opponent && idx[f.opponent] !== undefined) {
-      fights.push([f.name, f.opponent]);
-      seen.add(f.name); seen.add(f.opponent);
+  const matches = [];
+  players.forEach(p => {
+    if (seen.has(p.name)) return;
+    if (p.opponent && idx[p.opponent] !== undefined) {
+      matches.push([p.name, p.opponent]);
+      seen.add(p.name); seen.add(p.opponent);
     }
   });
 
-  // Pick the score field: ceiling for GPP, median for cash
-  const scoreKey = mode === 'ceiling' ? 'ceiling' : 'projection';
-
-  const fightOpts = fights.map(([a, b]) => [
-    { idx: idx[a], sal: fighters[idx[a]].salary, proj: fighters[idx[a]][scoreKey] },
-    { idx: idx[b], sal: fighters[idx[b]].salary, proj: fighters[idx[b]][scoreKey] },
+  const matchOpts = matches.map(([a, b]) => [
+    { idx: idx[a], sal: players[idx[a]].salary, proj: players[idx[a]].projection },
+    { idx: idx[b], sal: players[idx[b]].salary, proj: players[idx[b]].projection },
   ]);
 
-  // Generate all valid lineups (same comb logic as tennis)
-  const combos = combinations(fights.length, rosterSize);
+  // Generate all valid lineups
+  const combos = combinations(matches.length, rosterSize);
   const allLineups = [];
-  for (const fc of combos) {
+  for (const mc of combos) {
     const bits = 1 << rosterSize;
     for (let b = 0; b < bits; b++) {
       let ts = 0, tp = 0;
-      const fidxs = [];
+      const pidxs = [];
       for (let i = 0; i < rosterSize; i++) {
         const side = (b >> i) & 1;
-        const opt = fightOpts[fc[i]][side];
-        ts += opt.sal; tp += opt.proj; fidxs.push(opt.idx);
+        const opt = matchOpts[mc[i]][side];
+        ts += opt.sal; tp += opt.proj; pidxs.push(opt.idx);
       }
       if (ts <= salaryCap) {
-        allLineups.push({ proj: round2(tp), sal: ts, players: fidxs });
+        allLineups.push({ proj: round2(tp), sal: ts, players: pidxs });
       }
     }
   }
   allLineups.sort((a, b) => b.proj - a.proj);
 
-  // Exposure caps (same logic as tennis)
+  // Exposure caps
   const maxCaps = {}, minCaps = {};
-  const defCap = nLineups;
-  fighters.forEach(f => {
-    if (f.maxExp != null) maxCaps[f.name] = Math.max(1, Math.round(nLineups * f.maxExp / 100));
-    if (f.minExp != null && f.minExp > 0) minCaps[f.name] = Math.max(1, Math.round(nLineups * f.minExp / 100));
+  const defCap = nLineups; // 100% default
+  players.forEach(p => {
+    if (p.maxExp != null) maxCaps[p.name] = Math.max(1, Math.round(nLineups * p.maxExp / 100));
+    if (p.minExp != null && p.minExp > 0) minCaps[p.name] = Math.max(1, Math.round(nLineups * p.minExp / 100));
   });
 
-  const counts = new Array(fighters.length).fill(0);
+  const counts = new Array(players.length).fill(0);
   const selected = [];
   const usedKeys = new Set();
 
-  function canAdd(fidxs) {
-    for (const fid of fidxs) {
-      const cap = maxCaps[fighters[fid].name] ?? defCap;
-      if (counts[fid] + 1 > cap) return false;
+  function canAdd(pidxs) {
+    for (const pid of pidxs) {
+      const cap = maxCaps[players[pid].name] ?? defCap;
+      if (counts[pid] + 1 > cap) return false;
     }
     return true;
   }
+
   function addLU(lu) {
     const key = lu.players.join(',');
     selected.push(lu); usedKeys.add(key);
-    lu.players.forEach(fid => counts[fid]++);
+    lu.players.forEach(pid => counts[pid]++);
   }
 
-  // Phase 1: satisfy mins
+  // Phase 1: Satisfy mins (scarcity first)
   const sortedMins = Object.entries(minCaps).sort((a, b) => a[1] - b[1]);
   for (const [name] of sortedMins) {
     const ti = idx[name];
@@ -435,7 +226,7 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
     }
   }
 
-  // Phase 2: greedy fill
+  // Phase 2: Greedy fill
   for (const lu of allLineups) {
     if (selected.length >= nLineups) break;
     const key = lu.players.join(',');
@@ -444,8 +235,13 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
   }
 
   selected.sort((a, b) => b.proj - a.proj);
-  return { lineups: selected, counts, total: allLineups.length, mode };
+  return { lineups: selected, counts, total: allLineups.length };
 }
+
+// ============================================================
+// HELPERS
+// ============================================================
+function round2(n) { return Math.round(n * 100) / 100; }
 
 function combinations(n, k) {
   const result = [];
@@ -457,3 +253,112 @@ function combinations(n, k) {
   gen(0);
   return result;
 }
+
+// ============================================================
+// PP FANTASY SCORE — SCENARIO DISTRIBUTION
+// ============================================================
+export function ppScenarios(stats, ppLine) {
+  const aceNet = 0.5 * stats.aces - 0.5 * stats.dfs;
+
+  // Estimate conditional game distributions per outcome
+  // Scale based on player's actual games won line
+  const gwBase = stats.gw;
+  const glBase = stats.gl;
+  const gameRatio = gwBase / (gwBase + glBase); // player's share of games
+
+  // 2-0 win: ~20 total games, winner dominates
+  const tot20 = 19;
+  const gw20 = Math.round(tot20 * Math.max(gameRatio, 0.58) * 10) / 10;
+  const gl20 = tot20 - gw20;
+
+  // 2-1 win: ~32 total games, closer split
+  const tot21 = 32;
+  const gw21 = Math.round(tot21 * Math.min(Math.max(gameRatio, 0.52), 0.58) * 10) / 10;
+  const gl21 = tot21 - gw21;
+
+  // 0-2 loss: ~20 total games, player loses
+  const gw02 = tot20 - Math.round(tot20 * Math.max(1 - gameRatio, 0.58) * 10) / 10;
+  const gl02 = tot20 - gw02;
+
+  // 1-2 loss: ~32 total games
+  const gw12 = tot21 - Math.round(tot21 * Math.min(Math.max(1 - gameRatio, 0.52), 0.58) * 10) / 10;
+  const gl12 = tot21 - gw12;
+
+  // PP scores per outcome: 10 + GW - GL + 3*(SW - SL) + aceNet
+  const outcomes = [
+    { label: 'Win 2-0', prob: stats.pStraightWin, gw: gw20, gl: gl20, sw: 2, sl: 0 },
+    { label: 'Win 2-1', prob: Math.max(0, stats.wp - stats.pStraightWin), gw: gw21, gl: gl21, sw: 2, sl: 1 },
+    { label: 'Lose 0-2', prob: Math.max(0, (1 - stats.wp) - ((1 - stats.wp) - stats.pStraightWin > 0 ? 0 : 0)), gw: gw02, gl: gl02, sw: 0, sl: 2 },
+    { label: 'Lose 1-2', prob: 0, gw: gw12, gl: gl12, sw: 1, sl: 2 },
+  ];
+
+  // Fix lose probabilities using set betting
+  const pLoss = 1 - stats.wp;
+  // Approximate: P(lose 0-2) ≈ pLoss * (1 - stats.p3set) if player is underdog
+  // More accurately from the set betting data we already have
+  const pStraightLoss = Math.max(0, pLoss - Math.max(0, stats.p3set - (stats.wp - stats.pStraightWin)));
+  outcomes[2].prob = Math.max(0, pLoss * 0.6); // rough: 60% of losses are in straights
+  outcomes[3].prob = Math.max(0, pLoss - outcomes[2].prob);
+
+  // Actually use the simpler approach from set betting
+  // p3set = 1 - pStraightWin - pStraightLoss
+  // We have pStraightWin and p3set, so pStraightLoss = 1 - pStraightWin - p3set
+  const pSL = Math.max(0, 1 - stats.pStraightWin - stats.p3set);
+  const pW3 = Math.max(0, stats.wp - stats.pStraightWin);
+  const pL3 = Math.max(0, (1 - stats.wp) - pSL);
+
+  outcomes[0].prob = stats.pStraightWin;
+  outcomes[1].prob = pW3;
+  outcomes[2].prob = pSL;
+  outcomes[3].prob = pL3;
+
+  // Compute PP score for each
+  outcomes.forEach(o => {
+    o.ppScore = round2(10 + o.gw - o.gl + 3 * (o.sw - o.sl) + aceNet);
+  });
+
+  // Expected PP score
+  const expectedPP = round2(outcomes.reduce((sum, o) => sum + o.prob * o.ppScore, 0));
+
+  // Conditional winning PP score
+  const winProb = outcomes[0].prob + outcomes[1].prob;
+  const winningPP = winProb > 0
+    ? round2((outcomes[0].prob * outcomes[0].ppScore + outcomes[1].prob * outcomes[1].ppScore) / winProb)
+    : 0;
+
+  // P(over line)
+  const pOver = round2(outcomes.reduce((sum, o) => sum + (o.ppScore > ppLine ? o.prob : 0), 0));
+
+  // Edge vs 50/50
+  const edge = round2(pOver - 0.5);
+
+  return { outcomes, expectedPP, winningPP, pOver, edge, ppLine, aceNet: round2(aceNet) };
+}
+
+// ============================================================
+// BREAK POINTS — DEVIG BET365 vs PP IMPLIED
+// ============================================================
+export function bpComparison(bet365Over, bet365Under, ppLine, ppMult) {
+  // Devig bet365
+  const rawOver = bet365Over > 0 ? 100 / (bet365Over + 100) : Math.abs(bet365Over) / (Math.abs(bet365Over) + 100);
+  const rawUnder = bet365Under > 0 ? 100 / (bet365Under + 100) : Math.abs(bet365Under) / (Math.abs(bet365Under) + 100);
+  const total = rawOver + rawUnder;
+  const b365pOver = round2(rawOver / total);
+
+  // PP implied from multiplier (1/mult is rough implied probability)
+  let ppImplied = 0.5; // default for normal
+  if (ppMult && ppMult > 1) {
+    ppImplied = round2(1 / ppMult);
+  }
+
+  // Edge: bet365 true prob - PP implied prob
+  const edge = round2(b365pOver - ppImplied);
+
+  return {
+    b365pOver,
+    ppImplied,
+    edge,
+    play: edge > 0.03 ? 'MORE ✅' : edge < -0.03 ? 'LESS ✅' : 'SKIP',
+  };
+}
+
