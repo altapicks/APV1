@@ -236,23 +236,64 @@ function buildMMAProjections(data) {
         sigStr: s.sigStr, takedowns: s.takedowns, ctMin: s.ctSec / 60,
         knockdowns: s.knockdowns, subAttempts: s.subAttempts,
         ppProj, ppCeil, fightTime, stats: s,
+        // Combined fight-level round probabilities (needed for bimodal Fight Time edge)
+        fightPR1: fighter_a.pR1 + fighter_b.pR1,
+        fightPR2: fighter_a.pR2 + fighter_b.pR2,
+        fightPR3: fighter_a.pR3 + fighter_b.pR3,
+        fightPR4: fighter_a.pR4 + fighter_b.pR4,
+        fightPR5: fighter_a.pR5 + fighter_b.pR5,
+        fightPDec: fighter_a.pDec + fighter_b.pDec,
+        fightMaxMin: (fight.rounds || 3) * 5,
       });
     });
   });
+
+  // Helper: P(fight time > line) computed from combined round distribution
+  function pFightTimeOver(p, line) {
+    const rounds = [p.fightPR1, p.fightPR2, p.fightPR3, p.fightPR4, p.fightPR5];
+    let pOver = 0;
+    for (let i = 0; i < 5; i++) {
+      const rStart = i * 5, rEnd = (i + 1) * 5;
+      if (rEnd > p.fightMaxMin) break;
+      if (line >= rEnd) continue;
+      if (line < rStart) pOver += rounds[i];
+      else pOver += rounds[i] * (rEnd - line) / 5;
+    }
+    if (line < p.fightMaxMin) pOver += p.fightPDec;
+    return Math.max(0, Math.min(1, pOver));
+  }
+
   // Build PP rows
   const ppRows = [];
   if (data.pp_lines) {
     data.pp_lines.forEach(line => {
       const player = dkPlayers.find(p => p.name === line.player);
-      let projected = 0;
       if (!player) { ppRows.push({ player: line.player, stat: line.stat, line: line.line, projected: 0, ev: 0, opponent: '?', wp: 0, direction: '-', mult: line.mult || '' }); return; }
-      if (line.stat === 'Significant Strikes') projected = player.sigStr;
-      else if (line.stat === 'Fantasy Score') projected = player.ppProj;
-      else if (line.stat === 'Fight Time') projected = player.fightTime;
-      else if (line.stat === 'Takedowns') projected = player.takedowns;
-      else if (line.stat === 'Control Time') projected = player.ctMin;
-      const ev = Math.round((projected - line.line) * 100) / 100;
-      ppRows.push({ player: line.player, stat: line.stat, line: line.line, projected: Math.round(projected * 100) / 100, ev, opponent: player.opponent, wp: player.wp, direction: ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-', mult: line.mult || '' });
+      let projected = 0, ev = 0, direction = '-';
+      if (line.stat === 'Significant Strikes') {
+        projected = player.sigStr;
+        ev = Math.round((projected - line.line) * 100) / 100;
+        direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
+      } else if (line.stat === 'Fantasy Score') {
+        projected = player.ppProj;
+        ev = Math.round((projected - line.line) * 100) / 100;
+        direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
+      } else if (line.stat === 'Fight Time') {
+        // Bimodal distribution — use probability-based edge, not mean-minus-line
+        const pOver = pFightTimeOver(player, line.line);
+        projected = Math.round(pOver * 100 * 10) / 10;  // show as % probability of OVER
+        ev = Math.round((pOver - 0.5) * 100 * 100) / 100;  // edge in percentage points
+        direction = pOver > 0.5 ? 'MORE' : pOver < 0.5 ? 'LESS' : '-';
+      } else if (line.stat === 'Takedowns') {
+        projected = player.takedowns;
+        ev = Math.round((projected - line.line) * 100) / 100;
+        direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
+      } else if (line.stat === 'Control Time') {
+        projected = player.ctMin;
+        ev = Math.round((projected - line.line) * 100) / 100;
+        direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
+      }
+      ppRows.push({ player: line.player, stat: line.stat, line: line.line, projected: Math.round(projected * 100) / 100, ev, opponent: player.opponent, wp: player.wp, direction, mult: line.mult || '' });
     });
   }
   return { dkPlayers, ppRows };
@@ -831,14 +872,15 @@ function MMAPPTab({ rows }) {
       const isBest = best.some(t => t.player === r.player && t.stat === r.stat);
       const isWorst = worst.some(t => t.player === r.player && t.stat === r.stat);
       const playDir = r.direction;
+      const isFT = r.stat === 'Fight Time';
       return <tr key={r.player + r.stat} style={isBest ? {background:'rgba(34,197,94,0.06)'} : isWorst ? {background:'rgba(239,68,68,0.06)'} : undefined}>
         <td className="muted">{i+1}</td>
         <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
-        <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}</td>
-        <td className="num">{fmt(r.line, 2)}</td>
-        <td className="num"><span className="cell-proj">{fmt(r.projected, 2)}</span></td>
-        <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span></td>
+        <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}{isFT && <Tip emoji=" ⓘ" label="Probability-based — projected shows P(OVER), edge is % advantage vs 50%" />}</td>
+        <td className="num">{fmt(r.line, 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</td>
+        <td className="num"><span className="cell-proj">{fmt(r.projected, isFT ? 1 : 2)}{isFT && <span style={{ fontSize: 10, marginLeft: 1 }}>%</span>}</span></td>
+        <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, isFT ? 1 : 2)}{isFT && <span style={{ fontSize: 10, marginLeft: 1 }}>%</span>}</span></td>
         <td><span style={{color: playDir === 'MORE' ? 'var(--green)' : playDir === 'LESS' ? 'var(--red)' : 'var(--text-dim)', fontWeight:600}}>{playDir}</span></td>
         <td style={{color:'var(--amber)',fontSize:11}}>{r.mult || ''}</td>
         <td className="num muted">{fmtPct(r.wp)}</td>
