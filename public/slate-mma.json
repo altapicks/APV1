@@ -39,7 +39,9 @@
       "ss_line_b": 27.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Both debuts, grappling-heavy fight projected"
+      "notes": "Both debuts, grappling-heavy fight projected",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "John Castaneda",
@@ -74,7 +76,9 @@
       "ss_line_b": 54.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Vologdin UFC debut, expected to go distance"
+      "notes": "Vologdin UFC debut, expected to go distance",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "JJ Aldrich",
@@ -109,7 +113,9 @@
       "ss_line_b": 57.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Book 85%+ likely goes distance \u2014 low ceiling pure volume fight"
+      "notes": "Book 85%+ likely goes distance \u2014 low ceiling pure volume fight",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "Melissa Croden",
@@ -146,7 +152,9 @@
       "ss_line_a": 52.5,
       "ss_line_b": 50.5,
       "adj_a": 0,
-      "adj_b": 0
+      "adj_b": 0,
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "Tanner Boser",
@@ -181,7 +189,9 @@
       "ss_line_b": 40.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "HW kickboxer fight, finish upside both sides"
+      "notes": "HW kickboxer fight, finish upside both sides",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "Julien Leblanc",
@@ -216,7 +226,9 @@
       "ss_line_b": 29.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Valentin Sub +195 \u2014 book sees fast sub finish. Elite GPP play"
+      "notes": "Valentin Sub +195 \u2014 book sees fast sub finish. Elite GPP play",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "Dennis Buzukja",
@@ -251,7 +263,9 @@
       "ss_line_b": 30.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Barbosa R1 KO +110 = ~48% implied. Highest finish prob on slate"
+      "notes": "Barbosa R1 KO +110 = ~48% implied. Highest finish prob on slate",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "Thiago Moises",
@@ -286,7 +300,9 @@
       "ss_line_b": 52.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Grappler vs Striker. Moises CT 4:30 = huge DK upside if wins"
+      "notes": "Grappler vs Striker. Moises CT 4:30 = huge DK upside if wins",
+      "ss_source_a": "underdog",
+      "ss_source_b": "underdog"
     },
     {
       "fighter_a": "Jasmine Jasudavicius",
@@ -450,7 +466,9 @@
       "ss_line_b": 27.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Jasud CT 7:30 + 2.5 TD line = elite grappler stat line. DK monster"
+      "notes": "Jasud CT 7:30 + 2.5 TD line = elite grappler stat line. DK monster",
+      "ss_source_a": "pp",
+      "ss_source_b": "pp"
     },
     {
       "fighter_a": "Mandel Nallo",
@@ -606,11 +624,17 @@
       },
       "ct_a": 1.5,
       "ct_b": 1.0,
-      "ss_line_a": 35.5,
-      "ss_line_b": 37.5,
+      "ss_line_a": 42.5,
+      "ss_line_b": 36.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Nallo R1 +310 \u2192 ~24% R1 finish. High KO upside"
+      "notes": "Nallo R1 +310 \u2192 ~24% R1 finish. High KO upside",
+      "ss_source_a": "bet365",
+      "ts_line_a": 62.5,
+      "ts_source_a": "bet365",
+      "ss_source_b": "bet365",
+      "ts_line_b": 48.5,
+      "ts_source_b": "bet365"
     },
     {
       "fighter_a": "Kyler Phillips",
@@ -778,11 +802,13 @@
       },
       "ct_a": 2.5,
       "ct_b": 1.5,
-      "ss_line_a": 50.5,
-      "ss_line_b": 55.5,
+      "ss_line_a": 45.5,
+      "ss_line_b": 53.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Phillips 1.5 TD line + 2.5 CT \u2014 mixed style edge for DK"
+      "notes": "Phillips 1.5 TD line + 2.5 CT \u2014 mixed style edge for DK",
+      "ss_source_a": "bet365",
+      "ss_source_b": "bet365"
     },
     {
       "fighter_a": "Gilbert Burns",
@@ -930,11 +956,13 @@
       },
       "ct_a": 2.5,
       "ct_b": 1.5,
-      "ss_line_a": 33.5,
-      "ss_line_b": 41.5,
+      "ss_line_a": 31.5,
+      "ss_line_b": 44.5,
       "adj_a": 0,
       "adj_b": 0,
-      "notes": "Main event 5R. Malott KO -110 = ~52% KO prob. Massive ceiling \u2014 90pt R1 bonus path"
+      "notes": "Main event 5R. Malott KO -110 = ~52% KO prob. Massive ceiling \u2014 90pt R1 bonus path",
+      "ss_source_a": "bet365",
+      "ss_source_b": "bet365"
     }
   ],
   "dk_players": [
