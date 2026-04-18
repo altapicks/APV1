@@ -139,9 +139,9 @@ function useSlateData(sport) {
   useEffect(() => {
     setData(null); setError(null);
     const startTime = Date.now();
-    // First load plays the full splash (5000ms, ~2 visible bounces).
-    // Sport switches get a shorter but still-visible loader (2000ms, ~1 full bounce).
-    const MIN_LOAD_MS = hasLoadedRef.current ? 2000 : 5000;
+    // First load: full splash (5000ms). Tennis switch: 2000ms to see the ball bounce.
+    // UFC switch: 900ms (no ball, no reason to linger).
+    const MIN_LOAD_MS = !hasLoadedRef.current ? 5000 : (sport === 'tennis' ? 2000 : 900);
     const finalize = (cb) => {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, MIN_LOAD_MS - elapsed);
