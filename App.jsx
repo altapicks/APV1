@@ -137,11 +137,18 @@ function useSlateData(sport) {
   const [error, setError] = useState(null);
   useEffect(() => {
     setData(null); setError(null);
+    const startTime = Date.now();
+    const MIN_LOAD_MS = 1200;
+    const finalize = (cb) => {
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, MIN_LOAD_MS - elapsed);
+      setTimeout(cb, delay);
+    };
     const url = sport === 'mma' ? './slate-mma.json' : './slate.json';
     fetch(url)
       .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
-      .then(setData)
-      .catch(e => setError(e.message));
+      .then(d => finalize(() => setData(d)))
+      .catch(e => finalize(() => setError(e.message)));
   }, [sport]);
   return { data, error };
 }
@@ -287,17 +294,21 @@ const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2
 function Tip({ emoji, label }) { const [s, setS] = useState(false); return <span style={{ position: 'relative', cursor: 'help' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#E2E8F0', whiteSpace: 'nowrap', zIndex: 999, fontWeight: 500 }}>{label}</span>}</span>; }
 
 // ═══════════════════════════════════════════════════════════════════════
-// BRANDED LOADING SCREEN — pulsing logo + sport-aware copy
+// BRANDED LOADING SCREEN — pulsing logo + sport-themed progress animation
 // ═══════════════════════════════════════════════════════════════════════
 function LoadingScreen({ sport }) {
+  const isTennis = sport === 'tennis';
   const sportLabel = sport === 'mma' ? '🥊 UFC' : '🎾 Tennis';
   return (
     <div style={{ padding: '80px 20px 60px', textAlign: 'center' }}>
       <style>{`
-        @keyframes oo-pulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
-        @keyframes oo-glow  { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
-        @keyframes oo-dot   { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.85); } 40% { opacity: 1; transform: scale(1); } }
-        @keyframes oo-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+        @keyframes oo-pulse  { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+        @keyframes oo-glow   { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
+        @keyframes oo-dot    { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.85); } 40% { opacity: 1; transform: scale(1); } }
+        @keyframes oo-sweep  { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+        @keyframes tball-x   { 0% { left: 0; } 50% { left: calc(100% - 28px); } 100% { left: 0; } }
+        @keyframes tball-y   { 0%, 50%, 100% { transform: translateY(0) scaleX(1.15) scaleY(0.85); } 25% { transform: translateY(-38px) scaleX(0.95) scaleY(1.05) rotate(360deg); } 75% { transform: translateY(-38px) scaleX(0.95) scaleY(1.05) rotate(-360deg); } }
+        @keyframes tball-shadow { 0%, 50%, 100% { opacity: 0.55; transform: translateX(-50%) scaleX(1); } 25%, 75% { opacity: 0.15; transform: translateX(-50%) scaleX(0.35); } }
       `}</style>
       <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 24px' }}>
         <div style={{ position: 'absolute', inset: -30, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,197,24,0.35), transparent 70%)', animation: 'oo-glow 1.8s ease-in-out infinite' }} />
@@ -306,15 +317,33 @@ function LoadingScreen({ sport }) {
       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6, letterSpacing: 0.3 }}>
         Loading {sportLabel} slate
       </div>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 28 }}>
         Crunching projections · Simulating ownership
       </div>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 24 }}>
-        {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)', animation: `oo-dot 1.4s ease-in-out ${i * 0.18}s infinite` }} />)}
-      </div>
-      <div style={{ position: 'relative', width: 240, height: 3, margin: '0 auto', background: 'rgba(245,197,24,0.1)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '25%', height: '100%', background: 'linear-gradient(90deg, transparent, var(--primary), transparent)', animation: 'oo-sweep 1.6s ease-in-out infinite' }} />
-      </div>
+      {isTennis ? (
+        <div style={{ position: 'relative', width: 280, height: 60, margin: '0 auto' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, rgba(245,197,24,0.5), transparent)' }} />
+          <div style={{ position: 'absolute', bottom: 2, width: 28, height: 28, animation: 'tball-x 1.8s ease-in-out infinite' }}>
+            <div style={{ position: 'absolute', bottom: -5, left: '50%', width: 22, height: 4, background: 'rgba(0,0,0,0.6)', borderRadius: '50%', filter: 'blur(2px)', animation: 'tball-shadow 1.8s ease-in-out infinite' }} />
+            <div style={{ animation: 'tball-y 1.8s ease-in-out infinite', transformOrigin: '50% 100%' }}>
+              <svg width="28" height="28" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="18" fill="#DDFF4F" stroke="#95A835" strokeWidth="0.8" />
+                <path d="M 4 14 Q 20 26 36 14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                <path d="M 4 26 Q 20 14 36 26" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
+            {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)', animation: `oo-dot 1.4s ease-in-out ${i * 0.18}s infinite` }} />)}
+          </div>
+          <div style={{ position: 'relative', width: 240, height: 3, margin: '0 auto', background: 'rgba(245,197,24,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '25%', height: '100%', background: 'linear-gradient(90deg, transparent, var(--primary), transparent)', animation: 'oo-sweep 1.6s ease-in-out infinite' }} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
