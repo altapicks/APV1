@@ -426,8 +426,8 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
     lu.players.forEach(fid => counts[fid]++);
   }
 
-  // Phase 1: satisfy mins
-  const sortedMins = Object.entries(minCaps).sort((a, b) => a[1] - b[1]);
+  // Phase 1: satisfy mins (highest-min first — boosted players get richest pool)
+  const sortedMins = Object.entries(minCaps).sort((a, b) => b[1] - a[1]);
   for (const [name] of sortedMins) {
     const ti = idx[name];
     while (counts[ti] < minCaps[name] && selected.length < nLineups) {
