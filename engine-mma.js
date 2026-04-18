@@ -76,29 +76,35 @@ function parseRoundOdds(o, rounds) {
 
 // ---------- EXPECTED VALUE FROM TIER LADDER ----------
 // Bet365 sig-strike tier odds: [[25, -235], [50, -105], [75, +240], ...]
-// Devig each tier (with its complement), get P(X >= k), compute E[X] and 80th %ile.
+// We compute the MEDIAN of the distribution (50th percentile), which is what
+// O/U lines are set to. Mean would be higher due to right-skew from long
+// decisions, but median matches how books price these props.
 function expectedFromTiers(tiers) {
   if (!tiers || tiers.length === 0) return null;
-  // Devig each tier independently using 2-way no-vig via the next tier as proxy
-  // Simpler: use implied prob directly (slight over-estimate, fine for our purposes)
   const survival = tiers.map(([k, odds]) => [k, americanToProb(odds)]);
-  // Sort ascending by k (should already be)
   survival.sort((a, b) => a[0] - b[0]);
 
-  // E[X] = sum over tiers of (tier_k - prev_k) * P(X >= tier_k)
-  // plus baseline contribution from P(X < first tier)
-  let ev = 0;
-  let prevK = 0;
-  let prevP = 1.0;
+  // Find where P(X >= x) = 0.5 by linear interpolation between tiers
+  // Tier 0 is (0, 1) implicitly — P(X >= 0) = 1
+  let median = null;
+  let prevK = 0, prevP = 1.0;
   for (const [k, p] of survival) {
-    ev += (k - prevK) * prevP;
+    if (prevP >= 0.5 && p < 0.5) {
+      // Interpolate between (prevK, prevP) and (k, p) where survival crosses 0.5
+      median = prevK + (k - prevK) * (prevP - 0.5) / (prevP - p);
+      break;
+    }
     prevK = k;
     prevP = p;
   }
-  // Tail contribution: assume mean of tail is ~20% above last tier when p is small
-  ev += prevP * 20;
+  // Fallback: if all tiers are still >= 0.5, extrapolate
+  if (median === null) {
+    const [lastK, lastP] = survival[survival.length - 1];
+    // Assume exponential tail decay from last tier
+    median = lastP >= 0.5 ? lastK + 10 : lastK;
+  }
 
-  // 80th percentile: find the tier where P(X >= k) drops below 0.2
+  // 80th percentile for DK ceiling calc: where P(X >= k) drops below 0.2
   let p80 = survival[survival.length - 1][0];
   for (let i = 0; i < survival.length; i++) {
     if (survival[i][1] < 0.2) {
@@ -107,7 +113,7 @@ function expectedFromTiers(tiers) {
     }
     p80 = survival[i][0] + 10;
   }
-  return { ev: round1(ev), p80: round1(p80), tiers: survival };
+  return { ev: round1(median), p80: round1(p80), tiers: survival };
 }
 
 // ---------- TAKEDOWN PARSER ----------
@@ -158,24 +164,24 @@ export function processFight(fight) {
     dec: method.b.dec * (wpB / method.b.win),
   } : method.b;
 
-  // Sig strikes + total strikes — prefer Bet365 tiers, fallback to PP/Underdog line
+  // Sig strikes + total strikes
+  // NEW RULE: explicit O/U line (Bet365 direct > PP line > Underdog) takes PRIORITY.
+  // Tier ladder is only a fallback if no explicit line exists anywhere.
   const ssA = o.ss_a_tiers ? expectedFromTiers(o.ss_a_tiers) : null;
   const ssB = o.ss_b_tiers ? expectedFromTiers(o.ss_b_tiers) : null;
   const tsA = o.ts_a_tiers ? expectedFromTiers(o.ts_a_tiers) : null;
   const tsB = o.ts_b_tiers ? expectedFromTiers(o.ts_b_tiers) : null;
 
-  // Prefer Bet365 tier ladder EV when available (it's the real market for this fight).
-  // Fall back to PP/Underdog line for prelims where no tier data exists.
-  const sigA = ssA?.ev ?? fight.ss_line_a ?? 40;
-  const sigB = ssB?.ev ?? fight.ss_line_b ?? 40;
+  const sigA = fight.ss_line_a ?? ssA?.ev ?? 40;
+  const sigB = fight.ss_line_b ?? ssB?.ev ?? 40;
   const sig80A = ssA?.p80 ?? (sigA * 1.45);
   const sig80B = ssB?.p80 ?? (sigB * 1.45);
 
-  // Total strikes: derive from sig × 1.5 unless we have explicit tier data
-  const totA = tsA?.ev ? Math.max(tsA.ev * 0.75, sigA * 1.4) : sigA * 1.5;
-  const totB = tsB?.ev ? Math.max(tsB.ev * 0.75, sigB * 1.4) : sigB * 1.5;
-  const tot80A = tsA?.p80 ? tsA.p80 * 0.85 : (totA * 1.4);
-  const tot80B = tsB?.p80 ? tsB.p80 * 0.85 : (totB * 1.4);
+  // Total strikes (DK only — NOT sig strikes). Explicit TS line > tier median > 1.5×sig fallback.
+  const totA = fight.ts_line_a ?? tsA?.ev ?? sigA * 1.5;
+  const totB = fight.ts_line_b ?? tsB?.ev ?? sigB * 1.5;
+  const tot80A = tsA?.p80 ?? (totA * 1.4);
+  const tot80B = tsB?.p80 ?? (totB * 1.4);
 
   // Takedowns
   const tdA = parseTDs(o.td_a_line, o.td_a_over, o.td_a_under);
