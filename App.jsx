@@ -78,10 +78,33 @@ function computeFairOwn(value, avgValue, baseline = 20) {
   return baseline * (1 + 0.5 * clamped);
 }
 
-function applyContrarian(proj, ownership, strength, fairOwn = 20) {
+// Projection multiplier driven by ownership delta × value context.
+// BIGGEST TRAP (high own + low value) → maximum fade.
+// Chalky stud (high own + high value) → mild fade.
+// Underowned value → moderate boost (not as aggressive as fade side — avoids flier-stacking).
+// At strength=0.6, 12pt ownership overweight, val=0.8×avg: ~17% projection fade
+// At strength=0.6, 12pt ownership overweight, val=1.4×avg: ~7% projection fade
+// At strength=1.0 max: chalky trap gets up to ~30% fade
+function applyContrarian(proj, ownership, strength, fairOwn = 20, value = null, avgValue = null) {
   if (!strength || ownership == null) return proj;
-  const delta = fairOwn - ownership;
-  return proj * (1 + strength * delta / 100);
+  const delta = fairOwn - ownership;                        // +ve = under-owned, -ve = over-owned
+  const clampedDelta = Math.max(-40, Math.min(40, delta));
+
+  // Asymmetric scaling: fade side is more aggressive than boost side
+  const isOverowned = clampedDelta < 0;
+  const baseScale = isOverowned ? 0.022 : 0.012;            // fade 2.2%/pt, boost 1.2%/pt
+
+  // Value weighting on fade side only: amplify fade for poor-value chalk (true traps)
+  let valueWeight = 1;
+  if (isOverowned && value != null && avgValue > 0) {
+    const valRatio = value / avgValue;
+    valueWeight = Math.max(0.5, Math.min(1.5, 2 - valRatio));
+    // valRatio=0.7 → valueWeight=1.3 (amp fade by 30%) — true trap
+    // valRatio=1.0 → valueWeight=1.0 (neutral)
+    // valRatio=1.4 → valueWeight=0.6 (dampen fade by 40%) — chalky stud
+  }
+
+  return proj * (1 + strength * clampedDelta * baseScale * valueWeight);
 }
 
 function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
@@ -733,7 +756,7 @@ function BuilderTab({ players: rp, ownership }) {
     if (!contrarianOn) return rp;
     return rp.map(p => {
       const fairOwn = computeFairOwn(p.val || 0, avgVal);
-      const adjProj = applyContrarian(p.proj, ownership[p.name] || 20, contrarianStrength, fairOwn);
+      const adjProj = applyContrarian(p.proj, ownership[p.name] || 20, contrarianStrength, fairOwn, p.val, avgVal);
       const adjVal = p.salary > 0 ? Math.round(adjProj / (p.salary / 1000) * 100) / 100 : 0;
       return { ...p, proj: Math.round(adjProj * 100) / 100, val: adjVal };
     });
@@ -930,8 +953,8 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     return rp.map(p => {
       const valueRef = mode === 'ceiling' ? (p.cval || 0) : (p.val || 0);
       const fairOwn = computeFairOwn(valueRef, avgVal);
-      const adjProj = applyContrarian(p.proj, ownership[p.name] || 20, contrarianStrength, fairOwn);
-      const adjCeil = applyContrarian(p.ceil, ownership[p.name] || 20, contrarianStrength, fairOwn);
+      const adjProj = applyContrarian(p.proj, ownership[p.name] || 20, contrarianStrength, fairOwn, valueRef, avgVal);
+      const adjCeil = applyContrarian(p.ceil, ownership[p.name] || 20, contrarianStrength, fairOwn, valueRef, avgVal);
       const adjVal = p.salary > 0 ? Math.round(adjProj / (p.salary / 1000) * 100) / 100 : 0;
       const adjCval = p.salary > 0 ? Math.round(adjCeil / (p.salary / 1000) * 100) / 100 : 0;
       return { ...p, proj: Math.round(adjProj * 100) / 100, ceil: Math.round(adjCeil * 100) / 100, val: adjVal, cval: adjCval };
