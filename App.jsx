@@ -1,6 +1,17 @@
 import { Component, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { processMatch, dkProjection, ppProjection, ppEV, optimize, optimizeShowdown } from './engine.js';
 import { processFight, dkMMAProjection, dkMMACeiling, ppMMAProjection, ppMMACeiling, optimizeMMA } from './engine-mma.js';
+import {
+  buildPlayerStats as nbaBuildPlayerStats,
+  applyInjuryAdjustments as nbaApplyInjuryAdjustments,
+  dkProjection as nbaDkProjection,
+  dkCeiling as nbaDkCeiling,
+  ppProjection as nbaPpProjection,
+  projectPPStat as nbaProjectPPStat,
+  ppEV as nbaPpEV,
+  optimizeShowdown as nbaOptimizeShowdown,
+  optimizeClassic as nbaOptimizeClassic,
+} from './engine-nba.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ERROR BOUNDARY — catches any runtime crash and shows it on screen
@@ -60,6 +71,14 @@ const GLOSSARY_MMA = [
   { icon: 'fist',          label: 'Top 3 Finish Path', desc: 'Highest R1/R2 finish upside (+90/+70 bonus)' },
   { icon: 'gem',           label: 'Hidden Gem', desc: 'Low ownership + high ceiling' },
   { icon: 'bomb',          label: 'Trap', desc: 'High ownership + low ceiling' },
+  { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
+  { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
+];
+const GLOSSARY_NBA = [
+  { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
+  { icon: 'rocket',        label: 'Top 3 Ceiling', desc: 'Highest 85th-percentile projection' },
+  { icon: 'gem',           label: 'Hidden Gem', desc: 'Best value in salary band below biggest trap' },
+  { icon: 'bomb',          label: 'Biggest Trap', desc: 'Highest sim-owned — field-converged chalk' },
   { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
   { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
@@ -165,7 +184,7 @@ function useSlateData(sport, slateDate) {
     setData(null); setError(null);
     const startTime = Date.now();
     // First load: full splash (5000ms). Tennis switch: 2000ms to see the ball bounce.
-    // UFC switch: 900ms (no ball, no reason to linger). Archive picks: 600ms (quick).
+    // UFC/NBA switch: 900ms (no ball, no reason to linger). Archive picks: 600ms (quick).
     const isArchive = slateDate && slateDate !== 'live';
     const MIN_LOAD_MS = !hasLoadedRef.current ? 5000 : isArchive ? 600 : (sport === 'tennis' ? 2000 : 900);
     const finalize = (cb) => {
@@ -174,9 +193,10 @@ function useSlateData(sport, slateDate) {
       setTimeout(cb, delay);
     };
     // Live = current slate.json (root). Archive = /slates/{sport}/{date}.json
-    const url = isArchive
-      ? `/slates/${sport}/${slateDate}.json`
-      : (sport === 'mma' ? './slate-mma.json' : './slate.json');
+    const liveUrl = sport === 'mma' ? './slate-mma.json'
+                  : sport === 'nba' ? './slate-nba.json'
+                  : './slate.json';
+    const url = isArchive ? `/slates/${sport}/${slateDate}.json` : liveUrl;
     fetch(url)
       .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
       .then(d => finalize(() => { hasLoadedRef.current = true; setData(d); }))
@@ -407,6 +427,117 @@ function simulateMMAOwnership(fighters, n = 3000) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// NBA PROJECTION BUILDER
+// Uses pp_stats (Points/Rebounds/Assists/3PM/Stls+Blks) as the source-of-truth
+// stat projections, then derives DK and PP Fantasy Scores via engine-nba.
+// Applies injury cascade and pace/blowout context up front.
+// ═══════════════════════════════════════════════════════════════════════
+function buildNBAProjections(data) {
+  if (!data || !data.dk_players) return { dkPlayers: [], ppRows: [] };
+  const game = data.game || {};
+  const leagueAvgPace = 99.5;
+  const paceFactor = game.pace_okc && game.pace_phx
+    ? ((Number(game.pace_okc) + Number(game.pace_phx)) / 2) / leagueAvgPace
+    : 1.0;
+  const blowoutByTeam = {};
+  if (game.away && game.home) {
+    blowoutByTeam[game.home] = game.home === 'OKC' ? (game.blowout_risk_okc || 0) : (game.blowout_risk_phx || 0);
+    blowoutByTeam[game.away] = game.away === 'OKC' ? (game.blowout_risk_okc || 0) : (game.blowout_risk_phx || 0);
+  }
+
+  const adjusted = nbaApplyInjuryAdjustments(data.dk_players);
+  const dkPlayers = adjusted.map(p => {
+    const ctx = { paceFactor, blowoutRisk: blowoutByTeam[p.team] || 0 };
+    const stats = nbaBuildPlayerStats(p, ctx);
+    const proj = nbaDkProjection(stats);
+    const ceil = nbaDkCeiling(stats);
+    const ppProj = nbaPpProjection(stats);
+    const sal = p.util_salary || p.salary || 0;
+    const val  = sal > 0 ? Math.round(proj / (sal / 1000) * 100) / 100 : 0;
+    const cval = sal > 0 ? Math.round(ceil / (sal / 1000) * 100) / 100 : 0;
+    return {
+      name: p.name,
+      team: p.team,
+      opponent: p.opponent || (p.team === game.home ? game.away : game.home),
+      positions: p.positions || [],
+      positions_str: p.positions_str || (p.positions || []).join('/'),
+      salary: sal,
+      id: p.util_id || p.id,
+      util_id: p.util_id, util_salary: p.util_salary,
+      cpt_id: p.cpt_id,   cpt_salary: p.cpt_salary,
+      avgPPG: p.avg_ppg || 0,
+      proj, ceil, val, cval, ppProj,
+      projMins: stats.projMins,
+      usg: stats.usg,
+      status: stats.status,
+      stats,
+      cascadeNote: p.cascadeNote || null,
+      startTime: game.tip || '',
+    };
+  });
+
+  // Build PP rows — one row per PP line in slate
+  const ppRows = [];
+  if (data.pp_lines) {
+    const byName = {}; dkPlayers.forEach(p => { byName[p.name] = p; });
+    data.pp_lines.forEach(line => {
+      const player = byName[line.player];
+      if (!player) {
+        ppRows.push({
+          player: line.player, stat: line.stat, line: line.line,
+          projected: 0, ev: 0, opponent: '?', direction: '-', mult: 'normal',
+          team: '', ownImpact: 0,
+        });
+        return;
+      }
+      const projected = Math.round(nbaProjectPPStat(player.stats, line.stat) * 100) / 100;
+      const ev = nbaPpEV(projected, line.line);
+      ppRows.push({
+        player: line.player, stat: line.stat, line: line.line,
+        projected, ev,
+        opponent: player.opponent,
+        team: player.team,
+        direction: ev > 0.8 ? 'MORE' : ev < -0.8 ? 'LESS' : '-',
+        mult: line.mult || 'normal',
+      });
+    });
+  }
+  return { dkPlayers, ppRows };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NBA OWNERSHIP SIM — runs showdown optimizer on projection, returns {name: own%}
+// ═══════════════════════════════════════════════════════════════════════
+function simulateNBAOwnership(players, slateType = 'showdown') {
+  const active = players.filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
+  if (active.length < 6) return {};
+
+  const pData = active.map(p => ({
+    name: p.name, team: p.team, projection: p.proj,
+    util_salary: p.util_salary || p.salary, cpt_salary: p.cpt_salary,
+    util_id: p.util_id || p.id, cpt_id: p.cpt_id,
+    positions: p.positions || [], salary: p.util_salary || p.salary,
+    status: p.status, maxExp: 100, minExp: 0,
+  }));
+
+  try {
+    const n = slateType === 'classic' ? 3000 : 1500;
+    const res = slateType === 'classic'
+      ? nbaOptimizeClassic(pData, n, 50000)
+      : nbaOptimizeShowdown(pData, n, 50000, 45000);
+    const own = {};
+    if (!res.lineups.length) { pData.forEach(p => { own[p.name] = 0; }); return own; }
+    pData.forEach((p, i) => {
+      own[p.name] = res.counts[i] / res.lineups.length * 100;
+    });
+    return own;
+  } catch (e) {
+    console.error('simulateNBAOwnership error:', e);
+    return {};
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // SHARED HELPERS — UNCHANGED
 // ═══════════════════════════════════════════════════════════════════════
 function useSort(data, dk = 'val', dd = 'desc') {
@@ -626,7 +757,15 @@ export default function App() {
     try { return buildMMAProjections(data); }
     catch (e) { console.error('buildMMAProjections error:', e); return { dkPlayers: [], ppRows: [], buildError: e.message }; }
   }, [sport, data]);
-  const { dkPlayers: rawDkPlayers, ppRows, buildError } = sport === 'tennis' ? tennisProjections : mmaProjections;
+  const nbaProjections = useMemo(() => {
+    if (sport !== 'nba' || !data || !data.dk_players) return { dkPlayers: [], ppRows: [] };
+    try { return buildNBAProjections(data); }
+    catch (e) { console.error('buildNBAProjections error:', e); return { dkPlayers: [], ppRows: [], buildError: e.message }; }
+  }, [sport, data]);
+  const { dkPlayers: rawDkPlayers, ppRows, buildError } =
+    sport === 'tennis' ? tennisProjections
+    : sport === 'mma' ? mmaProjections
+    : nbaProjections;
   // Apply user projection overrides. For MMA, scale ceiling proportionally so proj:ceil ratio stays sane.
   // Value/cval are recomputed against salary so they reflect the new proj.
   const dkPlayers = useMemo(() => {
@@ -646,12 +785,19 @@ export default function App() {
   }, [rawDkPlayers, projOverrides]);
   const ownership = useMemo(() => {
     if (dkPlayers.length === 0) return {};
-    return sport === 'tennis' ? simulateOwnership(dkPlayers) : simulateMMAOwnership(dkPlayers);
-  }, [dkPlayers, sport]);
+    if (sport === 'tennis') return simulateOwnership(dkPlayers);
+    if (sport === 'mma') return simulateMMAOwnership(dkPlayers);
+    if (sport === 'nba') return simulateNBAOwnership(dkPlayers, data?.slate_type || 'showdown');
+    return {};
+  }, [dkPlayers, sport, data]);
 
   if (error) {
-    const expectedUrl = sport === 'mma' ? './slate-mma.json' : './slate.json';
-    const expectedPath = sport === 'mma' ? 'public/slate-mma.json' : 'public/slate.json';
+    const expectedUrl = sport === 'mma' ? './slate-mma.json'
+                      : sport === 'nba' ? './slate-nba.json'
+                      : './slate.json';
+    const expectedPath = sport === 'mma' ? 'public/slate-mma.json'
+                       : sport === 'nba' ? 'public/slate-nba.json'
+                       : 'public/slate.json';
     return <div className="app">
       <Topbar sport={sport} onSportChange={setSport} data={null} />
       <div className="empty" style={{ padding: '40px 20px' }}>
@@ -1032,6 +1178,13 @@ export default function App() {
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
+      {sport === 'nba' && (<>
+        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
+        {tab === 'pp' && <NBAPPTab rows={ppRows} />}
+        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} />}
+        {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
+        {tab === 'record' && <TrackRecordTab sport={sport} />}
+      </>)}
       </ErrorBoundary>}
     </div>
   </div>);
@@ -1076,6 +1229,21 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
             <path d="M8 17v3h6v-3"/>
           </svg>
         </button>
+        <button onClick={() => onSportChange('nba')} title="NBA" aria-label="NBA" style={{
+          background: sport === 'nba' ? 'var(--primary)' : 'transparent',
+          color: sport === 'nba' ? '#0A1628' : 'var(--text-muted)',
+          border: 'none', padding: '7px 12px', cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* Basketball — circle with horizontal equator and two curved seams */}
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12h18"/>
+            <path d="M12 3a9 9 0 0 1 0 18"/>
+            <path d="M5.5 5.5c3 2 3 11 0 13"/>
+            <path d="M18.5 5.5c-3 2-3 11 0 13"/>
+          </svg>
+        </button>
       </div>
       {hasArchive && onSlateDateChange && (
         <select
@@ -1105,7 +1273,11 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
         </select>
       )}
       {data && <div className="topbar-date">
-        <span className="topbar-date-main">{data.date} · {data.matches?.length || data.fights?.length || 0} {sport === 'mma' ? 'fights' : 'matches'}</span>
+        <span className="topbar-date-main">{data.date} · {
+          sport === 'nba' ? `${data.game ? `${data.game.away}@${data.game.home}` : ''} · ${(data.dk_players || []).length} players`
+          : sport === 'mma' ? `${data.fights?.length || 0} fights`
+          : `${data.matches?.length || 0} matches`
+        }</span>
         {data.last_updated && <span className="topbar-date-updated"> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></span>}
       </div>}
       <a href="https://x.com/OverOwnedDFS" target="_blank" rel="noopener noreferrer" className="twitter-btn" title="@OverOwnedDFS">
@@ -2189,6 +2361,586 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
         const scoreShown = mode === 'ceiling' ? p.ceiling : p.projection;
         return <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
       })}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupAvgOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupAvgOwn}%</span></div></div>;
+    })}</div>
+    {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
+  </>);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NBA COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════
+
+// Team color badge
+function TeamBadge({ team }) {
+  const colors = {
+    OKC: { bg: 'rgba(245,140,10,0.18)', fg: '#FFB648', br: 'rgba(245,140,10,0.5)' },
+    PHX: { bg: 'rgba(159,73,172,0.18)', fg: '#C99AD4', br: 'rgba(159,73,172,0.5)' },
+  };
+  const c = colors[team] || { bg: 'rgba(120,120,120,0.15)', fg: 'var(--text-muted)', br: 'var(--border)' };
+  return (
+    <span style={{
+      display: 'inline-block', padding: '1px 7px', borderRadius: 4,
+      fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+      color: c.fg, background: c.bg, border: `1px solid ${c.br}`,
+    }}>{team}</span>
+  );
+}
+
+// Status chip — click cycles ACTIVE → GTD → Q → OUT → ACTIVE
+const NBA_STATUS_CYCLE = ['ACTIVE', 'GTD', 'Q', 'OUT'];
+function StatusChip({ status, onCycle }) {
+  const s = (status || 'ACTIVE').toUpperCase();
+  const style = {
+    ACTIVE: { bg: 'rgba(74,222,128,0.12)', fg: 'var(--green-text)', br: 'rgba(74,222,128,0.4)' },
+    GTD:    { bg: 'rgba(251,191,36,0.12)', fg: 'var(--amber-text)', br: 'rgba(251,191,36,0.5)' },
+    Q:      { bg: 'rgba(251,146,60,0.15)', fg: '#FB923C',            br: 'rgba(251,146,60,0.5)' },
+    OUT:    { bg: 'rgba(239,68,68,0.18)',  fg: 'var(--red-text)',    br: 'rgba(239,68,68,0.6)' },
+  }[s] || { bg: 'var(--card)', fg: 'var(--text-muted)', br: 'var(--border)' };
+  return (
+    <button onClick={onCycle} title="Click to cycle status" style={{
+      padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+      color: style.fg, background: style.bg, border: `1px solid ${style.br}`, cursor: 'pointer',
+    }}>{s}</button>
+  );
+}
+
+// NBA DK Tab — projections, value, ownership, status, mins/usg, cascade
+function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
+  const [statusMap, setStatusMap] = useState({});
+  const cycleStatus = (name) => {
+    setStatusMap(prev => {
+      const cur = prev[name] ?? (players.find(p => p.name === name)?.status || 'ACTIVE');
+      const idx = NBA_STATUS_CYCLE.indexOf(cur);
+      return { ...prev, [name]: NBA_STATUS_CYCLE[(idx + 1) % NBA_STATUS_CYCLE.length] };
+    });
+  };
+  const effStatus = (p) => statusMap[p.name] ?? (p.status || 'ACTIVE');
+
+  const pw = useMemo(() => players.filter(p => p.salary > 0).map(p => {
+    const s = effStatus(p);
+    return { ...p, simOwn: own[p.name] || 0, effStatus: s, isOut: s === 'OUT' };
+  }), [players, own, statusMap]);
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'proj', 'desc');
+
+  const t3v = useMemo(() => [...pw].filter(p => !p.isOut).sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [pw]);
+  const t3c = useMemo(() => [...pw].filter(p => !p.isOut).sort((a, b) => b.ceil - a.ceil).slice(0, 3).map(p => p.name), [pw]);
+  const trap = useMemo(() => {
+    const active = pw.filter(p => !p.isOut);
+    const hasOwn = active.some(p => p.simOwn > 0);
+    const s = hasOwn ? [...active].sort((a, b) => b.simOwn - a.simOwn) : [...active].sort((a, b) => b.proj - a.proj);
+    return s[0]?.name || '';
+  }, [pw]);
+  const gem = useMemo(() => {
+    const trapP = pw.find(p => p.name === trap);
+    if (!trapP) return '';
+    const band = pw.filter(p => !p.isOut && p.name !== trap && p.salary >= trapP.salary - 2000 && p.salary <= trapP.salary + 500);
+    if (band.length === 0) return '';
+    // Best value in band, weighted by ceiling
+    const scored = band.map(p => ({ name: p.name, s: p.val * p.ceil })).sort((a, b) => b.s - a.s);
+    return scored[0]?.name || '';
+  }, [pw, trap]);
+
+  const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
+
+  // Cascade alert row if any players are OUT/Q/DOUBTFUL
+  const injuredPlayers = pw.filter(p => ['OUT','Q','DOUBTFUL'].includes(p.effStatus));
+
+  return (<>
+    <div className="metrics">
+      <div className="metric"><div className="metric-label"><Icon name="trophy" size={13}/> Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="rocket" size={13}/> Top Ceiling</div><div className="metric-value">{t3c.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.ceil, 1)}</span></div>; })}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem || '-'}</div><div className="metric-sub">Best value in trap's salary band</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Field-converged chalk</div></div>
+    </div>
+    {injuredPlayers.length > 0 && (
+      <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Icon name="warning" size={14} color="#FBBF24"/>
+        <strong style={{ color: 'var(--amber-text)' }}>Injury cascade active:</strong>
+        <span>{injuredPlayers.map(p => `${p.name} (${p.effStatus})`).join(' · ')}</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>Projections adjusted automatically for top backups.</span>
+      </div>
+    )}
+    {gameInfo && (
+      <div style={{ padding: '8px 12px', marginBottom: 12, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <span>{gameInfo.away} @ {gameInfo.home}</span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span>Spread: <strong style={{ color: 'var(--text)' }}>{gameInfo.home} {gameInfo.spread_okc > 0 ? '+' : ''}{gameInfo.spread_okc}</strong></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span>Total: <strong style={{ color: 'var(--text)' }}>{gameInfo.total}</strong></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span>Pace: <strong style={{ color: 'var(--text)' }}>{((gameInfo.pace_okc + gameInfo.pace_phx) / 2).toFixed(1)}</strong></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Probability the game becomes a blowout — affects starter minutes">Blowout risk: <strong style={{ color: gameInfo.blowout_risk_okc > 0.6 ? 'var(--amber)' : 'var(--text)' }}>{Math.round(gameInfo.blowout_risk_okc * 100)}%</strong></span>
+      </div>
+    )}
+    <div className="table-wrap"><table><thead><tr>
+      <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
+      <S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" />
+      <S label="Proj" colKey="proj" /><S label="Ceil" colKey="ceil" />
+      <S label="Val" colKey="val" /><S label="CVal" colKey="cval" />
+      <S label="Min" colKey="projMins" /><S label="Usg" colKey="usg" />
+      <th>Status</th>
+    </tr></thead>
+    <tbody>{sorted.map((p, i) => {
+      const iv = t3v.includes(p.name), ic = t3c.includes(p.name), ig = p.name === gem, it = p.name === trap;
+      const badges = [];
+      if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
+      if (ic) badges.push({ icon: 'rocket', label: 'Top 3 Ceiling' });
+      if (ig) badges.push({ icon: 'gem',    label: 'Hidden Gem' });
+      if (it) badges.push({ icon: 'bomb',   label: 'Trap' });
+      const isOver = overrides && overrides[p.name] != null;
+      const dimStyle = p.isOut ? { opacity: 0.45 } : {};
+      return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''} style={dimStyle}>
+        <td className="muted">{i + 1}</td>
+        <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
+        <td className="name">
+          {p.name}
+          {p.cascadeNote && <div style={{ fontSize: 10, color: 'var(--amber-text)', marginTop: 2 }}>↑ {p.cascadeNote}</div>}
+        </td>
+        <td><TeamBadge team={p.team} /></td>
+        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.positions_str}</td>
+        <td className="num">{fmtSal(p.salary)}</td>
+        <td className="num" style={{ color: p.simOwn > 40 ? 'var(--red-text)' : p.simOwn > 25 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
+        <td className="num">
+          <span className={iv ? 'cell-top3' : 'cell-proj'}>
+            <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
+              value={fmt(p.proj, 1)}
+              onChange={e => onOverride && onOverride(p.name, e.target.value)}
+              onDoubleClick={() => onOverride && onOverride(p.name, null)}
+              title={isOver ? 'Overridden — double-click to reset' : 'Click to edit'} />
+          </span>
+        </td>
+        <td className="num"><span style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--green)', padding: '3px 8px', borderRadius: 4, fontWeight: 600, fontSize: 12 }}>{fmt(p.ceil, 1)}</span></td>
+        <td className="num"><span className={iv ? 'cell-top3' : ''}>{fmt(p.val, 2)}</span></td>
+        <td className="num" style={{ color: p.cval > 5 ? 'var(--green)' : undefined, fontWeight: p.cval > 5 ? 700 : 400 }}>{fmt(p.cval, 2)}</td>
+        <td className="num">{fmt(p.projMins, 1)}</td>
+        <td className="num muted">{fmt(p.usg, 1)}</td>
+        <td><StatusChip status={p.effStatus} onCycle={() => cycleStatus(p.name)} /></td>
+      </tr>; })}</tbody></table></div>
+  </>);
+}
+
+// NBA PP Tab — stat-by-stat EV vs PP lines
+function NBAPPTab({ rows }) {
+  const [statFilter, setStatFilter] = useState('all');
+  const filtered = useMemo(() => statFilter === 'all' ? rows : rows.filter(r => r.stat === statFilter), [rows, statFilter]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, 'ev', 'desc');
+  const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
+  const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
+  const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
+  const uniqueStats = useMemo(() => [...new Set(rows.map(r => r.stat))], [rows]);
+  return (<>
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="5"/>
+          <circle cx="12" cy="12" r="1.5" fill="#F5C518" stroke="none"/>
+        </svg>
+      </div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">PrizePicks Projections</h2>
+        <div className="section-hero-sub">All NBA plays sorted by edge · Edge = Projected − PP Line</div>
+      </div>
+    </div>
+    <div className="metrics">
+      <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>+{fmt(r.ev, 2)}</span></div>)}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest Fades</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
+    </div>
+    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+      <button onClick={() => setStatFilter('all')} style={{ padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1px solid ${statFilter === 'all' ? 'var(--primary)' : 'var(--border)'}`, background: statFilter === 'all' ? 'rgba(245,197,24,0.14)' : 'var(--card)', color: statFilter === 'all' ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}>All ({rows.length})</button>
+      {uniqueStats.map(s => {
+        const count = rows.filter(r => r.stat === s).length;
+        return <button key={s} onClick={() => setStatFilter(s)} style={{ padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1px solid ${statFilter === s ? 'var(--primary)' : 'var(--border)'}`, background: statFilter === s ? 'rgba(245,197,24,0.14)' : 'var(--card)', color: statFilter === s ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}>{s} ({count})</button>;
+      })}
+    </div>
+    <div className="table-wrap"><table><thead><tr>
+      <th>#</th><th></th><S label="Player" colKey="player" /><th>Team</th>
+      <S label="Stat" colKey="stat" /><S label="Line" colKey="line" />
+      <S label="Projected" colKey="projected" /><S label="Edge" colKey="ev" />
+      <S label="Play" colKey="direction" />
+    </tr></thead>
+    <tbody>{sorted.map((r, i) => {
+      const isBest = best.some(t => t.player === r.player && t.stat === r.stat);
+      const isWorst = worst.some(t => t.player === r.player && t.stat === r.stat);
+      // Push-zone: |ev| < 1 → amber instead of hard green/red
+      const pushZone = Math.abs(r.ev) < 1;
+      return <tr key={r.player + r.stat} className={isBest ? 'row-hl-green' : isWorst ? 'row-hl-red' : ''}>
+        <td className="muted">{i + 1}</td>
+        <td>{isBest ? <Tip icon="flame" label="Best edge" /> : isWorst ? <Tip icon="trending-down" label="Fade" /> : ''}</td>
+        <td className="name">{r.player}</td>
+        <td>{r.team ? <TeamBadge team={r.team} /> : ''}</td>
+        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.stat}</td>
+        <td className="num">{fmt(r.line, 1)}</td>
+        <td className="num"><span className="cell-proj">{fmt(r.projected, 2)}</span></td>
+        <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : pushZone ? 'cell-ev-push' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'} style={pushZone ? { color: 'var(--amber-text)' } : undefined}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span></td>
+        <td><span style={{ color: r.direction === 'MORE' ? 'var(--green-text)' : r.direction === 'LESS' ? 'var(--red-text)' : 'var(--text-dim)', fontWeight: 600 }}>{r.direction}</span></td>
+      </tr>;
+    })}</tbody></table></div>
+  </>);
+}
+
+// NBA Builder Tab — contrarian lineup building for showdown or classic
+function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
+  const [exp, setExp] = useState({});
+  const [res, setRes] = useState(null);
+  const [nL, setNL] = useState(20);
+  const [variance, setVariance] = useState(2);
+  const [globalMax, setGlobalMax] = useState(100);
+  const [globalMin, setGlobalMin] = useState(0);
+  const [contrarianOn, setContrarianOn] = useState(false);
+  const [contrarianStrength, setContrarianStrength] = useState(0.6);
+  const isShowdown = (slateType || 'showdown') === 'showdown';
+
+  const avgVal = useMemo(() => {
+    const vals = rp.filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT').map(p => p.val || 0);
+    return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 4;
+  }, [rp]);
+
+  // CONTRARIAN MODE (NBA) — mirrors tennis/MMA with NBA-specific gem band
+  const contrarianCaps = useMemo(() => {
+    if (!contrarianOn) return {};
+    const withSal = rp.filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
+    if (withSal.length === 0) return {};
+    const caps = {};
+
+    const byProj = [...withSal].sort((a, b) => (b.ceil || b.proj || 0) - (a.ceil || a.proj || 0));
+    const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
+    const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
+
+    const boostFloor = Math.round(10 + contrarianStrength * 10);
+    const LEV_CAP = 30;
+
+    // TRAP — highest-owned player
+    const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
+    const trap = hasOwn
+      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
+      : byProj[0];
+    if (trap) {
+      const trapFieldOwn = ownership[trap.name] || 0;
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
+      caps[trap.name] = { max: maxCap, _isTrap: true };
+    }
+
+    // STUD — overowned star with worst value
+    const overownedStars = withSal.filter(p => {
+      if (p.name === trap?.name) return false;
+      if (!topProjSet.has(p.name)) return false;
+      const fieldOwn = ownership[p.name] || 0;
+      const fairOwn = computeFairOwn(p.val || 0, avgVal);
+      return fieldOwn > fairOwn + 5 && fieldOwn >= 25;
+    });
+    const stud = overownedStars.sort((a, b) => (a.val || 0) - (b.val || 0))[0];
+    if (stud) {
+      const fieldOwn = Math.round(ownership[stud.name] || 0);
+      caps[stud.name] = {
+        min: Math.min(85, fieldOwn + boostFloor),
+        max: Math.min(95, fieldOwn + LEV_CAP),
+        _isBoost: true, _leverage: boostFloor, _type: 'stud'
+      };
+    }
+
+    // GEM — salary band below trap (NBA-wide: -$2000 to +$500)
+    const trapSal = trap?.salary ?? 0;
+    const inBand = (p, lo, hi) => (p.salary - trapSal) >= lo && (p.salary - trapSal) <= hi;
+    const salaryEligible = trap ? withSal.filter(p => {
+      if (p.name === trap.name || p.name === stud?.name) return false;
+      return inBand(p, -2000, 500);
+    }) : [];
+    // Best value with ceiling weighting, biased toward underowned
+    const scored = salaryEligible.map(p => {
+      const fieldOwn = ownership[p.name] || 0;
+      const fairOwn = computeFairOwn(p.val || 0, avgVal);
+      const underownedBonus = Math.max(0, fairOwn - fieldOwn) * 0.5;
+      return { p, score: (p.val || 0) * (p.ceil || p.proj || 0) + underownedBonus };
+    }).sort((a, b) => b.score - a.score);
+    const gem = scored[0]?.p;
+    if (gem) {
+      const fieldOwn = Math.round(ownership[gem.name] || 0);
+      caps[gem.name] = {
+        min: Math.min(85, fieldOwn + boostFloor),
+        max: Math.min(95, fieldOwn + LEV_CAP),
+        _isBoost: true, _leverage: boostFloor, _type: 'gem'
+      };
+    }
+
+    // GLOBAL FLOOR — small min exposure for rest, +30pp cap for ≥15% field plays
+    const globalFloor = Math.round(1 + contrarianStrength * 7);
+    withSal.forEach(p => {
+      if (caps[p.name]) return;
+      const fieldOwn = Math.round(ownership[p.name] || 0);
+      const maxCap = fieldOwn >= 15 ? Math.min(95, fieldOwn + LEV_CAP) : 100;
+      caps[p.name] = { min: globalFloor, max: maxCap, _isFloor: true };
+    });
+
+    return caps;
+  }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
+
+  const sp = useMemo(() =>
+    [...rp].filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
+           .sort((a, b) => b.val - a.val),
+    [rp]);
+
+  const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
+  const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
+
+  const run = () => {
+    if (!canBuild) return;
+    const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
+    const enforceMinNudge = (pd, baseProjs) => {
+      const changed = pd.filter((p, i) => Math.abs(p.projection - baseProjs[i]) >= 0.01).length;
+      if (changed >= 2) return;
+      const idxs = [...Array(pd.length).keys()].sort(() => Math.random() - 0.5).slice(0, 2);
+      idxs.forEach(i => {
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        pd[i].projection = Math.round((pd[i].projection + sign * 0.01) * 1000) / 1000;
+      });
+    };
+    if (isShowdown) {
+      const baseProjs = sp.map(p => p.proj);
+      const pd = sp.map(p => {
+        const cap = contrarianCaps[p.name] || {};
+        const userSet = exp[p.name] || {};
+        const userMin = userSet.min !== undefined ? userSet.min : globalMin;
+        const userMax = userSet.max !== undefined ? userSet.max : globalMax;
+        const effMin = Math.max(userMin, cap.min || 0);
+        const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
+        return {
+          name: p.name, team: p.team, projection: p.proj * jitter(),
+          util_salary: p.util_salary || p.salary, cpt_salary: p.cpt_salary,
+          util_id: p.util_id || p.id, cpt_id: p.cpt_id,
+          salary: p.util_salary || p.salary, id: p.util_id || p.id,
+          positions: p.positions || [], status: p.status,
+          maxExp: effMax, minExp: effMin,
+        };
+      });
+      enforceMinNudge(pd, baseProjs);
+      const r = nbaOptimizeShowdown(pd, nL, 50000, 45000);
+      setRes({ ...r, pData: pd, isShowdown: true });
+      return;
+    }
+    // Classic
+    const baseProjs = sp.map(p => p.proj);
+    const pd = sp.map(p => {
+      const cap = contrarianCaps[p.name] || {};
+      const userSet = exp[p.name] || {};
+      const userMin = userSet.min !== undefined ? userSet.min : globalMin;
+      const userMax = userSet.max !== undefined ? userSet.max : globalMax;
+      const effMin = Math.max(userMin, cap.min || 0);
+      const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
+      return {
+        name: p.name, team: p.team, projection: p.proj * jitter(),
+        salary: p.salary, id: p.id, positions: p.positions || [],
+        status: p.status, maxExp: effMax, minExp: effMin,
+      };
+    });
+    enforceMinNudge(pd, baseProjs);
+    const r = nbaOptimizeClassic(pd, nL, 50000);
+    setRes({ ...r, pData: pd, isShowdown: false });
+  };
+
+  const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
+
+  const exportDK = () => {
+    if (!res) return;
+    if (res.isShowdown) {
+      let c = 'CPT,UTIL,UTIL,UTIL,UTIL,UTIL\n';
+      res.lineups.forEach(lu => {
+        const cptP = res.pData[lu.cpt];
+        const utilPs = lu.utils.map(i => res.pData[i]);
+        c += `${cptP.cpt_id},${utilPs.map(p => p.util_id).join(',')}\n`;
+      });
+      dl(c, 'dk_upload_nba_showdown.csv');
+      return;
+    }
+    let c = 'PG,SG,SF,PF,C,G,F,UTIL\n';
+    res.lineups.forEach(lu => {
+      const ps = lu.players.map(i => res.pData[i]);
+      c += ps.map(p => p.id).join(',') + '\n';
+    });
+    dl(c, 'dk_upload_nba_classic.csv');
+  };
+
+  const exportReadable = () => {
+    if (!res) return;
+    if (res.isShowdown) {
+      let c = 'Rank,Proj,Salary,CPT,U1,U2,U3,U4,U5\n';
+      res.lineups.forEach((lu, i) => {
+        const cptP = res.pData[lu.cpt];
+        const utilPs = lu.utils.map(j => res.pData[j]);
+        c += `${i + 1},${lu.proj},${lu.sal},${cptP.name},${utilPs.map(p => p.name).join(',')}\n`;
+      });
+      dl(c, 'nba_lineups_showdown.csv');
+      return;
+    }
+    let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6,P7,P8\n';
+    res.lineups.forEach((lu, i) => {
+      const ps = lu.players.map(j => res.pData[j]);
+      c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`;
+    });
+    dl(c, 'nba_lineups_classic.csv');
+  };
+
+  const exportProjections = () => {
+    let c = 'Player,Team,Sal,Proj,Ceil,Val,Mins,Usg,Status\n';
+    sp.forEach(p => { c += `${p.name},${p.team},${p.salary},${p.proj},${p.ceil},${p.val},${fmt(p.projMins, 1)},${fmt(p.usg, 1)},${p.status}\n`; });
+    dl(c, 'nba_projections.csv');
+  };
+
+  const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
+  const canBuild = overrideCount >= 2;
+
+  return (<>
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="#F5C518" stroke="none">
+          <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+        </svg>
+      </div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">Lineup Builder</h2>
+        <div className="section-hero-sub">{isShowdown ? 'NBA Showdown · 1 CPT + 5 UTIL · $50K cap' : 'NBA Classic · PG/SG/SF/PF/C/G/F/UTIL · $50K cap'}</div>
+      </div>
+    </div>
+    {!canBuild && (
+      <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="warning" size={15} color="#F5C518"/> DraftKings Compliance Warning</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          DraftKings requires you to edit our default projections before building. Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and change at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong>.
+          <span style={{ color: 'var(--text-dim)' }}> Currently changed: <strong style={{ color: overrideCount >= 2 ? 'var(--green)' : 'var(--red)' }}>{overrideCount}</strong>/2</span>
+        </div>
+      </div>
+    )}
+    <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
+    {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
+      const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
+      const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost);
+      const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
+      return (
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
+          {boostEntries.map(([name, c]) => (
+            <span key={name}>{c._type === 'stud' ? <><Icon name="trophy" size={12}/> Stud</> : <><Icon name="gem" size={12}/> Gem</>} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
+          ))}
+          {floorCount > 0 && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} others · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{Math.round(1 + contrarianStrength * 7)}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
+        </div>
+      );
+    })()}
+    <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMax} onChange={e => setGlobalMax(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }} title="Random ± shift applied to each player's projection per build.">
+        Variance
+        <input type="range" min="0" max="25" step="1" value={variance} onChange={e => setVariance(+e.target.value)} style={{ width: 80, accentColor: 'var(--primary)' }} />
+        <span style={{ fontWeight: 700, color: variance > 0 ? 'var(--primary)' : 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>{variance}%</span>
+      </label>
+      <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
+      <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
+    </div>
+    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
+      <span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+      <span style={{ color: 'var(--text-dim)', fontSize: 10, width: 32, flexShrink: 0 }}>{p.team}</span>
+      <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
+      <span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span>
+      <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 30, textAlign: 'right', flexShrink: 0 }}>{fmt(ownership[p.name] || 0, 0)}%</span>
+      <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} />
+      <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} />
+    </div>)}</div>
+    <button className="btn btn-primary" onClick={run} disabled={!canBuild}
+      title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
+      style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
+      <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
+    </button>
+    {res && <NBAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
+  </>);
+}
+
+function NBAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount }) {
+  const expData = useMemo(() => res.pData.map((p, i) => {
+    const cnt = res.counts[i]; const pct = res.lineups.length ? cnt / res.lineups.length * 100 : 0;
+    const simOwn = ownership[p.name] || 0;
+    const lev = Math.round((pct - simOwn) * 10) / 10;
+    const sal = p.util_salary || p.salary;
+    const val = sal > 0 ? p.projection / (sal / 1000) : 0;
+    return { name: p.name, team: p.team, salary: sal, projection: p.projection, val, cnt, pct, simOwn, lev };
+  }), [res, ownership]);
+  const avgSal = res.lineups.length ? Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length) : 0;
+  const projMax = res.lineups.length ? Math.max(...res.lineups.map(lu => lu.proj)) : 0;
+  const projMin = res.lineups.length ? Math.min(...res.lineups.map(lu => lu.proj)) : 0;
+  const avgOwn = res.lineups.length ? Math.round(res.lineups.reduce((s, lu) => {
+    const all = res.isShowdown ? [lu.cpt, ...lu.utils] : lu.players;
+    const lineupOwn = all.reduce((ss, pi) => ss + (ownership[res.pData[pi].name] || 0), 0) / all.length;
+    return s + lineupOwn;
+  }, 0) / res.lineups.length) : 0;
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(expData, 'pct', 'desc');
+  const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
+
+  return (<>
+    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
+      <Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 35 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
+    </div>
+    <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+      {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild} style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
+      {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
+      {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
+    </div>
+    <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
+    <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
+      <S label="Player" colKey="name" /><th>Team</th><S label="Salary" colKey="salary" /><S label="Proj" colKey="projection" /><S label="Val" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
+    </tr></thead>
+    <tbody>{sorted.map(p => <tr key={p.name}>
+      <td className="name">{p.name}</td>
+      <td>{p.team ? <TeamBadge team={p.team} /> : ''}</td>
+      <td className="num">${p.salary.toLocaleString()}</td>
+      <td className="num">{fmt(p.projection, 1)}</td>
+      <td className="num">{fmt(p.val, 2)}</td>
+      <td className="num">{p.cnt}</td>
+      <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
+      <td className="num muted">{fmt(p.simOwn, 1)}%</td>
+      <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
+    </tr>)}</tbody></table></div>
+    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
+    <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
+      if (res.isShowdown) {
+        const cpt = res.pData[lu.cpt];
+        const utils = lu.utils.map(i => res.pData[i]);
+        const allOwns = [cpt, ...utils].map(p => ownership[p.name] || 0);
+        const avgO = Math.round(allOwns.reduce((a, b) => a + b, 0) / allOwns.length);
+        return <div className="lu-card" key={idx}>
+          <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
+          <div className="lu-row">
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#F5C518', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>CPT</span>
+            <span className="lu-name">{cpt.name}</span>
+            <span className="lu-opp"><TeamBadge team={cpt.team} /></span>
+            <span className="lu-sal">${(cpt.cpt_salary || 0).toLocaleString()}</span>
+            <span className="lu-pts">{fmt(cpt.projection * 1.5, 1)}</span>
+          </div>
+          {utils.map((p, j) => <div className="lu-row" key={p.name}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>UTIL</span>
+            <span className="lu-name">{p.name}</span>
+            <span className="lu-opp"><TeamBadge team={p.team} /></span>
+            <span className="lu-sal">${(p.util_salary || p.salary).toLocaleString()}</span>
+            <span className="lu-pts">{fmt(p.projection, 1)}</span>
+          </div>)}
+          <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: avgO > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {avgO}%</span></div>
+        </div>;
+      }
+      // Classic
+      const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
+      const lineupOwn = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0) / ps.length);
+      return <div className="lu-card" key={idx}>
+        <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
+        {ps.map(p => <div className="lu-row" key={p.name}>
+          <span className="lu-name">{p.name}</span>
+          <span className="lu-opp"><TeamBadge team={p.team} /></span>
+          <span className="lu-sal">${p.salary.toLocaleString()}</span>
+          <span className="lu-pts">{fmt(p.projection, 1)}</span>
+        </div>)}
+        <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupOwn}%</span></div>
+      </div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
   </>);
