@@ -748,6 +748,9 @@ export default function App() {
         width: 56px !important;
         min-width: 56px !important;
         max-width: 56px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
         padding: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
@@ -757,18 +760,18 @@ export default function App() {
         justify-content: center !important;
         gap: 0 !important;
         border: 1px solid rgba(245, 197, 24, 0.18) !important;
+        border-radius: 7px !important;
+        box-shadow: none !important;
         transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
       }
       .tab.tab-icon:hover {
-        border-color: rgba(245, 197, 24, 0.4) !important;
+        border-color: rgba(245, 197, 24, 0.42) !important;
         background: rgba(245, 197, 24, 0.04) !important;
       }
       .tab.tab-icon.active {
         border-color: #F5C518 !important;
         background: rgba(245, 197, 24, 0.12) !important;
-        box-shadow:
-          0 0 10px rgba(245, 197, 24, 0.35),
-          inset 0 0 0 1px rgba(245, 197, 24, 0.3) !important;
+        box-shadow: 0 0 8px rgba(245, 197, 24, 0.4) !important;
       }
       .tab.tab-icon svg {
         width: 22px;
@@ -922,6 +925,8 @@ export default function App() {
           min-width: 0 !important;
           max-width: none !important;
           height: 48px !important;
+          min-height: 48px !important;
+          max-height: 48px !important;
         }
         .tab.tab-icon svg {
           width: 24px !important;
@@ -991,7 +996,7 @@ export default function App() {
         .topbar { padding: 8px 10px !important; }
         .topbar-brand { font-size: 16px !important; gap: 6px !important; }
         .topbar-brand svg { width: 22px !important; height: 22px !important; }
-        .tab.tab-icon { height: 44px !important; }
+        .tab.tab-icon { height: 44px !important; min-height: 44px !important; max-height: 44px !important; }
         .tab.tab-icon svg { width: 22px !important; height: 22px !important; }
         .table-wrap table { font-size: 11px !important; }
         .table-wrap th, .table-wrap td { padding: 6px 6px !important; }
