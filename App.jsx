@@ -1485,57 +1485,112 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
   const { sorted, sortKey, sortDir, toggleSort } = useSort(pwFiltered, 'val', 'desc');
   const t3v = useMemo(() => [...players].sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [players]);
   const t3s = useMemo(() => [...players].sort((a, b) => b.pStraight - a.pStraight).slice(0, 3).map(p => p.name), [players]);
+  // Biggest Trap — highest field-simulated ownership, lightly weighted by
+  // value. The field converges on top-value plays, so the trap will
+  // typically be a top-3 value play that's become inescapable. The valTilt
+  // factor prevents rare edge cases (e.g. high-ownership sub-value plays)
+  // from hijacking the label.
   const trap = useMemo(() => {
-    const hasOwn = pw.some(p => p.simOwn > 0);
-    const s = hasOwn ? [...pw].sort((a, b) => b.simOwn - a.simOwn) : [...pw].sort((a, b) => b.proj - a.proj);
-    return s[0]?.name || '';
+    const active = pw.filter(p => p.salary > 0);
+    if (active.length === 0) return '';
+    const hasOwn = active.some(p => (p.simOwn || 0) > 0);
+    if (!hasOwn) return [...active].sort((a, b) => b.proj - a.proj)[0]?.name || '';
+    const avgVal = active.reduce((s, p) => s + (p.val || 0), 0) / active.length;
+    const scored = active.map(p => {
+      const valTilt = avgVal > 0 ? Math.max(0.55, (p.val || 0) / avgVal) : 1;
+      return { name: p.name, score: (p.simOwn || 0) * valTilt };
+    }).sort((a, b) => b.score - a.score);
+    return scored[0]?.name || '';
   }, [pw]);
-  // Hidden Gem — two-path logic:
-  //   (1) If trap's opponent is +199 or better (wp >= 33.4%), they ARE the gem.
-  //       In tennis, close matchups mean the dog often flips the result — and they
-  //       come with the exact salary swap benefit.
-  //   (2) If trap's opponent is +200 or worse (wp < 33.4%), the dog is too big.
-  //       Fall back to a good-value high-ceiling player within -$1000/+$300 of trap.
+
+  // Hidden Gem — dual-track logic (primary + optional pivot):
+  //   PRIMARY 1 (preferred): trap's opponent, IF they're +199 or better
+  //     (wp >= 33.4%). Close matchups mean the dog can flip the result AND
+  //     provides the exact salary-swap benefit. When this path fires, we
+  //     also compute PRIMARY 2 as the PIVOT — an alternative angle for
+  //     users who'd rather not play the close-matchup dog.
+  //   PRIMARY 2 (fallback): good-value high-ceiling player within
+  //     -$1000/+$300 of trap's salary, scored for ownership leverage vs
+  //     trap AND straight-sets upside. When opponent doesn't qualify,
+  //     this is the only gem surfaced — no pivot shown.
   const gem = useMemo(() => {
     const trapPlayer = pw.find(p => p.name === trap);
-    if (!trapPlayer) return '';
+    if (!trapPlayer) return { primary: null, pivot: null };
+    const trapOwn = trapPlayer.simOwn || 0;
+
+    // Path 1: opponent
     const opponent = pw.find(p => p.name === trapPlayer.opponent);
-    if (opponent && (opponent.wp || 0) >= 0.334) return opponent.name;
-    // Salary-band fallback: -$1000 to +$300 of trap
+    const opponentQualifies = opponent && (opponent.wp || 0) >= 0.334;
+
+    // Path 2: salary-band (scored for leverage + upside)
     const trapSal = trapPlayer.salary;
-    const candidates = pw.filter(p => {
+    const scored = pw.filter(p => {
       if (p.name === trap) return false;
+      if (opponentQualifies && opponent && p.name === opponent.name) return false;
       const diff = p.salary - trapSal;
       return diff >= -1000 && diff <= 300;
-    });
-    if (candidates.length === 0) return '';
-    const scored = candidates.map(p => {
-      const val = p.proj / (p.salary / 1000);
-      return { name: p.name, s: val * p.proj };
-    }).sort((a, b) => b.s - a.s);
-    return scored[0]?.name || '';
+    }).map(p => {
+      const leverage = Math.max(0, trapOwn - (p.simOwn || 0));
+      const levBoost = 1 + leverage * 0.012;
+      const upsideBoost = 1 + (p.pStraight || 0.3) * 0.3;
+      const score = (p.val || 0) * (p.proj || 0) * levBoost * upsideBoost;
+      return { name: p.name, score };
+    }).sort((a, b) => b.score - a.score);
+    const bandWinner = scored[0];
+
+    if (opponentQualifies) {
+      return {
+        primary: { name: opponent.name, kind: 'opponent', wp: opponent.wp },
+        pivot: bandWinner ? { name: bandWinner.name, kind: 'value' } : null,
+      };
+    }
+    return {
+      primary: bandWinner ? { name: bandWinner.name, kind: 'value' } : null,
+      pivot: null,
+    };
   }, [pw, trap]);
+  const gemName = gem.primary?.name || '';
+  const pivotName = gem.pivot?.name || '';
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div className="metrics">
       <div className="metric"><div className="metric-label"><Icon name="trophy" size={13}/> Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="target" size={13}/> Top Straight Sets</div><div className="metric-value">{t3s.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.pStraight)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high upside</div></div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, bust risk</div></div>
+      <div className="metric">
+        <div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div>
+        <div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem.primary?.name || '-'}</div>
+        <div className="metric-sub">
+          {gem.primary?.kind === 'opponent'
+            ? `Close matchup · ${fmtPct(gem.primary.wp)} win prob`
+            : gem.primary?.kind === 'value'
+            ? "Overlooked value in trap's price range"
+            : 'Low ownership, high upside'}
+        </div>
+        {gem.pivot && (
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
+            or pivot: <span style={{ color: 'var(--text-muted)' }}>{gem.pivot.name}</span> <span style={{ fontSize: 10 }}>({gem.pivot.kind})</span>
+          </div>
+        )}
+      </div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">High-owned top-value play</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" /><S label="Proj" colKey="proj" /><S label="Val" colKey="val" /><S label="P(2-0)" colKey="pStraight" /><S label="GW" colKey="gw" /><S label="GL" colKey="gl" /><S label="SW" colKey="sw" /><S label="Aces" colKey="aces" /><S label="DFs" colKey="dfs" /><S label="Breaks" colKey="breaks" /><th>Time</th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
-      const iv = t3v.includes(p.name), is = t3s.includes(p.name), ig = p.name === gem, it = p.name === trap;
+      const iv = t3v.includes(p.name), is = t3s.includes(p.name);
+      const ig = p.name === gemName;
+      const ip = p.name === pivotName && pivotName !== '';
+      const it = p.name === trap;
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (is) badges.push({ icon: 'target',  label: 'Top 3 Straight Sets' });
-      if (ig) badges.push({ icon: 'gem',     label: 'Hidden Gem' });
+      if (ig) badges.push({ icon: 'gem',     label: gem.primary?.kind === 'opponent' ? 'Hidden Gem (opp)' : 'Hidden Gem (value)' });
+      if (ip) badges.push({ icon: 'gem',     label: 'Gem pivot (value)' });
       if (it) badges.push({ icon: 'bomb',    label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
-      return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
+      return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
         <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
@@ -2652,37 +2707,26 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
     return sorted[0]?.name || '';
   }, [pw]);
   // ═══════════════════════════════════════════════════════════════════════
-  // GEM ALGORITHM — NBA v2
-  // Two parallel candidates, whichever scores higher wins:
+  // GEM ALGORITHM — NBA v2 (dual-track with optional pivot)
+  // Two parallel candidates, winner = primary, best from OTHER track = pivot:
   //
   //   (A) Value gem — low-owned play in the trap's salary band that doesn't
   //       depend on the trap failing. Pure contrarian leverage.
-  //
   //   (B) Replacer gem — a teammate of the trap whose production would
   //       absorb the trap's usage if the trap busts/sits/underperforms.
-  //       This is double-leverage: fading the chalk AND rostering the
-  //       direct beneficiary of the chalk's failure.
+  //       Double-leverage: fading the chalk AND rostering the direct
+  //       beneficiary of the chalk's failure.
   //
-  // The weight shifts toward the replacer when:
-  //   - the trap owns a large share of his team's production (high proj)
-  //   - the replacer plays a position that can actually absorb the usage
-  //     (primary ball-handler → guard/wing replacer, not a center)
-  //   - the replacer has meaningful role ($3k+ salary, not deep bench)
-  //
-  // The label flips based on which track wins — "Teammate replacer" vs
-  // "Price-adjacent value" — so the user immediately sees the thesis.
+  // Pivot is only shown when the losing track has a viable candidate
+  // (score >= 25% of primary's score). Otherwise we don't surface noise.
   // ═══════════════════════════════════════════════════════════════════════
   const gem = useMemo(() => {
     const trapP = pw.find(p => p.name === trap);
-    if (!trapP) return { name: '', kind: '' };
+    if (!trapP) return { primary: null, pivot: null };
     const active = pw.filter(p => p.projectable && !p.isOut && p.name !== trap);
-    if (active.length === 0) return { name: '', kind: '' };
+    if (active.length === 0) return { primary: null, pivot: null };
 
-    // How much production the trap "owns" — bigger star means more to absorb.
-    // Clamps to 0.3–1.0 so even low-usage traps get a nonzero replacer search.
     const trapUsageFactor = Math.max(0.3, Math.min(1.0, (trapP.proj || 0) / 35));
-
-    // Position family buckets for usage-absorption overlap.
     const bucketOf = (s) => {
       const str = String(s || '');
       if (/C|PF/.test(str)) return 'big';
@@ -2710,19 +2754,36 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       if (isReplacer) {
         const overlap = positionOverlap(p.positions_str, trapP.positions_str);
         replacerScore = (p.ceil || 0) * (p.val || 0)
-          * (1 + overlap * 0.55)           // bigger bonus when role overlaps
-          * (1 + trapUsageFactor * 0.60)   // bigger bonus when trap has lots to give
+          * (1 + overlap * 0.55)
+          * (1 + trapUsageFactor * 0.60)
           * levBoost;
       }
-      const best = Math.max(valueScore, replacerScore);
-      const kind = replacerScore > valueScore ? 'replacer' : 'value';
-      return { name: p.name, score: best, kind };
-    }).sort((a, b) => b.score - a.score);
+      return { name: p.name, valueScore, replacerScore, overall: Math.max(valueScore, replacerScore) };
+    });
 
-    return scored[0] || { name: '', kind: '' };
+    const byOverall = [...scored].sort((a, b) => b.overall - a.overall);
+    const top = byOverall[0];
+    if (!top || top.overall <= 0) return { primary: null, pivot: null };
+    const primaryKind = top.replacerScore > top.valueScore ? 'replacer' : 'value';
+    const primary = { name: top.name, kind: primaryKind, score: top.overall };
+
+    // Pivot — best candidate from the OTHER track, if score >= 25% of primary
+    let pivot = null;
+    if (primaryKind === 'replacer') {
+      const byValue = scored.filter(s => s.name !== primary.name).sort((a, b) => b.valueScore - a.valueScore);
+      const pc = byValue[0];
+      if (pc && pc.valueScore >= primary.score * 0.25) pivot = { name: pc.name, kind: 'value', score: pc.valueScore };
+    } else {
+      const byRep = scored.filter(s => s.name !== primary.name && s.replacerScore > 0).sort((a, b) => b.replacerScore - a.replacerScore);
+      const pc = byRep[0];
+      if (pc && pc.replacerScore >= primary.score * 0.25) pivot = { name: pc.name, kind: 'replacer', score: pc.replacerScore };
+    }
+    return { primary, pivot };
   }, [pw, trap]);
-  const gemName = gem.name;
-  const gemKind = gem.kind;
+  const gemName = gem.primary?.name || '';
+  const gemKind = gem.primary?.kind || '';
+  const pivotName = gem.pivot?.name || '';
+  const pivotKind = gem.pivot?.kind || '';
 
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
 
@@ -2735,7 +2796,20 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
     <div className="metrics">
       <div className="metric"><div className="metric-label"><Icon name="trophy" size={13}/> Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="rocket" size={13}/> Top Ceiling</div><div className="metric-value">{t3c.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.ceil, 1)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gemName || '-'}</div><div className="metric-sub">{gemKind === 'replacer' ? 'Teammate can absorb trap\'s production' : gemKind === 'value' ? 'Low-owned value in trap\'s price band' : 'Low ownership, high upside'}</div></div>
+      <div className="metric">
+        <div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div>
+        <div className="metric-value" style={{ color: 'var(--green-text)' }}>{gemName || '-'}</div>
+        <div className="metric-sub">
+          {gemKind === 'replacer' ? "Teammate can absorb trap's production"
+            : gemKind === 'value' ? "Low-owned value in trap's price band"
+            : 'Low ownership, high upside'}
+        </div>
+        {pivotName && (
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
+            or pivot: <span style={{ color: 'var(--text-muted)' }}>{pivotName}</span> <span style={{ fontSize: 10 }}>({pivotKind})</span>
+          </div>
+        )}
+      </div>
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Field-converged chalk</div></div>
     </div>
     {unprojectablePlayers.length > 0 && (
@@ -2771,16 +2845,20 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       <th>Status</th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
-      const iv = t3v.includes(p.name), ic = t3c.includes(p.name), ig = p.name === gemName, it = p.name === trap;
+      const iv = t3v.includes(p.name), ic = t3c.includes(p.name);
+      const ig = p.name === gemName;
+      const ip = p.name === pivotName && pivotName !== '';
+      const it = p.name === trap;
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (ic) badges.push({ icon: 'rocket', label: 'Top 3 Ceiling' });
       if (ig) badges.push({ icon: 'gem',    label: gemKind === 'replacer' ? 'Hidden Gem (replacer)' : 'Hidden Gem (value)' });
+      if (ip) badges.push({ icon: 'gem',    label: pivotKind === 'replacer' ? 'Gem pivot (replacer)' : 'Gem pivot (value)' });
       if (it) badges.push({ icon: 'bomb',   label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
       const dimStyle = p.isOut || !p.projectable ? { opacity: p.isOut ? 0.4 : 0.6 } : {};
       const noLine = !p.projectable;
-      return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''} style={dimStyle}>
+      return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''} style={dimStyle}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
         <td className="name">
