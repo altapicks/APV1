@@ -540,7 +540,7 @@ export function simulateFieldShowdown(players, nSims = 1500, salaryCap = 50000) 
 //   2. Exposure caps via maxExp/minExp (percentages)
 //   3. Phase-1 min-exposure fill with urgency weighting (mirror tennis)
 // ============================================================
-export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, minSalary = 45000) {
+export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, minSalary = 48000) {
   const valid = players.filter(p =>
     p.projection > 0 &&
     p.util_salary > 0 &&
@@ -616,23 +616,39 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
 
   allLineups.sort((x, y) => y.proj - x.proj);
 
-  // Exposure caps
-  const maxCaps = {}, minCaps = {};
-  const defCap = nLineups;
-  valid.forEach(p => {
-    if (p.maxExp != null) maxCaps[p.name] = Math.max(1, Math.round(nLineups * p.maxExp / 100));
-    if (p.minExp != null && p.minExp > 0) minCaps[p.name] = Math.max(1, Math.round(nLineups * p.minExp / 100));
-  });
+  // ─── Exposure caps — three independent dimensions ────────────────────
+  // 1. Total:   max/min times the player appears in ANY slot
+  // 2. CPT:     max/min times the player is the captain specifically
+  // 3. FLEX:    max/min times the player is in a UTIL slot specifically
+  // Each player carries {maxExp, minExp, cptMaxExp, cptMinExp, flexMaxExp, flexMinExp}
+  // (all as percentages of nLineups).
+  const toCap = (pct) => (pct == null ? null : Math.max(1, Math.round(nLineups * pct / 100)));
+  const toMin = (pct) => (pct == null || pct <= 0 ? 0 : Math.max(1, Math.round(nLineups * pct / 100)));
+  const caps = valid.map(p => ({
+    max:     p.maxExp     != null ? toCap(p.maxExp)     : nLineups,
+    min:     toMin(p.minExp),
+    cptMax:  p.cptMaxExp  != null ? toCap(p.cptMaxExp)  : nLineups,
+    cptMin:  toMin(p.cptMinExp),
+    flexMax: p.flexMaxExp != null ? toCap(p.flexMaxExp) : nLineups,
+    flexMin: toMin(p.flexMinExp),
+  }));
 
   const counts = new Array(valid.length).fill(0);
   const cptCounts = new Array(valid.length).fill(0);
+  const flexCounts = new Array(valid.length).fill(0);
   const selected = [];
   const usedKeys = new Set();
 
   function canAdd(lu) {
-    for (const pid of lu.players) {
-      const cap = maxCaps[valid[pid].name] ?? defCap;
-      if (counts[pid] + 1 > cap) return false;
+    // CPT caps for the captain player
+    const cc = caps[lu.cpt];
+    if (counts[lu.cpt] + 1 > cc.max) return false;
+    if (cptCounts[lu.cpt] + 1 > cc.cptMax) return false;
+    // FLEX caps for each utility player
+    for (const pid of lu.utils) {
+      const fc = caps[pid];
+      if (counts[pid] + 1 > fc.max) return false;
+      if (flexCounts[pid] + 1 > fc.flexMax) return false;
     }
     return true;
   }
@@ -645,23 +661,32 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
     selected.push(lu); usedKeys.add(k);
     lu.players.forEach(pid => counts[pid]++);
     cptCounts[lu.cpt]++;
+    lu.utils.forEach(pid => flexCounts[pid]++);
   }
 
-  // Phase 1: min-exposure fill
-  const minNames = Object.keys(minCaps);
-  while (minNames.some(n => counts[byName[n]] < minCaps[n]) && selected.length < nLineups) {
-    const urgency = new Map();
-    minNames.forEach(n => {
-      const pid = byName[n];
-      if (counts[pid] >= minCaps[n]) return;
-      urgency.set(pid, (minCaps[n] - counts[pid]) / nLineups);
-    });
-    if (urgency.size === 0) break;
+  // Phase 1: min-exposure fill (covers total, cpt, and flex mins)
+  function hasUnmetMins() {
+    for (let i = 0; i < valid.length; i++) {
+      if (counts[i]     < caps[i].min)     return true;
+      if (cptCounts[i]  < caps[i].cptMin)  return true;
+      if (flexCounts[i] < caps[i].flexMin) return true;
+    }
+    return false;
+  }
+  while (hasUnmetMins() && selected.length < nLineups) {
     let best = null, bestScore = 0, bestProj = -Infinity;
     for (const lu of allLineups) {
       if (usedKeys.has(keyOf(lu)) || !canAdd(lu)) continue;
       let score = 0;
-      for (const pid of lu.players) if (urgency.has(pid)) score += urgency.get(pid);
+      // Reward addressing unmet mins
+      const cc = caps[lu.cpt];
+      if (counts[lu.cpt]    < cc.min)    score += (cc.min    - counts[lu.cpt])    / nLineups;
+      if (cptCounts[lu.cpt] < cc.cptMin) score += (cc.cptMin - cptCounts[lu.cpt]) / nLineups;
+      for (const pid of lu.utils) {
+        const fc = caps[pid];
+        if (counts[pid]     < fc.min)     score += (fc.min     - counts[pid])     / nLineups;
+        if (flexCounts[pid] < fc.flexMin) score += (fc.flexMin - flexCounts[pid]) / nLineups;
+      }
       if (score === 0) continue;
       if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && lu.proj > bestProj)) {
         best = lu; bestScore = score; bestProj = lu.proj;
@@ -671,14 +696,14 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
     addLU(best);
   }
 
-  // Phase 2: greedy fill
+  // Phase 2: greedy fill by projection
   for (const lu of allLineups) {
     if (selected.length >= nLineups) break;
     if (usedKeys.has(keyOf(lu)) || !canAdd(lu)) continue;
     addLU(lu);
   }
 
-  return { lineups: selected, counts, cptCounts, total: allLineups.length };
+  return { lineups: selected, counts, cptCounts, flexCounts, total: allLineups.length };
 }
 
 // ============================================================
@@ -686,7 +711,7 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
 // Single-game slates don't need this, but provided for future.
 // Randomized greedy with position-eligibility check.
 // ============================================================
-export function optimizeClassic(players, nLineups = 500, salaryCap = 50000) {
+export function optimizeClassic(players, nLineups = 500, salaryCap = 50000, minSalary = 48000) {
   const valid = players.filter(p =>
     p.projection > 0 &&
     p.salary > 0 &&
@@ -750,6 +775,7 @@ export function optimizeClassic(players, nLineups = 500, salaryCap = 50000) {
     }
     if (!ok) continue;
     if (sal > salaryCap) continue;
+    if (sal < minSalary) continue;   // min-spend floor — avoid under-budget lineups
     const sortedPlayers = [...picks].sort((a, b) => a - b);
     const key = sortedPlayers.join(',');
     if (usedKeys.has(key)) continue;
