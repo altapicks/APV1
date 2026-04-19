@@ -358,7 +358,7 @@ export function ppMMAEdge(projected, ppLine, mult) {
 // ============================================================
 // LINEUP OPTIMIZER — same logic as tennis (one side per match, no opp vs opp)
 // ============================================================
-export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterSize = 6, mode = 'ceiling') {
+export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterSize = 6, mode = 'ceiling', minSalary = 0) {
   const idx = {};
   fighters.forEach((f, i) => { idx[f.name] = i; });
 
@@ -394,7 +394,7 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
         const opt = fightOpts[fc[i]][side];
         ts += opt.sal; tp += opt.proj; fidxs.push(opt.idx);
       }
-      if (ts <= salaryCap) {
+      if (ts <= salaryCap && ts >= minSalary) {
         allLineups.push({ proj: round2(tp), sal: ts, players: fidxs });
       }
     }
