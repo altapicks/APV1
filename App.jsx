@@ -775,6 +775,24 @@ export default function App() {
         display: block;
       }
 
+      /* Slate picker dropdown — force native dark theme on the options list.
+         color-scheme: dark tells the browser to render the popup options,
+         scrollbar, and selection highlight in dark mode (Chrome/Edge/Safari).
+         Explicit option bg/color handles older browsers that ignore color-scheme. */
+      .slate-picker {
+        color-scheme: dark !important;
+      }
+      .slate-picker option {
+        background-color: #0A1628 !important;
+        color: #E5E7EB !important;
+        padding: 6px 10px !important;
+      }
+      .slate-picker option:checked,
+      .slate-picker option:hover {
+        background-color: rgba(245, 197, 24, 0.18) !important;
+        color: #F5C518 !important;
+      }
+
       /* Row-highlight classes — OPAQUE versions of the old rgba tints.
          color-mix() renders exactly the same visual as "card + 6% green/red"
          but as a solid color, so sticky cells stay opaque and no scroll-through
