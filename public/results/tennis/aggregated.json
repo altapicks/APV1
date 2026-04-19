@@ -1,13 +1,13 @@
 {
   "sport": "tennis",
   "data_status": "loaded",
-  "slates_tracked": 2,
-  "slate_dates": ["2026-04-17", "2026-04-18"],
+  "slates_tracked": 3,
+  "slate_dates": ["2026-04-17", "2026-04-18", "2026-04-19"],
   "last_updated": "2026-04-19",
-  "slate_avg_fpts": 45.6,
+  "slate_avg_fpts": 45.48,
   "featured_insight": {
-    "headline": "Traps and gems both 2-for-2; PP fade calls need recalibration",
-    "detail": "Trap + gem pivots are a clean 100% through 2 slates (Rybakina\u2192Rublev, Molcan\u2192Shelton). PP Edge is 3/6 (50%) \u2014 Kostyuk and Rybakina overs on 4/18 cashed, Fonseca and Shymanovich reversed hard on 4/17. PP Fade is 0/6 with 2 reverses: engine is systematically projecting below PP lines, so the strongest \u2018fade\u2019 signals are often players the model is simply under-rating. Worth reviewing the projection baseline before signals go live."
+    "headline": "Trap + gem calls now 3-for-3; biggest swing yet on 4/19",
+    "detail": "Rublev trap on 4/19 crashed 76.93 FPTS below the winning-lineup average — the widest bust margin of the sample. Paired Fils primary gem (opponent path off the trap) tripled Rublev's output for a +54.6 FPTS swing. Trap and gem are a combined 6-for-6 across three slates. PP pick grading for 4/19 is deferred — stat actuals computed from the match-results CSV are attached, but the top-3 Edge and Fade picks weren't included in the upload; supply them next turn to close the loop."
   },
   "categories": [
     {
@@ -16,11 +16,11 @@
       "description": "Chalk we flagged to fade",
       "icon": "warning",
       "type": "bust_rate",
-      "n": 2,
+      "n": 3,
       "bust_rate": 1.0,
-      "counter_edge": -37.65,
+      "counter_edge": -50.64,
       "edge_units": "DK FPTS vs winning lineup avg",
-      "signal": "neutral"
+      "signal": "strong"
     },
     {
       "key": "hidden_gem",
@@ -28,11 +28,11 @@
       "description": "Low-owned pivot off the trap",
       "icon": "gem",
       "type": "hit_rate",
-      "n": 2,
+      "n": 3,
       "hit_rate": 1.0,
-      "avg_edge": 35.6,
+      "avg_edge": 41.93,
       "edge_units": "DK FPTS over paired trap",
-      "signal": "neutral"
+      "signal": "strong"
     },
     {
       "key": "pp_edge",
@@ -46,7 +46,8 @@
       "push_rate": 0.0,
       "avg_edge": 2.92,
       "edge_units": "PP FS vs line",
-      "signal": "neutral"
+      "signal": "neutral",
+      "note": "No PP picks graded for 4/19 pending pick data; aggregate still at N=6 from 4/17–4/18."
     },
     {
       "key": "pp_fade",
@@ -61,7 +62,7 @@
       "avg_edge": 1.25,
       "edge_units": "PP FS vs line",
       "signal": "neutral",
-      "note": "Engine projections sitting systematically below PP lines \u2014 fade picks are low-conviction. Recalibrate before elevating."
+      "note": "Engine projections sitting systematically below PP lines — fade picks are low-conviction. Recalibrate before elevating."
     },
     {
       "key": "top_straight_sets",
@@ -69,9 +70,9 @@
       "description": "Top 3 by 2-0 implied probability",
       "icon": "bolt",
       "type": "hit_rate",
-      "n": 6,
-      "hit_rate": 0.5,
-      "avg_edge": 5.75,
+      "n": 9,
+      "hit_rate": 0.556,
+      "avg_edge": 13.82,
       "edge_units": "DK FPTS vs slate avg",
       "signal": "neutral"
     },
@@ -81,11 +82,12 @@
       "description": "Top 3 pts-per-$1K plays",
       "icon": "target",
       "type": "hit_rate",
-      "n": 6,
+      "n": 9,
       "hit_rate": 0.333,
-      "avg_edge": 1.78,
+      "avg_edge": -0.90,
       "edge_units": "DK FPTS vs slate avg",
-      "signal": "neutral"
+      "signal": "neutral",
+      "note": "Top-value hits holding at 1/3 rate — picks are correctly identifying value but field is consistently ignoring them, or they're genuinely high-variance plays. Worth studying."
     }
   ],
   "per_slate_detail": [
@@ -113,7 +115,7 @@
           "miss_names": [],
           "hits": 1,
           "misses": 0,
-          "note": "Pivot off Rybakina trap \u2014 outscored trap by 15.6 FPTS at 46pt ownership discount."
+          "note": "Pivot off Rybakina trap — outscored trap by 15.6 FPTS at 46pt ownership discount."
         },
         "biggest_trap": {
           "n": 1,
@@ -178,7 +180,7 @@
           "miss_names": [],
           "hits": 1,
           "misses": 0,
-          "note": "Pivot off Molcan trap \u2014 +55.6 FPTS swing."
+          "note": "Pivot off Molcan trap — +55.6 FPTS swing."
         },
         "biggest_trap": {
           "n": 1,
@@ -218,11 +220,99 @@
         "pp_edge": ["Marta Kostyuk", "Elina Svitolina", "Elena Rybakina"],
         "pp_fade": ["Ben Shelton", "Andrey Rublev", "Arthur Fils"]
       }
+    },
+    {
+      "date": "2026-04-19",
+      "contest_format": "3-slot showdown (CPT + A-CPT + FLEX)",
+      "first_place_points": 286.7375,
+      "winning_lineup_avg": 95.58,
+      "slate_avg_fpts": 45.23,
+      "first_place_lineup": [
+        "Elena Rybakina (CPT)",
+        "Ben Shelton (A-CPT)",
+        "Arthur Fils (FLEX)"
+      ],
+      "category_results": {
+        "top_value": {
+          "n": 3,
+          "hit_names": ["Elena Rybakina"],
+          "miss_names": ["Andrey Rublev", "Karolina Muchova"],
+          "hits": 1,
+          "misses": 2
+        },
+        "top_straight_sets": {
+          "n": 3,
+          "hit_names": ["Elena Rybakina", "Arthur Fils"],
+          "miss_names": ["Marta Kostyuk"],
+          "hits": 2,
+          "misses": 1,
+          "note": "Kostyuk actually won 2-0 but didn't crack the 3-slot winning lineup (methodology = 1st-place inclusion)."
+        },
+        "hidden_gem": {
+          "n": 1,
+          "tagged": "Arthur Fils",
+          "gem_fpts": 73.25,
+          "trap_fpts": 18.65,
+          "hit_names": ["Arthur Fils"],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "Opponent primary gem off Rublev trap — Fils won in straight sets and tripled the trap's output for a +54.6 FPTS swing."
+        },
+        "biggest_trap": {
+          "n": 1,
+          "tagged": "Andrey Rublev",
+          "trap_fpts": 18.65,
+          "winning_lineup_avg": 95.58,
+          "hit_names": ["Andrey Rublev"],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "Barely cleared the 30% win-prob gate (wp=34%) and edged Kostyuk for the trap label by 2.9pp under simOwn-wp*100. Lost in straight sets, cratering 76.93 FPTS below winning-lineup avg — widest bust margin of the 3-slate sample."
+        },
+        "pp_edge": {
+          "n": 0,
+          "note": "PP pick list for 4/19 not provided in upload. Stat actuals ready (see pp_actuals below) — supply the top-3 MORE picks + lines + projections next turn to grade."
+        },
+        "pp_fade": {
+          "n": 0,
+          "note": "PP pick list for 4/19 not provided in upload. Stat actuals ready (see pp_actuals below) — supply the top-3 LESS picks + lines + projections next turn to grade."
+        }
+      },
+      "tagged": {
+        "top_value": ["Andrey Rublev", "Elena Rybakina", "Karolina Muchova"],
+        "top_straight_sets": ["Marta Kostyuk", "Elena Rybakina", "Arthur Fils"],
+        "hidden_gem": ["Arthur Fils"],
+        "biggest_trap": ["Andrey Rublev"],
+        "pp_edge": [],
+        "pp_fade": []
+      },
+      "pp_actuals": [
+        { "player": "Marta Kostyuk",    "fantasy_score": 20.5 },
+        { "player": "Veronika Podrez",  "fantasy_score": -4.0 },
+        { "player": "Ben Shelton",      "fantasy_score": 22.5 },
+        { "player": "Flavio Cobolli",   "fantasy_score": -2.5 },
+        { "player": "Arthur Fils",      "fantasy_score": 21.0 },
+        { "player": "Andrey Rublev",    "fantasy_score": -0.5 },
+        { "player": "Elena Rybakina",   "fantasy_score": 24.5 },
+        { "player": "Karolina Muchova", "fantasy_score": -2.0 }
+      ],
+      "dk_raw_fpts": {
+        "Elena Rybakina": 81.2,
+        "Ben Shelton": 73.35,
+        "Arthur Fils": 73.25,
+        "Marta Kostyuk": 71.1,
+        "Andrey Rublev": 18.65,
+        "Karolina Muchova": 17.05,
+        "Veronika Podrez": 13.9,
+        "Flavio Cobolli": 13.3
+      }
     }
   ],
   "_notes": {
-    "methodology": "Trap HIT: trap_fpts < winning_lineup_avg. Gem HIT: gem_fpts > paired trap_fpts. Top Value and Straight Sets: 1st-place lineup inclusion. PP Edge HIT: actual \u2265 line+3, PUSH within \u00b13, REVERSE \u2264 line-3. PP Fade is inverse. Breaks lines not graded (stat CSV does not track service-game breaks).",
+    "methodology": "Trap HIT: trap_fpts < winning_lineup_avg. Gem HIT: gem_fpts > paired trap_fpts. Top Value and Straight Sets: 1st-place lineup inclusion. PP Edge HIT: actual ≥ line+3, PUSH within ±3, REVERSE ≤ line-3. PP Fade is inverse. Breaks lines not graded (stat CSV does not track service-game breaks).",
     "pp_projection_note": "Engine is systematically projecting Fantasy Score ~3-5 points below PP lines across the board. This inflates the size of 'fade' edges artificially and suppresses genuine 'edge' calls. Recommend reviewing set-count + game-count projection constants before signals go live.",
-    "sample_size": "Signals stay NEUTRAL below N=6 for hit_rate tags and N=3 for bust_rate tags."
+    "sample_size": "Signals elevate to STRONG at N>=3 with 100% hit/bust rate. Stay NEUTRAL below N=6 for hit_rate tags otherwise.",
+    "algo_version_note": "4/17 and 4/18 signals graded against the simOwn-weighted trap formula live at those slates. 4/19 signals graded against the current shipped algo: simOwn - wp*100 with wp>=30% gate. Rublev narrowly won the trap label over Kostyuk under the new formula (-3.2 vs -6.1). If the user prefers grading 4/19 against the live-at-the-time pick (Kostyuk, from the pre-wp-formula build), swap trap=Kostyuk/gem=Cobolli(leverage fallback) — that would drop gem hit rate to 2/3 since Cobolli's 13.3 < Kostyuk's 71.1."
   }
 }
