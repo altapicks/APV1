@@ -426,19 +426,30 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
     lu.players.forEach(fid => counts[fid]++);
   }
 
-  // Phase 1: satisfy mins (highest-min first — boosted players get richest pool)
-  const sortedMins = Object.entries(minCaps).sort((a, b) => b[1] - a[1]);
-  for (const [name] of sortedMins) {
-    const ti = idx[name];
-    while (counts[ti] < minCaps[name] && selected.length < nLineups) {
-      let placed = false;
-      for (const lu of allLineups) {
-        const key = lu.players.join(',');
-        if (usedKeys.has(key) || !lu.players.includes(ti) || !canAdd(lu.players)) continue;
-        addLU(lu); placed = true; break;
-      }
-      if (!placed) break;
+  // Phase 1: satisfy mins with URGENCY-WEIGHTED MULTI-CONSTRAINT PAIRING
+  const minNames = Object.keys(minCaps);
+  while (minNames.some(name => counts[idx[name]] < minCaps[name]) && selected.length < nLineups) {
+    const urgency = new Map();
+    for (const name of minNames) {
+      const pid = idx[name];
+      const needed = minCaps[name] - counts[pid];
+      if (needed <= 0) continue;
+      urgency.set(pid, needed / nLineups);
     }
+    if (urgency.size === 0) break;
+    let best = null, bestScore = 0, bestProj = -Infinity;
+    for (const lu of allLineups) {
+      const key = lu.players.join(',');
+      if (usedKeys.has(key) || !canAdd(lu.players)) continue;
+      let score = 0;
+      for (const pid of lu.players) if (urgency.has(pid)) score += urgency.get(pid);
+      if (score === 0) continue;
+      if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && lu.proj > bestProj)) {
+        best = lu; bestScore = score; bestProj = lu.proj;
+      }
+    }
+    if (best) addLU(best);
+    else break;
   }
 
   // Phase 2: greedy fill
@@ -449,7 +460,7 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
     addLU(lu);
   }
 
-  selected.sort((a, b) => b.proj - a.proj);
+  // Keep phase 1 boost-pairing order at top (no re-sort — boosted lineups should be #1).
   return { lineups: selected, counts, total: allLineups.length, mode };
 }
 
