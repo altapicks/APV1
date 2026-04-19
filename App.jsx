@@ -414,7 +414,11 @@ function SplashScreen({ sport }) {
       <div style={{ position: 'relative', width: 140, height: 140, marginBottom: 32, opacity: 0, transform: 'scale(0.55)', animation: 'oo-logo-enter 1.1s cubic-bezier(0.34, 1.35, 0.64, 1) 0.25s forwards' }}>
         <div style={{ position: 'absolute', inset: -40, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,197,24,0.5) 0%, rgba(245,197,24,0.15) 40%, transparent 70%)', opacity: 0, animation: 'oo-halo-burst 1.4s ease-out 0.35s forwards, oo-halo-pulse 3.2s ease-in-out 1.7s infinite' }} />
         <div style={{ position: 'absolute', inset: -8, border: '1px solid rgba(245,197,24,0.25)', borderTopColor: '#F5C518', borderRadius: '50%', opacity: 0, animation: 'oo-ring-fade 0.6s ease-out 0.9s forwards, oo-ring-spin 4s linear 0.9s infinite' }} />
-        <img src="./logo.png" alt="OverOwned" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} style={{ position: 'relative', width: '100%', height: '100%', filter: 'drop-shadow(0 8px 32px rgba(245,197,24,0.35))', animation: 'oo-breathe 3.2s ease-in-out 1.7s infinite' }} />
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'relative', width: '100%', height: '100%', filter: 'drop-shadow(0 8px 32px rgba(245,197,24,0.35))', animation: 'oo-breathe 3.2s ease-in-out 1.7s infinite' }}>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#F5C518" strokeWidth="14"/>
+          <path d="M 30 64 L 45 40 L 54 52 L 63 40 L 70 64 Z" fill="#F5C518"/>
+          <circle cx="45" cy="40" r="1.8" fill="#FFFFFF"/>
+        </svg>
       </div>
 
       {/* Wordmark */}
@@ -625,7 +629,11 @@ export default function App() {
 function Topbar({ sport, onSportChange, data }) {
   return (<div className="topbar">
     <div className="topbar-brand">
-      <img src="./logo.png" alt="OverOwned" onError={e => { e.target.onerror = null; e.target.src = '/logo.png'; }} />
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-label="OverOwned">
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#F5C518" strokeWidth="14"/>
+        <path d="M 30 64 L 45 40 L 54 52 L 63 40 L 70 64 Z" fill="#F5C518"/>
+        <circle cx="45" cy="40" r="1.8" fill="#FFFFFF"/>
+      </svg>
       <span>Over<span className="brand-o">O</span>wned</span>
     </div>
     <div className="topbar-right">
