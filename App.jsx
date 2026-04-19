@@ -157,7 +157,7 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
 // ═══════════════════════════════════════════════════════════════════════
 // SLATE DATA HOOK — sport-aware
 // ═══════════════════════════════════════════════════════════════════════
-function useSlateData(sport) {
+function useSlateData(sport, slateDate) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const hasLoadedRef = useRef(false);
@@ -165,20 +165,37 @@ function useSlateData(sport) {
     setData(null); setError(null);
     const startTime = Date.now();
     // First load: full splash (5000ms). Tennis switch: 2000ms to see the ball bounce.
-    // UFC switch: 900ms (no ball, no reason to linger).
-    const MIN_LOAD_MS = !hasLoadedRef.current ? 5000 : (sport === 'tennis' ? 2000 : 900);
+    // UFC switch: 900ms (no ball, no reason to linger). Archive picks: 600ms (quick).
+    const isArchive = slateDate && slateDate !== 'live';
+    const MIN_LOAD_MS = !hasLoadedRef.current ? 5000 : isArchive ? 600 : (sport === 'tennis' ? 2000 : 900);
     const finalize = (cb) => {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, MIN_LOAD_MS - elapsed);
       setTimeout(cb, delay);
     };
-    const url = sport === 'mma' ? './slate-mma.json' : './slate.json';
+    // Live = current slate.json (root). Archive = /slates/{sport}/{date}.json
+    const url = isArchive
+      ? `/slates/${sport}/${slateDate}.json`
+      : (sport === 'mma' ? './slate-mma.json' : './slate.json');
     fetch(url)
       .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
       .then(d => finalize(() => { hasLoadedRef.current = true; setData(d); }))
       .catch(e => finalize(() => setError(e.message)));
-  }, [sport]);
+  }, [sport, slateDate]);
   return { data, error };
+}
+
+// Loads the list of archived slates from /slates/{sport}/manifest.json.
+// Manifest shape: { slates: [{ date: "YYYY-MM-DD", label: "optional label" }, ...] }
+function useSlateManifest(sport) {
+  const [slates, setSlates] = useState([]);
+  useEffect(() => {
+    fetch(`/slates/${sport}/manifest.json`)
+      .then(r => r.ok ? r.json() : { slates: [] })
+      .then(m => setSlates(m.slates || []))
+      .catch(() => setSlates([]));
+  }, [sport]);
+  return slates;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -425,6 +442,7 @@ function Icon({ name, size = 14, color, style, className }) {
     case 'dollar':         return <svg {...p}><path d="M12 3v18"/><path d="M17 7h-6a3 3 0 0 0 0 6h2a3 3 0 0 1 0 6H6"/></svg>;
     case 'rocket':         return <svg {...p}><path d="M12 3c3 2 5 5 5 9v6l-5-3-5 3v-6c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M7 17l-3 4M17 17l3 4"/></svg>;
     case 'tennis':         return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M5 6c3 3 3 9 0 12"/><path d="M19 6c-3 3-3 9 0 12"/></svg>;
+    case 'chart-line':     return <svg {...p}><path d="M3 3v18h18"/><path d="M7 15l4-5 4 3 6-8"/></svg>;
     default: return null;
   }
 }
@@ -563,9 +581,13 @@ function SportSwitchLoader({ sport }) {
 // ═══════════════════════════════════════════════════════════════════════
 export default function App() {
   const [sport, setSport] = useState('tennis');
-  const { data, error } = useSlateData(sport);
+  const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD
+  const { data, error } = useSlateData(sport, slateDate);
+  const manifestSlates = useSlateManifest(sport);
   const [tab, setTab] = useState('dk');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  // Reset to live when sport changes so user isn't stuck on a date that may not exist in new sport
+  useEffect(() => { setSlateDate('live'); }, [sport]);
   // Projection overrides: user-entered projection values keyed by player name. Reset when slate/sport swaps.
   const [projOverrides, setProjOverrides] = useState({});
   useEffect(() => { setProjOverrides({}); }, [sport, data]);
@@ -667,7 +689,8 @@ export default function App() {
     { id: 'dk', l: 'DraftKings Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17V9.5l4 3 2-6.5 3 6 3-6 2 6.5 4-3V17z"/><path d="M3 19h18"/></svg> },
     { id: 'pp', l: 'PrizePicks Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg> },
     { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/></svg> },
-    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v16M5 7l3-3 3 3"/><path d="M16 20V4M13 17l3 3 3-3"/></svg> }
+    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v16M5 7l3-3 3 3"/><path d="M16 20V4M13 17l3 3 3-3"/></svg> },
+    { id: 'record', l: 'Track Record', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 4 3 6-8"/></svg> }
   ];
   const tabs = buildTabs();
 
@@ -720,15 +743,31 @@ export default function App() {
       .proj-edit.overridden { color: var(--primary) !important; font-weight: 700; }
       .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .proj-edit { -moz-appearance: textfield; }
-      /* Icon-only tabs — compact square buttons with hover tooltip (native title attr handles the label) */
-      .tab.tab-icon {
-        width: 56px;
-        min-width: 56px;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
+      /* Icon-only tabs — compact square buttons with hover tooltip (native title attr handles the label).
+         CRITICAL: active/inactive states MUST have identical box dimensions.
+         We achieve this by (a) pinning width/padding/margin on all states and
+         (b) using inset box-shadow (not border) for the active highlight,
+         so the highlight is purely decorative and never affects layout width. */
+      .tab.tab-icon,
+      .tab.tab-icon.active,
+      .tab.tab-icon:hover,
+      .tab.tab-icon:focus {
+        width: 56px !important;
+        min-width: 56px !important;
+        max-width: 56px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        border: 1px solid transparent !important;
+        outline: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0 !important;
+      }
+      .tab.tab-icon.active {
+        box-shadow: inset 0 0 0 2px var(--primary) !important;
+        background: rgba(245, 197, 24, 0.12) !important;
       }
       .tab.tab-icon svg {
         width: 22px;
@@ -845,6 +884,8 @@ export default function App() {
         }
         /* Hide full date line on mobile — removes the awkward "Updated..." third row */
         .topbar-date { display: none !important; }
+        /* Slate picker — compact on mobile */
+        .slate-picker { font-size: 11px !important; padding: 5px 22px 5px 8px !important; max-width: 130px; }
         .mountain-watermark { display: none; }
 
         /* Tab bar — stretch to full width, 4 icons fill evenly, bigger touch targets */
@@ -941,7 +982,7 @@ export default function App() {
       }
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
-    <Topbar sport={sport} onSportChange={setSport} data={data} />
+    <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} />
     <div className="tab-bar">{tabs.map(t => (
       <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
         {t.icon}
@@ -959,19 +1000,22 @@ export default function App() {
         {tab === 'pp' && <PPTab rows={ppRows} />}
         {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
+        {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'mma' && (<>
         {tab === 'dk' && <MMADKTab fighters={dkPlayers} fc={data.fights?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
         {tab === 'pp' && <MMAPPTab rows={ppRows} />}
         {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
+        {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       </ErrorBoundary>}
     </div>
   </div>);
 }
 
-function Topbar({ sport, onSportChange, data }) {
+function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateChange, manifestSlates = [] }) {
+  const hasArchive = manifestSlates && manifestSlates.length > 0;
   return (<div className="topbar">
     <div className="topbar-brand">
       <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-label="OverOwned">
@@ -1010,6 +1054,33 @@ function Topbar({ sport, onSportChange, data }) {
           </svg>
         </button>
       </div>
+      {hasArchive && onSlateDateChange && (
+        <select
+          value={slateDate}
+          onChange={e => onSlateDateChange(e.target.value)}
+          title="Select slate date"
+          className="slate-picker"
+          style={{
+            background: slateDate !== 'live' ? 'rgba(245,197,24,0.12)' : 'var(--bg)',
+            border: `1px solid ${slateDate !== 'live' ? 'rgba(245,197,24,0.4)' : 'var(--border-light)'}`,
+            borderRadius: 6,
+            color: slateDate !== 'live' ? 'var(--primary)' : 'var(--text-muted)',
+            padding: '6px 10px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            appearance: 'none',
+            paddingRight: 24,
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23F5C518' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 8px center',
+          }}>
+          <option value="live">Live slate</option>
+          {manifestSlates.map(s => (
+            <option key={s.date} value={s.date}>{s.label || s.date}</option>
+          ))}
+        </select>
+      )}
       {data && <div className="topbar-date">
         <span className="topbar-date-main">{data.date} · {data.matches?.length || data.fights?.length || 0} {sport === 'mma' ? 'fights' : 'matches'}</span>
         {data.last_updated && <span className="topbar-date-updated"> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></span>}
@@ -1509,6 +1580,133 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
       return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
+  </>);
+}
+
+function TrackRecordTab({ sport }) {
+  const [data, setData] = useState(null);
+  const [loadState, setLoadState] = useState('loading');
+  useEffect(() => {
+    setLoadState('loading');
+    fetch(`/results/${sport}/aggregated.json`)
+      .then(r => { if (!r.ok) throw new Error('no file'); return r.json(); })
+      .then(j => { setData(j); setLoadState((j && j.slates_tracked > 0) ? 'loaded' : 'empty'); })
+      .catch(() => setLoadState('empty'));
+  }, [sport]);
+
+  const hero = (
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+          <path d="M3 3v18h18"/>
+          <path d="M7 15l4-5 4 3 6-8"/>
+        </svg>
+      </div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">Track Record</h2>
+        <div className="section-hero-sub">{loadState === 'loaded' ? `${data.slates_tracked} ${sport === 'tennis' ? 'tennis' : 'UFC'} slate${data.slates_tracked === 1 ? '' : 's'} tracked · sorted by profitability` : 'How each tag has performed across completed slates'}</div>
+      </div>
+    </div>
+  );
+
+  if (loadState === 'loading') {
+    return <>{hero}<div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 13 }}>Loading track record...</div></>;
+  }
+
+  if (loadState === 'empty') {
+    return (<>
+      {hero}
+      <div style={{ padding: '48px 24px', textAlign: 'center', background: 'var(--card)', border: '1px dashed var(--border)', borderRadius: 10 }}>
+        <div style={{ display: 'inline-flex', marginBottom: 14, padding: 14, background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: '50%' }}>
+          <Icon name="chart-line" size={28} color="#F5C518"/>
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>No completed slates yet</div>
+        <div style={{ fontSize: 13, maxWidth: 520, margin: '0 auto', lineHeight: 1.65, color: 'var(--text-muted)' }}>
+          Track Record populates as you upload DK contest CSVs from completed slates. Every <strong style={{color:'var(--primary)'}}>Top Value</strong>, <strong style={{color:'var(--primary)'}}>Hidden Gem</strong>, <strong style={{color:'var(--primary)'}}>Biggest Trap</strong>, and <strong style={{color:'var(--primary)'}}>PP Edge/Fade</strong> call gets graded — hit rates compound into actionable patterns over time.
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 18, fontFamily: 'monospace' }}>Expected path: <span style={{color:'var(--text-muted)'}}>public/results/{sport}/aggregated.json</span></div>
+      </div>
+    </>);
+  }
+
+  // LOADED — render categories table + insight
+  const rateFor = c => c.type === 'bust_rate' ? c.bust_rate : (c.type === 'reversal' ? Math.max(c.hit_rate || 0, c.reverse_rate || 0) : c.hit_rate);
+  const sorted = [...(data.categories || [])].sort((a, b) => rateFor(b) - rateFor(a));
+  const sigColor = s => s === 'follow' ? 'var(--green-text)' : s === 'fade' ? 'var(--red-text)' : s === 'counter' ? 'var(--amber-text)' : 'var(--text-muted)';
+  const sigBg = s => s === 'follow' ? 'rgba(74,222,128,0.12)' : s === 'fade' ? 'rgba(248,113,113,0.12)' : s === 'counter' ? 'rgba(251,191,36,0.12)' : 'rgba(156,163,175,0.1)';
+  const sigLabel = s => s === 'follow' ? 'FOLLOW' : s === 'fade' ? 'FADE' : s === 'counter' ? 'COUNTER' : 'NEUTRAL';
+
+  return (<>
+    {hero}
+    {data.data_status === 'preview' && (
+      <div style={{ padding: '10px 14px', background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.3)', borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Icon name="warning" size={14} color="#F5C518"/>
+        <span><strong style={{ color: 'var(--primary)' }}>Preview data</strong> — this is illustrative. Real tracking begins when you ship <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: 3, fontSize: 11 }}>public/results/{sport}/aggregated.json</code> with actual results.</span>
+      </div>
+    )}
+    {data.featured_insight && (
+      <div style={{ padding: '16px 18px', background: 'linear-gradient(135deg, rgba(245,197,24,0.1), rgba(245,197,24,0.02))', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <Icon name="flame" size={18} color="#F5C518"/>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#F5C518' }}>Pattern of Note</span>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#F8FAFC', marginBottom: 6, letterSpacing: '-0.01em', lineHeight: 1.3 }}>{data.featured_insight.headline}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.55 }}>{data.featured_insight.detail}</div>
+      </div>
+    )}
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style={{ width: 28 }}></th>
+            <th>Tag</th>
+            <th>N</th>
+            <th>Rate</th>
+            <th>Edge</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(cat => {
+            const primary = rateFor(cat);
+            const rateLbl = cat.type === 'bust_rate' ? 'bust' : 'hit';
+            const edge = cat.counter_edge != null ? cat.counter_edge : cat.avg_edge;
+            const edgeLbl = cat.counter_edge != null ? `${cat.edge_units} (counter-play)` : cat.edge_units;
+            return (
+              <tr key={cat.key}>
+                <td><Icon name={cat.icon} size={16} color="#F5C518"/></td>
+                <td className="name">
+                  <div>{cat.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400, marginTop: 2 }}>{cat.description}</div>
+                </td>
+                <td className="num muted">{cat.n}</td>
+                <td className="num">
+                  <div style={{ fontWeight: 700, color: primary >= 0.55 ? 'var(--green-text)' : primary <= 0.45 ? 'var(--red-text)' : 'var(--text)' }}>
+                    {(primary * 100).toFixed(1)}% <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 400 }}>{rateLbl}</span>
+                  </div>
+                  {cat.type === 'reversal' && (
+                    <div style={{ fontSize: 10, color: 'var(--amber-text)', marginTop: 2, fontWeight: 600 }}>
+                      reverses {(cat.reverse_rate * 100).toFixed(0)}%
+                    </div>
+                  )}
+                </td>
+                <td className="num">
+                  <span style={{ fontWeight: 600, color: edge > 0 ? 'var(--green-text)' : edge < 0 ? 'var(--red-text)' : 'var(--text-muted)' }}>
+                    {edge > 0 ? '+' : ''}{edge.toFixed(Math.abs(edge) < 1 ? 2 : 1)}
+                  </span>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 400, marginTop: 2 }}>{edgeLbl}</div>
+                </td>
+                <td>
+                  <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: sigColor(cat.signal), background: sigBg(cat.signal), border: `1px solid ${sigColor(cat.signal)}` }}>
+                    {sigLabel(cat.signal)}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   </>);
 }
 
