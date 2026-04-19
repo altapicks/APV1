@@ -722,12 +722,29 @@ export default function App() {
         /* Content padding — tighter on mobile */
         .content { padding: 14px 10px !important; }
 
-        /* Topbar — wrap the sport toggle + date underneath brand on narrow screens */
-        .topbar { flex-wrap: wrap !important; gap: 10px !important; padding: 10px 12px !important; }
-        .topbar-brand { font-size: 18px !important; }
-        .topbar-brand svg { width: 26px !important; height: 26px !important; }
-        .topbar-right { gap: 8px !important; flex-wrap: wrap; justify-content: flex-end; }
-        .topbar-date { font-size: 11px !important; width: 100%; text-align: right; }
+        /* Topbar — ONE row: brand + toggle + X button. Hide the "Updated" time info on mobile. */
+        .topbar {
+          flex-wrap: nowrap !important;
+          gap: 8px !important;
+          padding: 10px 12px !important;
+          align-items: center !important;
+        }
+        .topbar-brand {
+          font-size: 16px !important;
+          flex-shrink: 1;
+          min-width: 0;
+          gap: 6px !important;
+        }
+        .topbar-brand svg { width: 24px !important; height: 24px !important; flex-shrink: 0; }
+        .topbar-brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .topbar-right {
+          flex-shrink: 0;
+          gap: 6px !important;
+          flex-wrap: nowrap !important;
+          align-items: center;
+        }
+        /* Hide full date line on mobile — removes the awkward "Updated..." third row */
+        .topbar-date { display: none !important; }
         .mountain-watermark { display: none; }
 
         /* Tab bar — stretch to full width, 4 icons fill evenly, bigger touch targets */
@@ -862,20 +879,36 @@ function Topbar({ sport, onSportChange, data }) {
     </div>
     <div className="topbar-right">
       <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border-light)', borderRadius: 6, overflow: 'hidden' }}>
-        <button onClick={() => onSportChange('tennis')} style={{
+        <button onClick={() => onSportChange('tennis')} title="Tennis" aria-label="Tennis" style={{
           background: sport === 'tennis' ? 'var(--primary)' : 'transparent',
           color: sport === 'tennis' ? '#0A1628' : 'var(--text-muted)',
-          border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-        }}>🎾 Tennis</button>
-        <button onClick={() => onSportChange('mma')} style={{
+          border: 'none', padding: '7px 12px', cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* Tennis ball — circle with two inward-bowing vertical seams (classic tennis ball silhouette) */}
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M5 6c3 3 3 9 0 12"/>
+            <path d="M19 6c-3 3-3 9 0 12"/>
+          </svg>
+        </button>
+        <button onClick={() => onSportChange('mma')} title="MMA" aria-label="MMA" style={{
           background: sport === 'mma' ? 'var(--primary)' : 'transparent',
           color: sport === 'mma' ? '#0A1628' : 'var(--text-muted)',
-          border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-        }}>🥊 MMA</button>
+          border: 'none', padding: '7px 12px', cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* MMA glove — padded knuckles at top, thumb protrusion left, wrist cuff bottom */}
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 4h5a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/>
+            <path d="M5 10a1.5 1.5 0 0 0 0 3"/>
+            <path d="M8 17v3h6v-3"/>
+          </svg>
+        </button>
       </div>
       {data && <div className="topbar-date">
-        {data.date} · {data.matches?.length || data.fights?.length || 0} {sport === 'mma' ? 'fights' : 'matches'}
-        {data.last_updated && <> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></>}
+        <span className="topbar-date-main">{data.date} · {data.matches?.length || data.fights?.length || 0} {sport === 'mma' ? 'fights' : 'matches'}</span>
+        {data.last_updated && <span className="topbar-date-updated"> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></span>}
       </div>}
       <a href="https://x.com/OverOwnedDFS" target="_blank" rel="noopener noreferrer" className="twitter-btn" title="@OverOwnedDFS">
         <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
