@@ -543,6 +543,32 @@ export default function App() {
   const { data, error } = useSlateData(sport);
   const [tab, setTab] = useState('dk');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  // Projection overrides: user-entered projection values keyed by player name. Reset when slate/sport swaps.
+  const [projOverrides, setProjOverrides] = useState({});
+  useEffect(() => { setProjOverrides({}); }, [sport, data]);
+  const onOverrideProj = useCallback((name, value) => {
+    setProjOverrides(prev => {
+      if (value === '' || value == null || isNaN(+value)) {
+        const next = { ...prev }; delete next[name]; return next;
+      }
+      return { ...prev, [name]: +value };
+    });
+  }, []);
+  // Cursor-tracking gold glow: follows mouse, rendered via CSS custom properties on <body>.
+  // Throttled via rAF so mousemove doesn't thrash layout.
+  useEffect(() => {
+    let raf = 0;
+    const onMove = (e) => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        document.body.style.setProperty('--mx', `${e.clientX}px`);
+        document.body.style.setProperty('--my', `${e.clientY}px`);
+        raf = 0;
+      });
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => { window.removeEventListener('mousemove', onMove); if (raf) cancelAnimationFrame(raf); };
+  }, []);
   useEffect(() => { if (data) setHasLoadedOnce(true); }, [data]);
   // Preload Instrument Serif (for the splash tagline) — runs once
   useEffect(() => {
@@ -563,7 +589,24 @@ export default function App() {
     try { return buildMMAProjections(data); }
     catch (e) { console.error('buildMMAProjections error:', e); return { dkPlayers: [], ppRows: [], buildError: e.message }; }
   }, [sport, data]);
-  const { dkPlayers, ppRows, buildError } = sport === 'tennis' ? tennisProjections : mmaProjections;
+  const { dkPlayers: rawDkPlayers, ppRows, buildError } = sport === 'tennis' ? tennisProjections : mmaProjections;
+  // Apply user projection overrides. For MMA, scale ceiling proportionally so proj:ceil ratio stays sane.
+  // Value/cval are recomputed against salary so they reflect the new proj.
+  const dkPlayers = useMemo(() => {
+    if (!rawDkPlayers.length || Object.keys(projOverrides).length === 0) return rawDkPlayers;
+    return rawDkPlayers.map(p => {
+      const ov = projOverrides[p.name];
+      if (ov == null) return p;
+      const mult = p.proj > 0 ? ov / p.proj : 1;
+      const newVal = p.salary > 0 ? Math.round(ov / (p.salary / 1000) * 100) / 100 : 0;
+      const out = { ...p, proj: ov, val: newVal, _overridden: true };
+      if (p.ceil != null) {
+        out.ceil = Math.round(p.ceil * mult * 100) / 100;
+        if (p.salary > 0) out.cval = Math.round(out.ceil / (p.salary / 1000) * 100) / 100;
+      }
+      return out;
+    });
+  }, [rawDkPlayers, projOverrides]);
   const ownership = useMemo(() => {
     if (dkPlayers.length === 0) return {};
     return sport === 'tennis' ? simulateOwnership(dkPlayers) : simulateMMAOwnership(dkPlayers);
@@ -619,7 +662,43 @@ export default function App() {
         -moz-appearance: textfield;
         text-align: center;
       }
+      /* Cursor-tracking gold glow — fixed, pointer-events:none, subtle */
+      .cursor-glow {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        pointer-events: none;
+        z-index: 0;
+        background: radial-gradient(
+          600px circle at var(--mx, 50%) var(--my, 50%),
+          rgba(245, 197, 24, 0.08),
+          rgba(245, 197, 24, 0.03) 40%,
+          transparent 70%
+        );
+        transition: background 0.05s ease-out;
+        mix-blend-mode: screen;
+      }
+      @media (hover: none) { .cursor-glow { display: none; } }
+      /* Projection table override input — inline edit, subtle until focused */
+      .proj-edit {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text);
+        font: inherit;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        width: 58px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        transition: all 0.12s;
+      }
+      .proj-edit:hover { border-color: var(--border); background: var(--bg); }
+      .proj-edit:focus { outline: none; border-color: var(--primary); background: var(--bg); color: var(--primary); }
+      .proj-edit.overridden { color: var(--primary); font-weight: 600; }
+      .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      .proj-edit { -moz-appearance: textfield; }
     `}</style>
+    <div className="cursor-glow" aria-hidden="true" />
     <Topbar sport={sport} onSportChange={setSport} data={data} />
     <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.icon}{t.l}</button>)}</div>
     <div className="content">
@@ -630,13 +709,13 @@ export default function App() {
       </div>}
       {!buildError && <ErrorBoundary>
       {sport === 'tennis' && (<>
-        {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} />}
+        {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
         {tab === 'pp' && <PPTab rows={ppRows} />}
         {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
       </>)}
       {sport === 'mma' && (<>
-        {tab === 'dk' && <MMADKTab fighters={dkPlayers} fc={data.fights?.length || 0} own={ownership} />}
+        {tab === 'dk' && <MMADKTab fighters={dkPlayers} fc={data.fights?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
         {tab === 'pp' && <MMAPPTab rows={ppRows} />}
         {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
@@ -689,7 +768,7 @@ function Topbar({ sport, onSportChange, data }) {
 // ═══════════════════════════════════════════════════════════════════════
 // TENNIS COMPONENTS — UNCHANGED from v5 except BuilderTab gets contrarian
 // ═══════════════════════════════════════════════════════════════════════
-function DKTab({ players, mc, own }) {
+function DKTab({ players, mc, own, onOverride, overrides }) {
   const pw = useMemo(() => players.filter(p => p.salary > 0).map(p => ({ ...p, simOwn: own[p.name] || 0 })), [players, own]);
   const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'val', 'desc');
   const t3v = useMemo(() => [...players].sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [players]);
@@ -726,9 +805,6 @@ function DKTab({ players, mc, own }) {
   }, [pw, trap]);
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 16, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-      {GLOSSARY_TENNIS.filter(g => '🏆🎯💎💣'.includes(g.emoji)).map(g => <div key={g.emoji} style={{ fontSize: 12 }}><span style={{ fontSize: 16, marginRight: 6 }}>{g.emoji}</span><span style={{ color: 'var(--text)', fontWeight: 600 }}>{g.label}</span><span style={{ color: 'var(--text-dim)', marginLeft: 6 }}>— {g.desc}</span></div>)}
-    </div>
     <div className="metrics">
       <div className="metric"><div className="metric-label">🏆 Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
       <div className="metric"><div className="metric-label">🎯 Top Straight Sets</div><div className="metric-value">{t3s.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.pStraight)}</span></div>; })}</div></div>
@@ -741,6 +817,7 @@ function DKTab({ players, mc, own }) {
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name), ig = p.name === gem, it = p.name === trap;
       let b = ''; if (iv) b += '🏆'; if (is) b += '🎯'; if (ig) b += '💎'; if (it) b += '💣';
+      const isOver = overrides && overrides[p.name] != null;
       return <tr key={p.name} style={ig ? { background: 'rgba(34,197,94,0.06)' } : it ? { background: 'rgba(239,68,68,0.06)' } : undefined}>
         <td className="muted">{i + 1}</td>
         <td style={{ fontSize: 14 }}>{b && [...b].filter((_, j) => j % 2 === 0).map((e, j) => { const em = b.substring(j*2, j*2+2); return <Tip key={j} emoji={em} label={em === '🏆' ? 'Top 3 Value' : em === '🎯' ? 'Top 3 Straight Sets' : em === '💎' ? 'Hidden Gem' : 'Trap'} />; })}</td>
@@ -748,7 +825,13 @@ function DKTab({ players, mc, own }) {
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
-        <td className="num"><span className={iv ? 'cell-top3' : 'cell-proj'}>{fmt(p.proj, 2)}</span></td>
+        <td className="num">
+          <input type="number" step="0.01" className={`proj-edit ${isOver ? 'overridden' : ''} ${iv ? 'cell-top3' : ''}`}
+            value={fmt(p.proj, 2)}
+            onChange={e => onOverride && onOverride(p.name, e.target.value)}
+            onDoubleClick={() => onOverride && onOverride(p.name, null)}
+            title={isOver ? 'Overridden — double-click to reset' : 'Click to edit projection'} />
+        </td>
         <td className="num"><span className={iv ? 'cell-top3' : ''}>{fmt(p.val, 2)}</span></td>
         <td className="num"><span className={is ? 'cell-top3' : ''}>{fmtPct(p.pStraight)}</span></td>
         <td className="num">{fmt(p.gw)}</td><td className="num muted">{fmt(p.gl)}</td><td className="num">{fmt(p.sw)}</td>
@@ -951,6 +1034,18 @@ function BuilderTab({ players: rp, ownership }) {
     // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
     // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
+    // DK anti-abuse rule: submitted lineup CSVs can't be identical across entries. Even at variance=0
+    // (deterministic builds), guarantee at least 2 players' projections differ from baseline by ≥0.01 —
+    // enough to break ties in the optimizer without meaningfully altering rankings.
+    const enforceMinNudge = (pd, basePd) => {
+      const changed = pd.filter((p, i) => Math.abs(p.projection - basePd[i].proj) >= 0.01).length;
+      if (changed >= 2) return;
+      const idxs = [...Array(pd.length).keys()].sort(() => Math.random() - 0.5).slice(0, 2);
+      idxs.forEach(i => {
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        pd[i].projection = Math.round((pd[i].projection + sign * 0.01) * 1000) / 1000;
+      });
+    };
     if (isShowdown) {
       const pd = sp.map(p => {
         const cap = contrarianCaps[p.name] || {};
@@ -968,6 +1063,7 @@ function BuilderTab({ players: rp, ownership }) {
           maxExp: effMax, minExp: effMin,
         };
       });
+      enforceMinNudge(pd, sp);
       const r = optimizeShowdown(pd, nL, 50000);
       setRes({ ...r, pData: pd, isShowdown: true });
       return;
@@ -983,6 +1079,7 @@ function BuilderTab({ players: rp, ownership }) {
       const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj * jitter(), opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
+    enforceMinNudge(pd, sp);
     const r = optimize(pd, nL, 50000, 6, 48000);
     setRes({ ...r, pData: pd, isShowdown: false });
   };
@@ -1134,7 +1231,7 @@ function LeverageTab({ players: rp }) {
 // ═══════════════════════════════════════════════════════════════════════
 // MMA COMPONENTS — NEW
 // ═══════════════════════════════════════════════════════════════════════
-function MMADKTab({ fighters, fc, own }) {
+function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
   const pw = useMemo(() => fighters.filter(p => p.salary > 0).map(p => ({ ...p, simOwn: own[p.name] || 0 })), [fighters, own]);
   const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'proj', 'desc');
   const t3v = useMemo(() => [...fighters].sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [fighters]);
@@ -1171,9 +1268,6 @@ function MMADKTab({ fighters, fc, own }) {
   }, [pw, trap]);
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 16, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-      {GLOSSARY_MMA.filter(g => '🏆👊💎💣'.includes(g.emoji)).map(g => <div key={g.emoji} style={{ fontSize: 12 }}><span style={{ fontSize: 16, marginRight: 6 }}>{g.emoji}</span><span style={{ color: 'var(--text)', fontWeight: 600 }}>{g.label}</span><span style={{ color: 'var(--text-dim)', marginLeft: 6 }}>— {g.desc}</span></div>)}
-    </div>
     <div className="metrics">
       <div className="metric"><div className="metric-label">🏆 Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = fighters.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
       <div className="metric"><div className="metric-label">👊 Top Finish Path</div><div className="metric-value">{t3f.map((n, i) => { const p = fighters.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.finishProb)}</span></div>; })}</div></div>
@@ -1191,6 +1285,7 @@ function MMADKTab({ fighters, fc, own }) {
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), isf = t3f.includes(p.name), ig = p.name === gem, it = p.name === trap;
       let b = ''; if (iv) b += '🏆'; if (isf) b += '👊'; if (ig) b += '💎'; if (it) b += '💣';
+      const isOver = overrides && overrides[p.name] != null;
       return <tr key={p.name} style={ig ? { background: 'rgba(34,197,94,0.06)' } : it ? { background: 'rgba(239,68,68,0.06)' } : undefined}>
         <td className="muted">{i + 1}</td>
         <td style={{ fontSize: 14 }}>{b && [...b].filter((_, j) => j % 2 === 0).map((e, j) => { const em = b.substring(j*2, j*2+2); return <Tip key={j} emoji={em} label={em === '🏆' ? 'Top 3 Value' : em === '👊' ? 'Top 3 Finish Path' : em === '💎' ? 'Hidden Gem' : 'Trap'} />; })}</td>
@@ -1198,7 +1293,13 @@ function MMADKTab({ fighters, fc, own }) {
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
-        <td className="num"><span className={iv ? 'cell-top3' : 'cell-proj'}>{fmt(p.proj, 1)}</span></td>
+        <td className="num">
+          <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''} ${iv ? 'cell-top3' : ''}`}
+            value={fmt(p.proj, 1)}
+            onChange={e => onOverride && onOverride(p.name, e.target.value)}
+            onDoubleClick={() => onOverride && onOverride(p.name, null)}
+            title={isOver ? 'Overridden — double-click to reset. Ceiling scales proportionally.' : 'Click to edit projection'} />
+        </td>
         <td className="num"><span style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--green)', padding: '4px 10px', borderRadius: 4, fontWeight: 600, minWidth: 50, display: 'inline-block', textAlign: 'center' }}>{fmt(p.ceil, 1)}</span></td>
         <td className="num" style={{ color: p.finishProb > 0.35 ? 'var(--primary)' : 'var(--text-muted)', fontWeight: p.finishProb > 0.35 ? 700 : 400 }}>{fmtPct(p.finishProb)}</td>
         <td className="num"><span className={iv ? 'cell-top3' : ''}>{fmt(p.val, 2)}</span></td>
@@ -1256,6 +1357,7 @@ function MMAPPTab({ rows }) {
 function MMABuilderTab({ fighters: rp, ownership }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [nL, setNL] = useState(150);
+  const [variance, setVariance] = useState(2);                // ±% jitter on projections per build
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
   const [mode, setMode] = useState('ceiling');  // ceiling=GPP, proj=cash
   const [contrarianOn, setContrarianOn] = useState(false);
@@ -1365,6 +1467,19 @@ function MMABuilderTab({ fighters: rp, ownership }) {
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const run = () => {
+    // Variance jitter: each build applies a fresh ±variance% random multiplier. Same mult to proj AND ceiling
+    // per fighter so their ratio stays consistent (matters because cash mode uses proj, GPP uses ceiling).
+    const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
+    // DK anti-abuse: guarantee ≥2 projections differ from baseline by ≥0.01 even at variance=0.
+    const enforceMinNudge = (pd, basePd, key) => {
+      const changed = pd.filter((p, i) => Math.abs(p[key] - basePd[i][key === 'projection' ? 'proj' : 'ceil']) >= 0.01).length;
+      if (changed >= 2) return;
+      const idxs = [...Array(pd.length).keys()].sort(() => Math.random() - 0.5).slice(0, 2);
+      idxs.forEach(i => {
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        pd[i][key] = Math.round((pd[i][key] + sign * 0.01) * 1000) / 1000;
+      });
+    };
     const pd = sp.map(p => {
       const cap = contrarianCaps[p.name] || {};
       const userSet = exp[p.name] || {};
@@ -1373,13 +1488,16 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       const userMax = userSet.max !== undefined ? userSet.max : globalMax;
       const effMin = Math.max(userMin, cap.min || 0);
       const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
+      const m = jitter();      // same multiplier for proj + ceiling per fighter
       return {
         name: p.name, salary: p.salary, id: p.id,
-        projection: p.proj, ceiling: p.ceil,
+        projection: p.proj * m, ceiling: p.ceil * m,
         opponent: p.opponent,
         maxExp: effMax, minExp: effMin
       };
     });
+    // Nudge whichever key the optimizer actually ranks on for this mode
+    enforceMinNudge(pd, sp, mode === 'ceiling' ? 'ceiling' : 'projection');
     const r = optimizeMMA(pd, nL, 50000, 6, mode, 48000);
     setRes({ ...r, pData: pd, mode });
   };
@@ -1415,6 +1533,11 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMax} onChange={e => setGlobalMax(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }} title="Random ± shift applied to each fighter's projection & ceiling per build. Guarantees two users on the same slate don't submit identical lineups.">
+        Variance
+        <input type="range" min="0" max="25" step="1" value={variance} onChange={e => setVariance(+e.target.value)} style={{ width: 80, accentColor: 'var(--primary)' }} />
+        <span style={{ fontWeight: 700, color: variance > 0 ? 'var(--primary)' : 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>{variance}%</span>
+      </label>
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
