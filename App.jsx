@@ -740,27 +740,36 @@ export default function App() {
          We achieve this by (a) pinning width/padding/margin on all states and
          (b) using inset box-shadow (not border) for the active highlight,
          so the highlight is purely decorative and never affects layout width. */
-      .tab.tab-icon,
-      .tab.tab-icon.active,
-      .tab.tab-icon:hover,
-      .tab.tab-icon:focus {
+      /* Icon-only tabs.
+         Layout (width/height/padding/border-width) goes on the BASE .tab.tab-icon
+         selector only — specificity (0,2,0) — so the mobile media query can
+         cleanly override it. State-specific visuals (:hover, .active) only change
+         colors/shadow, never dimensions — so they never fight mobile layout. */
+      .tab.tab-icon {
         width: 56px !important;
         min-width: 56px !important;
         max-width: 56px !important;
+        height: 40px !important;
         padding: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
-        border: 1px solid transparent !important;
-        outline: none !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 0 !important;
+        border: 1px solid rgba(245, 197, 24, 0.22) !important;
+        border-radius: 6px !important;
+        outline: none !important;
+        background: transparent !important;
+        transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
       }
-      .tab.tab-icon { height: 40px !important; }
+      .tab.tab-icon:hover {
+        border-color: rgba(245, 197, 24, 0.5) !important;
+        background: rgba(245, 197, 24, 0.04) !important;
+      }
       .tab.tab-icon.active {
-        box-shadow: inset 0 0 0 2px var(--primary) !important;
+        border-color: #F5C518 !important;
         background: rgba(245, 197, 24, 0.12) !important;
+        box-shadow: 0 0 8px rgba(245, 197, 24, 0.38) !important;
       }
       .tab.tab-icon svg {
         width: 22px;
@@ -774,6 +783,7 @@ export default function App() {
          Explicit option bg/color handles older browsers that ignore color-scheme. */
       .slate-picker {
         color-scheme: dark !important;
+        accent-color: #F5C518 !important;
       }
       .slate-picker option {
         background-color: #0A1628 !important;
@@ -782,8 +792,10 @@ export default function App() {
       }
       .slate-picker option:checked,
       .slate-picker option:hover {
-        background-color: rgba(245, 197, 24, 0.18) !important;
+        background: linear-gradient(rgba(245, 197, 24, 0.25), rgba(245, 197, 24, 0.25)) !important;
+        background-color: rgba(245, 197, 24, 0.25) !important;
         color: #F5C518 !important;
+        box-shadow: inset 0 0 0 100vw rgba(245, 197, 24, 0.25) !important;
       }
 
       /* Row-highlight classes — OPAQUE versions of the old rgba tints.
