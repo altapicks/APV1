@@ -932,10 +932,12 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
     return { name: p.name, salary: p.salary, projection: p.projection, val, cnt, pct, simOwn, lev };
   }), [res, ownership]);
   const avgSal = Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length);
+  const projMax = res.lineups.length ? Math.max(...res.lineups.map(lu => lu.proj)) : 0;
+  const projMin = res.lineups.length ? Math.min(...res.lineups.map(lu => lu.proj)) : 0;
   const { sorted, sortKey, sortDir, toggleSort } = useSort(expData, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{res.lineups[0]?.proj}</span> → <span style={{ color: 'var(--text-dim)' }}>{res.lineups[res.lineups.length - 1]?.proj}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
+    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} style={{ flex: '1 1 auto', width: 'auto' }}>⚡ Rebuild {nL}</button>}
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}>📥 Download DK Upload CSV</button>}
@@ -1257,6 +1259,8 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
     return { name: p.name, salary: p.salary, score, val, cnt, pct, simOwn, lev };
   }), [res, ownership, mode]);
   const avgSal = Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length);
+  const projMax = res.lineups.length ? Math.max(...res.lineups.map(lu => lu.proj)) : 0;
+  const projMin = res.lineups.length ? Math.min(...res.lineups.map(lu => lu.proj)) : 0;
   const avgOwn = Math.round(res.lineups.reduce((s, lu) => {
     const lineupOwn = lu.players.reduce((ss, pi) => ss + (ownership[res.pData[pi].name] || 0), 0) / lu.players.length;
     return s + lineupOwn;
@@ -1265,7 +1269,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-      ✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{res.lineups[0]?.proj}</span> → <span style={{ color: 'var(--text-dim)' }}>{res.lineups[res.lineups.length - 1]?.proj}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
+      ✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
     </div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} style={{ flex: '1 1 auto', width: 'auto' }}>⚡ Rebuild {nL}</button>}
