@@ -688,8 +688,8 @@ export default function App() {
   const buildTabs = () => [
     { id: 'dk', l: 'DraftKings Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17V9.5l4 3 2-6.5 3 6 3-6 2 6.5 4-3V17z"/><path d="M3 19h18"/></svg> },
     { id: 'pp', l: 'PrizePicks Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg> },
-    { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/></svg> },
-    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v16M5 7l3-3 3 3"/><path d="M16 20V4M13 17l3 3 3-3"/></svg> },
+    { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/></svg> },
+    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3v18M4 7l3-4 3 4"/><path d="M17 21V3M14 17l3 4 3-4"/></svg> },
     { id: 'record', l: 'Track Record', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 4 3 6-8"/></svg> }
   ];
   const tabs = buildTabs();
@@ -1292,13 +1292,14 @@ function BuilderTab({ players: rp, ownership }) {
     // (1) TRAP — highest-owned player (matches DK tab's "Biggest Trap" definition).
     //     DK tab defines trap as simply highest ownership. Contrarian respects that —
     //     if the field has converged on a player, fade them regardless of star status.
+    //     Cap: field_own - (strength × 40) so at max strength the trap gets -40pp fade.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
     const trap = hasOwn
       ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
       : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 40));
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
@@ -1944,7 +1945,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 40));
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
