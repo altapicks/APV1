@@ -1,0 +1,220 @@
+{
+  "sport": "tennis",
+  "data_status": "loaded",
+  "slates_tracked": 2,
+  "slate_dates": [
+    "2026-04-17",
+    "2026-04-18"
+  ],
+  "last_updated": "2026-04-19",
+  "slate_avg_fpts": 45.6,
+  "featured_insight": {
+    "headline": "Trap calls split 1-for-2 out of the gate",
+    "detail": "Rybakina flagged as the 4/17 trap made the winning lineup \u2014 miss. 4/18 Molcan trap landed cleanly (excluded from 1st place). Small sample; hit rates stabilize after ~6-8 slates."
+  },
+  "categories": [
+    {
+      "key": "top_value",
+      "label": "Top Value",
+      "description": "Top 3 pts-per-$1K plays",
+      "icon": "target",
+      "type": "hit_rate",
+      "n": 6,
+      "hit_rate": 0.333,
+      "avg_edge": 1.78,
+      "edge_units": "DK FPTS vs slate avg",
+      "signal": "neutral"
+    },
+    {
+      "key": "top_straight_sets",
+      "label": "Straight Sets Locks",
+      "description": "Top 3 by 2-0 implied probability",
+      "icon": "bolt",
+      "type": "hit_rate",
+      "n": 6,
+      "hit_rate": 0.5,
+      "avg_edge": 5.75,
+      "edge_units": "DK FPTS vs slate avg",
+      "signal": "neutral"
+    },
+    {
+      "key": "hidden_gem",
+      "label": "Hidden Gem",
+      "description": "Low-owned high-upside play of the slate",
+      "icon": "gem",
+      "type": "hit_rate",
+      "n": 2,
+      "hit_rate": 0.5,
+      "avg_edge": -0.56,
+      "edge_units": "DK FPTS vs slate avg",
+      "signal": "neutral"
+    },
+    {
+      "key": "biggest_trap",
+      "label": "Biggest Trap",
+      "description": "Chalk we flagged to fade",
+      "icon": "warning",
+      "type": "bust_rate",
+      "n": 2,
+      "bust_rate": 0.5,
+      "counter_edge": -9.33,
+      "edge_units": "DK FPTS vs slate avg",
+      "signal": "neutral"
+    }
+  ],
+  "per_slate_detail": [
+    {
+      "date": "2026-04-17",
+      "first_place_points": 444.05,
+      "first_place_lineup": [
+        "Marta Kostyuk",
+        "Tatjana Maria",
+        "Elena Rybakina",
+        "Veronika Podrez",
+        "Elina Svitolina",
+        "Alexander Zverev"
+      ],
+      "category_results": {
+        "top_value": {
+          "n": 3,
+          "hit_names": [
+            "Veronika Podrez"
+          ],
+          "miss_names": [
+            "Francisco Cerundolo",
+            "Karolina Muchova"
+          ],
+          "hits": 1,
+          "misses": 2
+        },
+        "top_straight_sets": {
+          "n": 3,
+          "hit_names": [
+            "Elena Rybakina",
+            "Marta Kostyuk"
+          ],
+          "miss_names": [
+            "Sorana Cirstea"
+          ],
+          "hits": 2,
+          "misses": 1
+        },
+        "hidden_gem": {
+          "n": 1,
+          "hit_names": [],
+          "miss_names": [
+            "Iryna Shymanovich"
+          ],
+          "hits": 0,
+          "misses": 1
+        },
+        "biggest_trap": {
+          "n": 1,
+          "hit_names": [],
+          "miss_names": [
+            "Elena Rybakina"
+          ],
+          "hits": 0,
+          "misses": 1
+        }
+      },
+      "tagged": {
+        "top_value": [
+          "Veronika Podrez",
+          "Francisco Cerundolo",
+          "Karolina Muchova"
+        ],
+        "top_straight_sets": [
+          "Elena Rybakina",
+          "Marta Kostyuk",
+          "Sorana Cirstea"
+        ],
+        "hidden_gem": [
+          "Iryna Shymanovich"
+        ],
+        "biggest_trap": [
+          "Elena Rybakina"
+        ]
+      }
+    },
+    {
+      "date": "2026-04-18",
+      "first_place_points": 441.7,
+      "first_place_lineup": [
+        "Marta Kostyuk",
+        "Ben Shelton",
+        "Elena Rybakina",
+        "Flavio Cobolli",
+        "Andrey Rublev",
+        "Arthur Fils"
+      ],
+      "category_results": {
+        "top_value": {
+          "n": 3,
+          "hit_names": [
+            "Flavio Cobolli"
+          ],
+          "miss_names": [
+            "Veronika Podrez",
+            "Alex Molcan"
+          ],
+          "hits": 1,
+          "misses": 2
+        },
+        "top_straight_sets": {
+          "n": 3,
+          "hit_names": [
+            "Marta Kostyuk"
+          ],
+          "miss_names": [
+            "Sorana Cirstea",
+            "Alexander Zverev"
+          ],
+          "hits": 1,
+          "misses": 2
+        },
+        "hidden_gem": {
+          "n": 1,
+          "hit_names": [
+            "Ben Shelton"
+          ],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0
+        },
+        "biggest_trap": {
+          "n": 1,
+          "hit_names": [
+            "Alex Molcan"
+          ],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0
+        }
+      },
+      "tagged": {
+        "top_value": [
+          "Veronika Podrez",
+          "Flavio Cobolli",
+          "Alex Molcan"
+        ],
+        "top_straight_sets": [
+          "Marta Kostyuk",
+          "Sorana Cirstea",
+          "Alexander Zverev"
+        ],
+        "hidden_gem": [
+          "Ben Shelton"
+        ],
+        "biggest_trap": [
+          "Alex Molcan"
+        ]
+      }
+    }
+  ],
+  "_notes": {
+    "methodology": "Tags graded against 1st-place lineup from DK contest CSV. Trap HITS when player is NOT in winning lineup (bust success); other tags HIT when player IS in winning lineup.",
+    "pp_lines_status": "PrizePicks line grading (Fantasy Score, Breaks, Aces) requires raw match stats not present in DK contest CSVs. Will be added when per-match stat collection is in place.",
+    "sample_size": "Signals are NEUTRAL below N=6 for hit_rate tags and N=3 for bust_rate tags. Patterns require larger samples."
+  }
+}
