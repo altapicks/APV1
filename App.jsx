@@ -533,7 +533,7 @@ function SportSwitchLoader({ sport }) {
         @keyframes sw-dot       { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
       `}</style>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 24, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.1s forwards' }}>
-        Switching to <span style={{display:"inline-flex",alignItems:"center",gap:6,verticalAlign:"-0.2em"}}><Icon name={isTennis ? "tennis" : "fist"} size={16} color="#F5C518"/> {isTennis ? "Tennis" : "UFC"}</span>
+        Switching to <span style={{display:"inline-flex",alignItems:"center",gap:6,verticalAlign:"-0.2em"}}>{isTennis ? "Tennis" : "UFC"} <Icon name={isTennis ? "tennis" : "fist"} size={16} color="#F5C518"/></span>
       </div>
       {isTennis ? (
         <div style={{ position: 'relative', width: 100, height: 70, margin: '0 auto 20px', opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
@@ -752,8 +752,8 @@ export default function App() {
         display: flex;
         align-items: center;
         gap: 16px;
-        padding: 20px 4px 18px;
-        margin-bottom: 16px;
+        padding: 4px 4px 14px;
+        margin-bottom: 14px;
       }
       .section-hero-icon-wrap {
         width: 54px;
@@ -795,7 +795,7 @@ export default function App() {
         letter-spacing: 0.02em;
       }
       @media (max-width: 768px) {
-        .section-hero { gap: 12px; padding: 16px 4px 14px; margin-bottom: 12px; }
+        .section-hero { gap: 12px; padding: 2px 4px 10px; margin-bottom: 10px; }
         .section-hero-icon-wrap { width: 44px; height: 44px; border-radius: 11px; }
         .section-hero-icon { width: 22px; height: 22px; }
         .section-hero-title { font-size: 22px; letter-spacing: -0.02em; }
