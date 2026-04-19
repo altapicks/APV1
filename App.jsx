@@ -11,6 +11,8 @@ import {
   ppEV as nbaPpEV,
   optimizeShowdown as nbaOptimizeShowdown,
   optimizeClassic as nbaOptimizeClassic,
+  devig as nbaDevig,
+  lineToProjection as nbaLineToProjection,
 } from './engine-nba.js';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -183,10 +185,15 @@ function useSlateData(sport, slateDate) {
   useEffect(() => {
     setData(null); setError(null);
     const startTime = Date.now();
-    // First load: full splash (5000ms). Tennis switch: 2000ms to see the ball bounce.
-    // UFC/NBA switch: 900ms (no ball, no reason to linger). Archive picks: 600ms (quick).
+    // First load: full splash (5000ms). Tennis/NBA switch: 2000ms so the
+    // ball-bounce animation plays. UFC switch: 900ms (dots only).
+    // Archive picks: 600ms (quick).
     const isArchive = slateDate && slateDate !== 'live';
-    const MIN_LOAD_MS = !hasLoadedRef.current ? 5000 : isArchive ? 600 : (sport === 'tennis' ? 2000 : 900);
+    const MIN_LOAD_MS = !hasLoadedRef.current
+      ? 5000
+      : isArchive ? 600
+      : (sport === 'tennis' || sport === 'nba') ? 2000
+      : 900;
     const finalize = (cb) => {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, MIN_LOAD_MS - elapsed);
@@ -392,7 +399,11 @@ function buildMMAProjections(data) {
 // ═══════════════════════════════════════════════════════════════════════
 // OWNERSHIP SIMULATORS
 // ═══════════════════════════════════════════════════════════════════════
-function simulateOwnership(players, n = 1300) {
+// Tennis ownership sim — exposure from top 1500 highest-scoring lineups.
+// For showdown, also tracks captain-specific ownership (some players chalky
+// as CPT but rare as FLEX, e.g. low-salary dogs optimizers love to captain).
+// Returns { overall, cpt }.
+function simulateOwnership(players, n = 1500) {
   const isShowdown = players.some(p => p.salary > 0 && p.cpt_salary != null);
   if (isShowdown) {
     const pData = players.filter(p => p.salary > 0).map(p => ({
@@ -403,16 +414,27 @@ function simulateOwnership(players, n = 1300) {
     }));
     try {
       const res = optimizeShowdown(pData, n, 50000);
-      const own = {};
-      pData.forEach((p, i) => { own[p.name] = res.lineups.length ? res.counts[i] / res.lineups.length * 100 : 0; });
-      return own;
-    } catch { return {}; }
+      const overall = {}, cpt = {};
+      pData.forEach((p, i) => {
+        overall[p.name] = res.lineups.length ? res.counts[i] / res.lineups.length * 100 : 0;
+        cpt[p.name] = res.lineups.length ? (res.cptCounts?.[i] || 0) / res.lineups.length * 100 : 0;
+      });
+      return { overall, cpt };
+    } catch { return { overall: {}, cpt: {} }; }
   }
-  const pData = players.filter(p => p.salary > 0).map(p => ({ name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: 100, minExp: 0 }));
-  try { const res = optimize(pData, n, 50000, 6); const own = {}; pData.forEach((p, i) => { own[p.name] = res.counts[i] / res.lineups.length * 100; }); return own; } catch { return {}; }
+  const pData = players.filter(p => p.salary > 0).map(p => ({
+    name: p.name, salary: p.salary, id: p.id, projection: p.proj,
+    opponent: p.opponent, maxExp: 100, minExp: 0,
+  }));
+  try {
+    const res = optimize(pData, n, 50000, 6);
+    const overall = {};
+    pData.forEach((p, i) => { overall[p.name] = res.counts[i] / res.lineups.length * 100; });
+    return { overall, cpt: {} };
+  } catch { return { overall: {}, cpt: {} }; }
 }
 
-function simulateMMAOwnership(fighters, n = 3000) {
+function simulateMMAOwnership(fighters, n = 1500) {
   const pData = fighters.filter(f => f.salary > 0).map(f => ({
     name: f.name, salary: f.salary, id: f.id,
     projection: f.proj, ceiling: f.ceil,
@@ -420,41 +442,34 @@ function simulateMMAOwnership(fighters, n = 3000) {
   }));
   try {
     const res = optimizeMMA(pData, n, 50000, 6, 'median');
-    const own = {};
-    pData.forEach((p, i) => { own[p.name] = res.counts[i] / res.lineups.length * 100; });
-    return own;
-  } catch { return {}; }
+    const overall = {};
+    pData.forEach((p, i) => { overall[p.name] = res.counts[i] / res.lineups.length * 100; });
+    return { overall, cpt: {} };
+  } catch { return { overall: {}, cpt: {} }; }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // NBA PROJECTION BUILDER
-// Uses pp_stats (Points/Rebounds/Assists/3PM/Stls+Blks) as the source-of-truth
-// stat projections, then derives DK and PP Fantasy Scores via engine-nba.
-// Applies injury cascade and pace/blowout context up front.
+// Pure DraftKings prop devig — no minute/pace/blowout/cascade scaling.
+// Players without a DK Points line are marked unprojectable and excluded
+// from the builder pool.
 // ═══════════════════════════════════════════════════════════════════════
 function buildNBAProjections(data) {
   if (!data || !data.dk_players) return { dkPlayers: [], ppRows: [] };
   const game = data.game || {};
-  const leagueAvgPace = 99.5;
-  const paceFactor = game.pace_okc && game.pace_phx
-    ? ((Number(game.pace_okc) + Number(game.pace_phx)) / 2) / leagueAvgPace
-    : 1.0;
-  const blowoutByTeam = {};
-  if (game.away && game.home) {
-    blowoutByTeam[game.home] = game.home === 'OKC' ? (game.blowout_risk_okc || 0) : (game.blowout_risk_phx || 0);
-    blowoutByTeam[game.away] = game.away === 'OKC' ? (game.blowout_risk_okc || 0) : (game.blowout_risk_phx || 0);
-  }
 
-  const adjusted = nbaApplyInjuryAdjustments(data.dk_players);
-  const dkPlayers = adjusted.map(p => {
-    const ctx = { paceFactor, blowoutRisk: blowoutByTeam[p.team] || 0 };
-    const stats = nbaBuildPlayerStats(p, ctx);
-    const proj = nbaDkProjection(stats);
-    const ceil = nbaDkCeiling(stats);
-    const ppProj = nbaPpProjection(stats);
+  const dkPlayers = data.dk_players.map(p => {
+    const stats = nbaBuildPlayerStats(p);   // context-free
+    const proj = stats.projectable ? nbaDkProjection(stats) : 0;
+    const ceil = stats.projectable ? nbaDkCeiling(stats) : 0;
+    const ppProj = stats.projectable ? nbaPpProjection(stats) : 0;
     const sal = p.util_salary || p.salary || 0;
-    const val  = sal > 0 ? Math.round(proj / (sal / 1000) * 100) / 100 : 0;
-    const cval = sal > 0 ? Math.round(ceil / (sal / 1000) * 100) / 100 : 0;
+    const val  = stats.projectable && sal > 0 ? Math.round(proj / (sal / 1000) * 100) / 100 : 0;
+    const cval = stats.projectable && sal > 0 ? Math.round(ceil / (sal / 1000) * 100) / 100 : 0;
+    // Count how many of the 5 core stats we actually have DK lines for.
+    const hasData = stats.hasStatData || {};
+    const statCoverage = ['points', 'rebounds', 'assists', 'threes', 'stls_blks']
+      .filter(k => hasData[k]).length;
     return {
       name: p.name,
       team: p.team,
@@ -467,36 +482,40 @@ function buildNBAProjections(data) {
       cpt_id: p.cpt_id,   cpt_salary: p.cpt_salary,
       avgPPG: p.avg_ppg || 0,
       proj, ceil, val, cval, ppProj,
-      projMins: stats.projMins,
-      usg: stats.usg,
+      projMins: stats.projMins,      // informational only
+      projectable: stats.projectable,
+      statCoverage,                   // 0–5
+      hasStatData: hasData,
       status: stats.status,
       stats,
-      cascadeNote: p.cascadeNote || null,
       startTime: game.tip || '',
     };
   });
 
-  // Build PP rows — one row per PP line in slate
+  // PP rows — only include when we can compute a projection for that stat
   const ppRows = [];
   if (data.pp_lines) {
     const byName = {}; dkPlayers.forEach(p => { byName[p.name] = p; });
     data.pp_lines.forEach(line => {
       const player = byName[line.player];
-      if (!player) {
-        ppRows.push({
-          player: line.player, stat: line.stat, line: line.line,
-          projected: 0, ev: 0, opponent: '?', direction: '-', mult: 'normal',
-          team: '', ownImpact: 0,
-        });
-        return;
-      }
-      const projected = Math.round(nbaProjectPPStat(player.stats, line.stat) * 100) / 100;
+      if (!player || !player.projectable) return;    // skip — no DK data
+      // Per-stat availability: only include row if we have that specific DK prop
+      const stat = String(line.stat);
+      const need = {
+        'Points':         () => player.hasStatData.points,
+        'Rebounds':       () => player.hasStatData.rebounds,
+        'Assists':        () => player.hasStatData.assists,
+        '3PM':            () => player.hasStatData.threes,
+        'Stls+Blks':      () => player.hasStatData.stls_blks,
+        'Fantasy Score':  () => player.hasStatData.points,   // FS needs at least points
+      }[stat];
+      if (need && !need()) return;
+      const projected = Math.round(nbaProjectPPStat(player.stats, stat) * 100) / 100;
       const ev = nbaPpEV(projected, line.line);
       ppRows.push({
-        player: line.player, stat: line.stat, line: line.line,
+        player: line.player, stat, line: line.line,
         projected, ev,
-        opponent: player.opponent,
-        team: player.team,
+        opponent: player.opponent, team: player.team,
         direction: ev > 0.8 ? 'MORE' : ev < -0.8 ? 'LESS' : '-',
         mult: line.mult || 'normal',
       });
@@ -506,34 +525,48 @@ function buildNBAProjections(data) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// NBA OWNERSHIP SIM — runs showdown optimizer on projection, returns {name: own%}
+// NBA OWNERSHIP SIM — exposure from top 1500 highest-scoring lineups
+// (top-N enumeration by DK Fantasy Score, NOT weighted random field sim).
+// Returns { overall, cpt } where:
+//   overall[name] = % of top-1500 lineups containing the player in ANY slot
+//   cpt[name]     = % of top-1500 lineups where the player is captain
 // ═══════════════════════════════════════════════════════════════════════
 function simulateNBAOwnership(players, slateType = 'showdown') {
-  const active = players.filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
-  if (active.length < 6) return {};
+  const active = players.filter(p =>
+    p.salary > 0 &&
+    p.projectable !== false &&
+    (p.status || 'ACTIVE').toUpperCase() !== 'OUT'
+  );
+  if (active.length < 6) return { overall: {}, cpt: {} };
 
   const pData = active.map(p => ({
     name: p.name, team: p.team, projection: p.proj,
     util_salary: p.util_salary || p.salary, cpt_salary: p.cpt_salary,
     util_id: p.util_id || p.id, cpt_id: p.cpt_id,
     positions: p.positions || [], salary: p.util_salary || p.salary,
-    status: p.status, maxExp: 100, minExp: 0,
+    status: p.status,
   }));
 
   try {
-    const n = slateType === 'classic' ? 3000 : 1500;
-    const res = slateType === 'classic'
-      ? nbaOptimizeClassic(pData, n, 50000)
-      : nbaOptimizeShowdown(pData, n, 50000, 45000);
-    const own = {};
-    if (!res.lineups.length) { pData.forEach(p => { own[p.name] = 0; }); return own; }
+    if (slateType === 'classic') {
+      const res = nbaOptimizeClassic(pData, 1500, 50000);
+      const overall = {};
+      if (!res.lineups.length) return { overall, cpt: {} };
+      pData.forEach((p, i) => { overall[p.name] = res.counts[i] / res.lineups.length * 100; });
+      return { overall, cpt: {} };
+    }
+    // Showdown — top 1500 highest-scoring lineups by DK Fantasy projection
+    const res = nbaOptimizeShowdown(pData, 1500, 50000, 45000);
+    const overall = {}, cpt = {};
+    if (!res.lineups.length) return { overall, cpt };
     pData.forEach((p, i) => {
-      own[p.name] = res.counts[i] / res.lineups.length * 100;
+      overall[p.name] = res.counts[i] / res.lineups.length * 100;
+      cpt[p.name] = (res.cptCounts?.[i] || 0) / res.lineups.length * 100;
     });
-    return own;
+    return { overall, cpt };
   } catch (e) {
     console.error('simulateNBAOwnership error:', e);
-    return {};
+    return { overall: {}, cpt: {} };
   }
 }
 
@@ -573,6 +606,7 @@ function Icon({ name, size = 14, color, style, className }) {
     case 'dollar':         return <svg {...p}><path d="M12 3v18"/><path d="M17 7h-6a3 3 0 0 0 0 6h2a3 3 0 0 1 0 6H6"/></svg>;
     case 'rocket':         return <svg {...p}><path d="M12 3c3 2 5 5 5 9v6l-5-3-5 3v-6c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M7 17l-3 4M17 17l3 4"/></svg>;
     case 'tennis':         return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M5 6c3 3 3 9 0 12"/><path d="M19 6c-3 3-3 9 0 12"/></svg>;
+    case 'basketball':     return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a9 9 0 0 1 0 18"/><path d="M5.5 5.5c3 2 3 11 0 13"/><path d="M18.5 5.5c-3 2-3 11 0 13"/></svg>;
     case 'chart-line':     return <svg {...p}><path d="M3 3v18h18"/><path d="M7 15l4-5 4 3 6-8"/></svg>;
     default: return null;
   }
@@ -587,6 +621,7 @@ function Tip({ icon, emoji, label, size = 14 }) {
 // ═══════════════════════════════════════════════════════════════════════
 function SplashScreen({ sport }) {
   const isTennis = sport === 'tennis';
+  const isNba = sport === 'nba';
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 50% 40%, #0F1D35 0%, #0A1628 40%, #060F1F 100%)', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', overflow: 'hidden' }}>
       <style>{`
@@ -648,7 +683,31 @@ function SplashScreen({ sport }) {
           </div>
         </div>
       )}
-      {!isTennis && (
+      {isNba && (
+        <div style={{ position: 'relative', width: 140, height: 100, marginBottom: 24, opacity: 0, animation: 'oo-fade-in 0.6s ease-out 1.4s forwards' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 100, height: 2, background: 'linear-gradient(90deg, transparent 0%, rgba(245,197,24,0.55) 50%, transparent 100%)' }} />
+          <div style={{ position: 'absolute', bottom: 2, left: '50%', marginLeft: -20, width: 40, height: 40 }}>
+            <div style={{ position: 'absolute', bottom: -4, left: '50%', width: 34, height: 6, background: 'rgba(0,0,0,0.6)', borderRadius: '50%', filter: 'blur(2.5px)', transform: 'translateX(-50%)', animation: 'oo-shadow-beat 1.4s cubic-bezier(0.5, 0, 0.5, 1) 1.6s infinite' }} />
+            <div style={{ transformOrigin: '50% 100%', animation: 'oo-preserve 1.4s cubic-bezier(0.5, 0, 0.5, 1) 1.6s infinite' }}>
+              <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="bballSplash" cx="0.35" cy="0.3" r="0.8">
+                    <stop offset="0%" stopColor="#FFB672"/>
+                    <stop offset="55%" stopColor="#E8722C"/>
+                    <stop offset="100%" stopColor="#A74712"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r="18" fill="url(#bballSplash)" stroke="#5C2A0A" strokeWidth="0.8"/>
+                <path d="M 2 20 H 38" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M 20 2 V 38" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M 6.5 6.5 Q 20 20 6.5 33.5" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M 33.5 6.5 Q 20 20 33.5 33.5" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+      {!isTennis && !isNba && (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20, opacity: 0, animation: 'oo-fade-in 0.6s ease-out 1.4s forwards' }}>
           {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: '#F5C518', animation: `oo-dot-blink 1.2s ease-in-out ${i * 0.18}s infinite` }} />)}
         </div>
@@ -665,6 +724,9 @@ function SplashScreen({ sport }) {
 // ═══════════════════════════════════════════════════════════════════════
 function SportSwitchLoader({ sport }) {
   const isTennis = sport === 'tennis';
+  const isNba = sport === 'nba';
+  const label = isTennis ? 'Tennis' : isNba ? 'NBA' : 'UFC';
+  const iconName = isTennis ? 'tennis' : isNba ? 'basketball' : 'fist';
   return (
     <div style={{ padding: '80px 20px 60px', textAlign: 'center' }}>
       <style>{`
@@ -672,11 +734,12 @@ function SportSwitchLoader({ sport }) {
         @keyframes sw-preserve  { 0%, 100% { transform: translateY(0) scaleX(1.18) scaleY(0.82); } 10% { transform: translateY(-8px) scaleX(1.04) scaleY(0.96); } 50% { transform: translateY(-44px) scaleX(0.95) scaleY(1.05); } 90% { transform: translateY(-8px) scaleX(1.04) scaleY(0.96); } }
         @keyframes sw-shadow    { 0%, 100% { opacity: 0.5; transform: translateX(-50%) scaleX(1); } 50% { opacity: 0.15; transform: translateX(-50%) scaleX(0.4); } }
         @keyframes sw-dot       { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+        @keyframes sw-spin      { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 24, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.1s forwards' }}>
-        Switching to {isTennis ? "Tennis" : "UFC"} <Icon name={isTennis ? "tennis" : "fist"} size={16} color="#F5C518"/>
+        Switching to {label} <Icon name={iconName} size={16} color="#F5C518"/>
       </div>
-      {isTennis ? (
+      {isTennis && (
         <div style={{ position: 'relative', width: 100, height: 70, margin: '0 auto 20px', opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
           <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 64, height: 2, background: 'linear-gradient(90deg, transparent, rgba(245,197,24,0.5), transparent)' }} />
           <div style={{ position: 'absolute', bottom: 2, left: '50%', marginLeft: -14, width: 28, height: 28 }}>
@@ -690,7 +753,32 @@ function SportSwitchLoader({ sport }) {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+      {isNba && (
+        <div style={{ position: 'relative', width: 100, height: 70, margin: '0 auto 20px', opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 64, height: 2, background: 'linear-gradient(90deg, transparent, rgba(245,197,24,0.5), transparent)' }} />
+          <div style={{ position: 'absolute', bottom: 2, left: '50%', marginLeft: -14, width: 28, height: 28 }}>
+            <div style={{ position: 'absolute', bottom: -3, left: '50%', width: 22, height: 4, background: 'rgba(0,0,0,0.55)', borderRadius: '50%', filter: 'blur(2px)', transform: 'translateX(-50%)', animation: 'sw-shadow 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite' }} />
+            <div style={{ transformOrigin: '50% 100%', animation: 'sw-preserve 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite' }}>
+              <svg width="28" height="28" viewBox="0 0 40 40">
+                <defs>
+                  <radialGradient id="bballSw" cx="0.35" cy="0.3" r="0.8">
+                    <stop offset="0%" stopColor="#FFA05E"/>
+                    <stop offset="55%" stopColor="#E8722C"/>
+                    <stop offset="100%" stopColor="#A74712"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r="18" fill="url(#bballSw)" stroke="#5C2A0A" strokeWidth="0.8" />
+                <path d="M 2 20 H 38" fill="none" stroke="rgba(0,0,0,0.55)" strokeWidth="1.3" strokeLinecap="round" />
+                <path d="M 20 2 V 38" fill="none" stroke="rgba(0,0,0,0.55)" strokeWidth="1.3" strokeLinecap="round" />
+                <path d="M 6.5 6.5 Q 20 20 6.5 33.5" fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+                <path d="M 33.5 6.5 Q 20 20 33.5 33.5" fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+      {!isTennis && !isNba && (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
           {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)', animation: `sw-dot 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
         </div>
@@ -783,13 +871,18 @@ export default function App() {
       return out;
     });
   }, [rawDkPlayers, projOverrides]);
-  const ownership = useMemo(() => {
-    if (dkPlayers.length === 0) return {};
+  // Ownership now returns { overall, cpt } — captain-specific tracking for
+  // showdown slates is critical since a player at 60% total ownership but
+  // only 8% CPT is a different fade target than one at 60% / 40% CPT.
+  const ownershipData = useMemo(() => {
+    if (dkPlayers.length === 0) return { overall: {}, cpt: {} };
     if (sport === 'tennis') return simulateOwnership(dkPlayers);
     if (sport === 'mma') return simulateMMAOwnership(dkPlayers);
     if (sport === 'nba') return simulateNBAOwnership(dkPlayers, data?.slate_type || 'showdown');
-    return {};
+    return { overall: {}, cpt: {} };
   }, [dkPlayers, sport, data]);
+  const ownership = ownershipData.overall;
+  const cptOwnership = ownershipData.cpt;
 
   if (error) {
     const expectedUrl = sport === 'mma' ? './slate-mma.json'
@@ -1107,6 +1200,19 @@ export default function App() {
 
         /* Builder controls — stack rows vertically, full-width inputs */
         .builder-controls { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+        /* NBA builder uses grid — override the flex rules on mobile so rows
+           stack single-column with full width per card */
+        .builder-controls.nba-builder-grid {
+          display: grid !important;
+          grid-template-columns: 1fr !important;
+          gap: 8px !important;
+          flex-direction: initial !important;
+        }
+        .builder-controls.nba-builder-grid .ctrl-row {
+          grid-template-columns: 1fr 30px 56px 44px 36px 48px 48px !important;
+          padding: 9px 10px !important;
+          font-size: 12px !important;
+        }
         .ctrl-row { flex-wrap: wrap !important; gap: 8px !important; }
         .ctrl-row > * { flex: 1 1 auto; }
         .ctrl-name { min-width: 0 !important; flex: 2 1 120px !important; }
@@ -1179,9 +1285,9 @@ export default function App() {
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'nba' && (<>
-        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
+        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} cptOwn={cptOwnership} onOverride={onOverrideProj} overrides={projOverrides} />}
         {tab === 'pp' && <NBAPPTab rows={ppRows} />}
-        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} />}
+        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
@@ -1245,33 +1351,43 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
           </svg>
         </button>
       </div>
-      {hasArchive && onSlateDateChange && (
-        <select
-          value={slateDate}
-          onChange={e => onSlateDateChange(e.target.value)}
-          title="Select slate date"
-          className="slate-picker"
-          style={{
-            background: slateDate !== 'live' ? 'rgba(245,197,24,0.12)' : 'var(--bg)',
-            border: `1px solid ${slateDate !== 'live' ? 'rgba(245,197,24,0.4)' : 'var(--border-light)'}`,
-            borderRadius: 6,
-            color: slateDate !== 'live' ? 'var(--primary)' : 'var(--text-muted)',
-            padding: '6px 10px',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            appearance: 'none',
-            paddingRight: 24,
-            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23F5C518' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
-          }}>
-          <option value="live">Live slate</option>
-          {manifestSlates.map(s => (
-            <option key={s.date} value={s.date}>{s.label || s.date}</option>
-          ))}
-        </select>
-      )}
+      {hasArchive && onSlateDateChange && (() => {
+        // UI shows most recent 6; backend (manifest.json) keeps the full list.
+        // Older slates are still accessible by direct URL or by extending the manifest
+        // if a "See all" option is added later.
+        const recentSlates = manifestSlates.slice(0, 6);
+        const isOlderSelected = slateDate !== 'live' && !recentSlates.some(s => s.date === slateDate);
+        return (
+          <select
+            value={slateDate}
+            onChange={e => onSlateDateChange(e.target.value)}
+            title="Select slate date"
+            className="slate-picker"
+            style={{
+              background: slateDate !== 'live' ? 'rgba(245,197,24,0.12)' : 'var(--bg)',
+              border: `1px solid ${slateDate !== 'live' ? 'rgba(245,197,24,0.4)' : 'var(--border-light)'}`,
+              borderRadius: 6,
+              color: slateDate !== 'live' ? 'var(--primary)' : 'var(--text-muted)',
+              padding: '5px 22px 5px 9px',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              appearance: 'none',
+              height: 30,
+              lineHeight: '18px',
+              maxWidth: 140,
+              backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23F5C518' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 7px center',
+            }}>
+            <option value="live">Live slate</option>
+            {recentSlates.map(s => (
+              <option key={s.date} value={s.date}>{s.label || s.date}</option>
+            ))}
+            {isOlderSelected && <option value={slateDate}>{slateDate}</option>}
+          </select>
+        );
+      })()}
       {data && <div className="topbar-date">
         <span className="topbar-date-main">{data.date} · {
           sport === 'nba' ? `${data.game ? `${data.game.away}@${data.game.home}` : ''} · ${(data.dk_players || []).length} players`
@@ -2405,7 +2521,7 @@ function StatusChip({ status, onCycle }) {
 }
 
 // NBA DK Tab — projections, value, ownership, status, mins/usg, cascade
-function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
+function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }) {
   const [statusMap, setStatusMap] = useState({});
   const cycleStatus = (name) => {
     setStatusMap(prev => {
@@ -2418,23 +2534,38 @@ function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
 
   const pw = useMemo(() => players.filter(p => p.salary > 0).map(p => {
     const s = effStatus(p);
-    return { ...p, simOwn: own[p.name] || 0, effStatus: s, isOut: s === 'OUT' };
-  }), [players, own, statusMap]);
+    return {
+      ...p,
+      simOwn: own[p.name] || 0,
+      cptOwnPct: cptOwn[p.name] || 0,
+      flexOwnPct: Math.max(0, (own[p.name] || 0) - (cptOwn[p.name] || 0)),
+      effStatus: s,
+      isOut: s === 'OUT',
+    };
+  }), [players, own, cptOwn, statusMap]);
 
   const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'proj', 'desc');
 
-  const t3v = useMemo(() => [...pw].filter(p => !p.isOut).sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [pw]);
-  const t3c = useMemo(() => [...pw].filter(p => !p.isOut).sort((a, b) => b.ceil - a.ceil).slice(0, 3).map(p => p.name), [pw]);
+  const t3v = useMemo(() => [...pw].filter(p => !p.isOut && p.projectable).sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [pw]);
+  const t3c = useMemo(() => [...pw].filter(p => !p.isOut && p.projectable).sort((a, b) => b.ceil - a.ceil).slice(0, 3).map(p => p.name), [pw]);
+  // TRAP = highest field-simulated ownership, period.
+  // Per GPP leverage theory, the chalky play is what we fade — even if they
+  // have "good value". Good-value chalk is exactly where the field converges,
+  // which is precisely what we're trying to differentiate from.
   const trap = useMemo(() => {
-    const active = pw.filter(p => !p.isOut);
+    const active = pw.filter(p => !p.isOut && p.projectable);
+    if (active.length === 0) return '';
     const hasOwn = active.some(p => p.simOwn > 0);
-    const s = hasOwn ? [...active].sort((a, b) => b.simOwn - a.simOwn) : [...active].sort((a, b) => b.proj - a.proj);
-    return s[0]?.name || '';
+    const sorted = hasOwn
+      ? [...active].sort((a, b) => b.simOwn - a.simOwn)
+      : [...active].sort((a, b) => b.proj - a.proj);
+    return sorted[0]?.name || '';
   }, [pw]);
   const gem = useMemo(() => {
     const trapP = pw.find(p => p.name === trap);
     if (!trapP) return '';
-    const band = pw.filter(p => !p.isOut && p.name !== trap && p.salary >= trapP.salary - 2000 && p.salary <= trapP.salary + 500);
+    const band = pw.filter(p => !p.isOut && p.projectable && p.name !== trap &&
+                                p.salary >= trapP.salary - 2000 && p.salary <= trapP.salary + 500);
     if (band.length === 0) return '';
     // Best value in band, weighted by ceiling
     const scored = band.map(p => ({ name: p.name, s: p.val * p.ceil })).sort((a, b) => b.s - a.s);
@@ -2443,8 +2574,10 @@ function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
 
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
 
-  // Cascade alert row if any players are OUT/Q/DOUBTFUL
-  const injuredPlayers = pw.filter(p => ['OUT','Q','DOUBTFUL'].includes(p.effStatus));
+  // Cascade removed — projections come from static DK prop lines only.
+  // Status cycler still exists so the user can flag players OUT to exclude
+  // them from the builder / ownership sim.
+  const unprojectablePlayers = pw.filter(p => !p.projectable && !p.isOut);
 
   return (<>
     <div className="metrics">
@@ -2453,12 +2586,11 @@ function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
       <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem || '-'}</div><div className="metric-sub">Best value in trap's salary band</div></div>
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Field-converged chalk</div></div>
     </div>
-    {injuredPlayers.length > 0 && (
-      <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+    {unprojectablePlayers.length > 0 && (
+      <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <Icon name="warning" size={14} color="#FBBF24"/>
-        <strong style={{ color: 'var(--amber-text)' }}>Injury cascade active:</strong>
-        <span>{injuredPlayers.map(p => `${p.name} (${p.effStatus})`).join(' · ')}</span>
-        <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>Projections adjusted automatically for top backups.</span>
+        <strong style={{ color: 'var(--amber-text)' }}>{unprojectablePlayers.length} players have no DraftKings prop line</strong>
+        <span style={{ color: 'var(--text-dim)' }}>— excluded from projections and builder. They remain visible below marked <span style={{ color: 'var(--text-muted)' }}>No Line</span>.</span>
       </div>
     )}
     {gameInfo && (
@@ -2476,10 +2608,13 @@ function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
     )}
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
-      <S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" />
+      <S label="Sal" colKey="salary" />
+      <S label="Sim Own" colKey="simOwn" />
+      <S label="CPT %" colKey="cptOwnPct" />
       <S label="Proj" colKey="proj" /><S label="Ceil" colKey="ceil" />
       <S label="Val" colKey="val" /><S label="CVal" colKey="cval" />
-      <S label="Min" colKey="projMins" /><S label="Usg" colKey="usg" />
+      <S label="Min" colKey="projMins" />
+      <th title="Source of projection">Src</th>
       <th>Status</th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
@@ -2490,32 +2625,37 @@ function NBADKTab({ players, gameInfo, own, onOverride, overrides }) {
       if (ig) badges.push({ icon: 'gem',    label: 'Hidden Gem' });
       if (it) badges.push({ icon: 'bomb',   label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
-      const dimStyle = p.isOut ? { opacity: 0.45 } : {};
+      const dimStyle = p.isOut || !p.projectable ? { opacity: p.isOut ? 0.4 : 0.6 } : {};
+      const noLine = !p.projectable;
       return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''} style={dimStyle}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
         <td className="name">
           {p.name}
-          {p.cascadeNote && <div style={{ fontSize: 10, color: 'var(--amber-text)', marginTop: 2 }}>↑ {p.cascadeNote}</div>}
+          {noLine && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 3, fontSize: 9, fontWeight: 700, background: 'rgba(251,191,36,0.15)', color: 'var(--amber-text)', border: '1px solid rgba(251,191,36,0.4)' }}>NO LINE</span>}
+          {p.statCoverage > 0 && p.statCoverage < 5 && !noLine && <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text-dim)' }} title="Partial DK data">{p.statCoverage}/5 stats</span>}
         </td>
         <td><TeamBadge team={p.team} /></td>
         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.positions_str}</td>
         <td className="num">{fmtSal(p.salary)}</td>
-        <td className="num" style={{ color: p.simOwn > 40 ? 'var(--red-text)' : p.simOwn > 25 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
+        <td className="num" style={{ color: p.simOwn > 40 ? 'var(--red-text)' : p.simOwn > 25 ? 'var(--amber)' : 'var(--text-muted)' }}>{noLine ? '—' : fmt(p.simOwn, 1) + '%'}</td>
+        <td className="num" title="Captain-specific ownership in top 1500 lineups" style={{ color: p.cptOwnPct > 30 ? 'var(--red-text)' : p.cptOwnPct > 15 ? 'var(--amber)' : 'var(--text-dim)', fontWeight: p.cptOwnPct > 20 ? 600 : 400 }}>{noLine ? '—' : fmt(p.cptOwnPct, 1) + '%'}</td>
         <td className="num">
-          <span className={iv ? 'cell-top3' : 'cell-proj'}>
-            <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
-              value={fmt(p.proj, 1)}
-              onChange={e => onOverride && onOverride(p.name, e.target.value)}
-              onDoubleClick={() => onOverride && onOverride(p.name, null)}
-              title={isOver ? 'Overridden — double-click to reset' : 'Click to edit'} />
-          </span>
+          {noLine ? <span style={{ color: 'var(--text-dim)' }}>—</span> : (
+            <span className={iv ? 'cell-top3' : 'cell-proj'}>
+              <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
+                value={fmt(p.proj, 1)}
+                onChange={e => onOverride && onOverride(p.name, e.target.value)}
+                onDoubleClick={() => onOverride && onOverride(p.name, null)}
+                title={isOver ? 'Overridden — double-click to reset' : 'Click to edit'} />
+            </span>
+          )}
         </td>
-        <td className="num"><span style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--green)', padding: '3px 8px', borderRadius: 4, fontWeight: 600, fontSize: 12 }}>{fmt(p.ceil, 1)}</span></td>
-        <td className="num"><span className={iv ? 'cell-top3' : ''}>{fmt(p.val, 2)}</span></td>
-        <td className="num" style={{ color: p.cval > 5 ? 'var(--green)' : undefined, fontWeight: p.cval > 5 ? 700 : 400 }}>{fmt(p.cval, 2)}</td>
+        <td className="num">{noLine ? <span style={{ color: 'var(--text-dim)' }}>—</span> : <span style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--green)', padding: '3px 8px', borderRadius: 4, fontWeight: 600, fontSize: 12 }}>{fmt(p.ceil, 1)}</span>}</td>
+        <td className="num">{noLine ? '—' : <span className={iv ? 'cell-top3' : ''}>{fmt(p.val, 2)}</span>}</td>
+        <td className="num" style={{ color: p.cval > 5 ? 'var(--green)' : undefined, fontWeight: p.cval > 5 ? 700 : 400 }}>{noLine ? '—' : fmt(p.cval, 2)}</td>
         <td className="num">{fmt(p.projMins, 1)}</td>
-        <td className="num muted">{fmt(p.usg, 1)}</td>
+        <td className="num muted" title="Informational — minutes are not used in projections (DK lines already price them in)">{noLine ? '—' : 'DK'}</td>
         <td><StatusChip status={p.effStatus} onCycle={() => cycleStatus(p.name)} /></td>
       </tr>; })}</tbody></table></div>
   </>);
@@ -2601,7 +2741,7 @@ function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
   // CONTRARIAN MODE (NBA) — mirrors tennis/MMA with NBA-specific gem band
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
-    const withSal = rp.filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
+    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
     if (withSal.length === 0) return {};
     const caps = {};
 
@@ -2612,7 +2752,7 @@ function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
     const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
 
-    // TRAP — highest-owned player
+    // TRAP = highest field ownership (pure chalk fade for GPP leverage).
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
     const trap = hasOwn
       ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
@@ -2678,7 +2818,7 @@ function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
   }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
 
   const sp = useMemo(() =>
-    [...rp].filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
+    [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
            .sort((a, b) => b.val - a.val),
     [rp]);
 
@@ -2839,15 +2979,63 @@ function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
     </div>
-    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
-      <span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-      <span style={{ color: 'var(--text-dim)', fontSize: 10, width: 32, flexShrink: 0 }}>{p.team}</span>
-      <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
-      <span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span>
-      <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 30, textAlign: 'right', flexShrink: 0 }}>{fmt(ownership[p.name] || 0, 0)}%</span>
-      <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} />
-      <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} />
-    </div>)}</div>
+    <div className="builder-controls nba-builder-grid" style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+      gap: 8,
+    }}>{sp.map(p => {
+      const ownPct = ownership[p.name] || 0;
+      return <div className="ctrl-row" key={p.name} style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 34px 50px 40px 34px 44px 44px',
+        alignItems: 'center',
+        gap: 6,
+        padding: '8px 10px',
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
+        borderRadius: 6,
+        fontSize: 12,
+      }}>
+        <span className="ctrl-name" style={{
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontWeight: 600, color: 'var(--text)',
+        }} title={p.name}>{p.name}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: p.team === 'OKC' ? '#FFB648' : '#C99AD4', textAlign: 'center' }}>{p.team}</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: 11, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtSal(p.salary)}</span>
+        <span className="ctrl-proj" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary)', fontVariantNumeric: 'tabular-nums' }}>{fmt(p.proj, 1)}</span>
+        <span style={{
+          color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)',
+          fontSize: 11, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+        }}>{fmt(ownPct, 0)}%</span>
+        <input type="number" min="0" max="100" value={exp[p.name]?.min ?? globalMin}
+          onChange={e => sE(p.name, 'min', +e.target.value)} title="Min exposure %"
+          style={{
+            width: '100%', padding: '4px 6px', minWidth: 0,
+            background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4,
+            color: 'var(--text)', fontSize: 12, textAlign: 'center',
+          }} />
+        <input type="number" min="0" max="100" value={exp[p.name]?.max ?? globalMax}
+          onChange={e => sE(p.name, 'max', +e.target.value)} title="Max exposure %"
+          style={{
+            width: '100%', padding: '4px 6px', minWidth: 0,
+            background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4,
+            color: 'var(--text)', fontSize: 12, textAlign: 'center',
+          }} />
+      </div>;
+    })}</div>
+    {/* Column header legend for the grid above */}
+    <div style={{
+      display: 'none', fontSize: 10, color: 'var(--text-dim)',
+      marginTop: 4, marginBottom: 8, paddingLeft: 10,
+    }} className="nba-builder-legend-spacer" />
+    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, marginBottom: 12, paddingLeft: 4 }}>
+      Columns: <strong style={{ color: 'var(--text-muted)' }}>Player</strong> · Team · Salary · Proj · Sim Own% · <strong style={{ color: 'var(--primary)' }}>Min%</strong> · <strong style={{ color: 'var(--primary)' }}>Max%</strong>
+      {sp.length < rp.filter(p => p.salary > 0).length && (
+        <span style={{ marginLeft: 12, color: 'var(--amber-text)' }}>
+          · {rp.filter(p => p.salary > 0 && !p.projectable).length} players excluded (no DK line)
+        </span>
+      )}
+    </div>
     <button className="btn btn-primary" onClick={run} disabled={!canBuild}
       title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
