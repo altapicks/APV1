@@ -2945,19 +2945,32 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
         <span style={{ color: 'var(--text-dim)' }}>— excluded from projections and builder. They remain visible below marked <span style={{ color: 'var(--text-muted)' }}>No Line</span>.</span>
       </div>
     )}
-    {gameInfo && (
-      <div style={{ padding: '8px 12px', marginBottom: 12, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-        <span>{gameInfo.away} @ {gameInfo.home}</span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
-        <span>Spread: <strong style={{ color: 'var(--text)' }}>{gameInfo.home} {gameInfo.spread_okc > 0 ? '+' : ''}{gameInfo.spread_okc}</strong></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
-        <span>Total: <strong style={{ color: 'var(--text)' }}>{gameInfo.total}</strong></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
-        <span>Pace: <strong style={{ color: 'var(--text)' }}>{((gameInfo.pace_okc + gameInfo.pace_phx) / 2).toFixed(1)}</strong></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
-        <span title="Probability the game becomes a blowout — affects starter minutes">Blowout risk: <strong style={{ color: gameInfo.blowout_risk_okc > 0.6 ? 'var(--amber)' : 'var(--text)' }}>{Math.round(gameInfo.blowout_risk_okc * 100)}%</strong></span>
-      </div>
-    )}
+    {gameInfo && (() => {
+      const hk = (gameInfo.home || '').toLowerCase();
+      const ak = (gameInfo.away || '').toLowerCase();
+      const spread   = gameInfo[`spread_${hk}`];
+      const paceH    = gameInfo[`pace_${hk}`];
+      const paceA    = gameInfo[`pace_${ak}`];
+      const blowoutH = gameInfo[`blowout_risk_${hk}`];
+      const fav      = Number.isFinite(spread) ? (spread < 0 ? gameInfo.home : gameInfo.away) : null;
+      const hasSpread  = Number.isFinite(spread);
+      const hasTotal   = Number.isFinite(gameInfo.total);
+      const hasPace    = Number.isFinite(paceH) && Number.isFinite(paceA);
+      const hasBlowout = Number.isFinite(blowoutH);
+      return (
+        <div style={{ padding: '8px 12px', marginBottom: 12, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <span>{gameInfo.away} @ {gameInfo.home}</span>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span>Spread: <strong style={{ color: 'var(--text)' }}>{hasSpread ? `${fav} ${Math.abs(spread)}` : '—'}</strong></span>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span>Total: <strong style={{ color: 'var(--text)' }}>{hasTotal ? gameInfo.total : '—'}</strong></span>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span>Pace: <strong style={{ color: 'var(--text)' }}>{hasPace ? ((paceH + paceA) / 2).toFixed(1) : '—'}</strong></span>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span title="Probability the game becomes a blowout — affects starter minutes">Blowout risk: <strong style={{ color: hasBlowout && blowoutH > 0.6 ? 'var(--amber)' : 'var(--text)' }}>{hasBlowout ? `${Math.round(blowoutH * 100)}%` : '—'}</strong></span>
+        </div>
+      );
+    })()}
     <SearchBar value={q} onChange={setQ} placeholder="Search players, teams, positions" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
