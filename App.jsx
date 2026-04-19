@@ -523,14 +523,6 @@ function SplashScreen({ sport }) {
         </div>
       )}
 
-      {/* Loader text */}
-      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: 'rgba(248,250,252,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0, animation: 'oo-fade-in 0.6s ease-out 1.7s forwards' }}>
-        Loading {isTennis ? 'Tennis' : 'UFC'} slate
-        <span style={{ marginLeft: 10 }}>
-          {[0, 1, 2].map(i => <span key={i} style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: '#F5C518', margin: '0 1px', animation: `oo-dot-blink 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
-        </span>
-      </div>
-
       {/* Vignette */}
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)', pointerEvents: 'none' }} />
     </div>
@@ -773,11 +765,10 @@ export default function App() {
       }
       .tab.tab-icon.active {
         border-color: #F5C518 !important;
-        background: rgba(245, 197, 24, 0.14) !important;
+        background: rgba(245, 197, 24, 0.12) !important;
         box-shadow:
-          0 0 18px rgba(245, 197, 24, 0.5),
-          0 0 34px rgba(245, 197, 24, 0.22),
-          inset 0 0 0 1px rgba(245, 197, 24, 0.45) !important;
+          0 0 10px rgba(245, 197, 24, 0.35),
+          inset 0 0 0 1px rgba(245, 197, 24, 0.3) !important;
       }
       .tab.tab-icon svg {
         width: 22px;
