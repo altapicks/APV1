@@ -144,6 +144,114 @@ export function ppEV(projectedScore, ppLine) {
 }
 
 // ============================================================
+// SHOWDOWN OPTIMIZER (DK Captain Mode)
+// ============================================================
+// Builds 3-player lineups: CPT (1.5x proj, CPT salary), A-CPT (1.25x proj, A-CPT salary), FLEX (1x proj, FLEX salary)
+// Requires each player to have: flex_salary, acpt_salary, cpt_salary, flex_id, acpt_id, cpt_id, projection
+// Mirrors optimize()'s urgency-weighted min satisfaction + greedy fill pattern.
+export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minSalary = 0) {
+  const N = players.length;
+  const idx = {};
+  players.forEach((p, i) => { idx[p.name] = i; });
+
+  // Enumerate all valid (CPT, A-CPT, FLEX) triples with distinct players
+  const allLineups = [];
+  for (let c = 0; c < N; c++) {
+    const cp = players[c];
+    const cSal = cp.cpt_salary, cProj = 1.5 * cp.projection;
+    for (let a = 0; a < N; a++) {
+      if (a === c) continue;
+      const ap = players[a];
+      const partial = cSal + ap.acpt_salary;
+      if (partial > salaryCap) continue;
+      const aProj = 1.25 * ap.projection;
+      for (let f = 0; f < N; f++) {
+        if (f === c || f === a) continue;
+        const fp = players[f];
+        const ts = partial + fp.flex_salary;
+        if (ts > salaryCap || ts < minSalary) continue;
+        const tp = cProj + aProj + fp.projection;
+        allLineups.push({
+          proj: round2(tp),
+          sal: ts,
+          players: [c, a, f],                    // classic-compat: array of player indices
+          roles: ['CPT', 'A-CPT', 'FLEX'],       // parallel array of role labels
+          cpt: c, acpt: a, flex: f,              // explicit role-indexed fields for export
+        });
+      }
+    }
+  }
+  allLineups.sort((a, b) => b.proj - a.proj);
+
+  // Exposure caps (identical pattern to classic optimize)
+  const maxCaps = {}, minCaps = {};
+  const defCap = nLineups;
+  players.forEach(p => {
+    if (p.maxExp != null) maxCaps[p.name] = Math.max(1, Math.round(nLineups * p.maxExp / 100));
+    if (p.minExp != null && p.minExp > 0) minCaps[p.name] = Math.max(1, Math.round(nLineups * p.minExp / 100));
+  });
+
+  const counts = new Array(N).fill(0);
+  const cptCounts = new Array(N).fill(0);       // tracks CPT-specific usage for downstream diagnostics
+  const selected = [];
+  const usedKeys = new Set();
+
+  function canAdd(lu) {
+    for (const pid of lu.players) {
+      const cap = maxCaps[players[pid].name] ?? defCap;
+      if (counts[pid] + 1 > cap) return false;
+    }
+    return true;
+  }
+
+  function addLU(lu) {
+    const key = `${lu.cpt}|${lu.acpt}|${lu.flex}`;
+    selected.push(lu); usedKeys.add(key);
+    lu.players.forEach(pid => counts[pid]++);
+    cptCounts[lu.cpt]++;
+  }
+
+  // Phase 1: urgency-weighted min satisfaction (same logic as classic)
+  const minNames = Object.keys(minCaps);
+  while (minNames.some(name => counts[idx[name]] < minCaps[name]) && selected.length < nLineups) {
+    const urgency = new Map();
+    for (const name of minNames) {
+      const pid = idx[name];
+      const needed = minCaps[name] - counts[pid];
+      if (needed <= 0) continue;
+      urgency.set(pid, needed / nLineups);
+    }
+    if (urgency.size === 0) break;
+
+    let best = null, bestScore = 0, bestProj = -Infinity;
+    for (const lu of allLineups) {
+      const key = `${lu.cpt}|${lu.acpt}|${lu.flex}`;
+      if (usedKeys.has(key) || !canAdd(lu)) continue;
+      let score = 0;
+      for (const pid of lu.players) {
+        if (urgency.has(pid)) score += urgency.get(pid);
+      }
+      if (score === 0) continue;
+      if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && lu.proj > bestProj)) {
+        best = lu; bestScore = score; bestProj = lu.proj;
+      }
+    }
+    if (best) addLU(best);
+    else break;
+  }
+
+  // Phase 2: greedy fill from highest projection
+  for (const lu of allLineups) {
+    if (selected.length >= nLineups) break;
+    const key = `${lu.cpt}|${lu.acpt}|${lu.flex}`;
+    if (usedKeys.has(key) || !canAdd(lu)) continue;
+    addLU(lu);
+  }
+
+  return { lineups: selected, counts, cptCounts, total: allLineups.length };
+}
+
+// ============================================================
 // LINEUP OPTIMIZER
 // ============================================================
 export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6, minSalary = 0) {
