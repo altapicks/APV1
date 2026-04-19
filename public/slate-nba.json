@@ -1,0 +1,1467 @@
+{
+  "date": "2026-04-19",
+  "slate_type": "showdown",
+  "notes": "DK Showdown: 1 CPT (1.5x) + 5 UTIL \u00b7 $50K cap \u00b7 PHX@OKC Game 1.",
+  "game": {
+    "away": "PHX",
+    "home": "OKC",
+    "tip": "04/19/2026 03:30PM ET",
+    "spread_okc": -14.5,
+    "total": 214.5,
+    "implied_okc": 114.5,
+    "implied_phx": 100.0,
+    "ml_okc": -1000,
+    "ml_phx": 700,
+    "pace_okc": 99.1,
+    "pace_phx": 100.5,
+    "blowout_risk_okc": 0.7,
+    "blowout_risk_phx": 0.3
+  },
+  "dk_players": [
+    {
+      "name": "Shai Gilgeous-Alexander",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42685785,
+      "util_salary": 11600,
+      "cpt_id": 42685821,
+      "cpt_salary": 17400,
+      "salary": 11600,
+      "id": 42685785,
+      "avg_ppg": 50.62,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 30.0,
+        "L5": 27.3,
+        "L10": 32.0,
+        "All": 33.3
+      },
+      "pp_stats": {
+        "points": 29.5,
+        "rebounds": 4.5,
+        "assists": 6.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 479,
+      "td_odds": 5200
+    },
+    {
+      "name": "Devin Booker",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42685786,
+      "util_salary": 10400,
+      "cpt_id": 42685822,
+      "cpt_salary": 15600,
+      "salary": 10400,
+      "id": 42685786,
+      "avg_ppg": 40.58,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 40.0,
+        "L5": 39.0,
+        "L10": 36.3,
+        "All": 33.8
+      },
+      "pp_stats": {
+        "points": 23.5,
+        "rebounds": 4.5,
+        "assists": 5.5,
+        "threes": 1.5,
+        "stls_blks": 1.3
+      },
+      "dd_odds": 730,
+      "td_odds": 7700
+    },
+    {
+      "name": "Jalen Green",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42685787,
+      "util_salary": 9800,
+      "cpt_id": 42685823,
+      "cpt_salary": 14700,
+      "salary": 9800,
+      "id": 42685787,
+      "avg_ppg": 30.6,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 39.5,
+        "L5": 27.7,
+        "L10": 28.6,
+        "All": 26.7
+      },
+      "pp_stats": {
+        "points": 18.5,
+        "rebounds": 4.5,
+        "assists": 3.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 2100
+    },
+    {
+      "name": "Jalen Williams",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42685788,
+      "util_salary": 9400,
+      "cpt_id": 42685824,
+      "cpt_salary": 14100,
+      "salary": 9400,
+      "id": 42685788,
+      "avg_ppg": 33.39,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 32.0,
+        "L5": 29.0,
+        "L10": 26.8,
+        "All": 28.4
+      },
+      "pp_stats": {
+        "points": 17.5,
+        "rebounds": 4.5,
+        "assists": 5.5,
+        "threes": 0.5,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 1120
+    },
+    {
+      "name": "Chet Holmgren",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42685789,
+      "util_salary": 8800,
+      "cpt_id": 42685825,
+      "cpt_salary": 13200,
+      "salary": 8800,
+      "id": 42685789,
+      "avg_ppg": 35.3,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 31.0,
+        "L5": 25.0,
+        "L10": 26.0,
+        "All": 28.9
+      },
+      "pp_stats": {
+        "points": 16.5,
+        "rebounds": 9.5,
+        "assists": 1.5,
+        "threes": 1.5,
+        "stls_blks": 2.5
+      },
+      "dd_odds": 126
+    },
+    {
+      "name": "Dillon Brooks",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42685790,
+      "util_salary": 7400,
+      "cpt_id": 42685826,
+      "cpt_salary": 11100,
+      "salary": 7400,
+      "id": 42685790,
+      "avg_ppg": 29.99,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 33.5,
+        "L5": 30.3,
+        "L10": 29.8,
+        "All": 30.5
+      },
+      "pp_stats": {
+        "points": 15.5,
+        "rebounds": 3.5,
+        "assists": 1.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 3100
+    },
+    {
+      "name": "Isaiah Hartenstein",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685791,
+      "util_salary": 6400,
+      "cpt_id": 42685827,
+      "cpt_salary": 9600,
+      "salary": 6400,
+      "id": 42685791,
+      "avg_ppg": 29.39,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 20.0,
+        "L5": 16.3,
+        "L10": 19.9,
+        "All": 24.3
+      },
+      "pp_stats": {
+        "points": 7.5,
+        "rebounds": 7.5,
+        "assists": 2.5,
+        "threes": 0.1,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 436
+    },
+    {
+      "name": "Grayson Allen",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42685792,
+      "util_salary": 6200,
+      "cpt_id": 42685828,
+      "cpt_salary": 9300,
+      "salary": 6200,
+      "id": 42685792,
+      "avg_ppg": 29.98,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 26,
+        "L5": 13.0,
+        "L10": 22.4,
+        "All": 28.8
+      },
+      "pp_stats": {
+        "points": 8.5,
+        "rebounds": 3.0,
+        "assists": 2.0,
+        "threes": 1.5,
+        "stls_blks": 1.0
+      }
+    },
+    {
+      "name": "Jordan Goodwin",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42685793,
+      "util_salary": 6000,
+      "cpt_id": 42685829,
+      "cpt_salary": 9000,
+      "salary": 6000,
+      "id": 42685793,
+      "avg_ppg": 22.12,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 31.5,
+        "L5": 25.3,
+        "L10": 24.3,
+        "All": 22.8
+      },
+      "pp_stats": {
+        "points": 8.5,
+        "rebounds": 5.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 1400
+    },
+    {
+      "name": "Mark Williams",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685794,
+      "util_salary": 5800,
+      "cpt_id": 42685830,
+      "cpt_salary": 8700,
+      "salary": 5800,
+      "id": 42685794,
+      "avg_ppg": 26.4,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 22.0,
+        "L5": 21.0,
+        "L10": 23.2,
+        "All": 23.6
+      },
+      "pp_stats": {
+        "points": 7.5,
+        "rebounds": 6.5,
+        "assists": 0.5,
+        "threes": 0.2,
+        "stls_blks": 1.5
+      },
+      "dd_odds": 780
+    },
+    {
+      "name": "Ajay Mitchell",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42685795,
+      "util_salary": 5200,
+      "cpt_id": 42685831,
+      "cpt_salary": 7800,
+      "salary": 5200,
+      "id": 42685795,
+      "avg_ppg": 26.14,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 24.0,
+        "L5": 21.3,
+        "L10": 23.8,
+        "All": 25.8
+      },
+      "pp_stats": {
+        "points": 10.5,
+        "rebounds": 2.5,
+        "assists": 3.5,
+        "threes": 0.5,
+        "stls_blks": 1.1
+      }
+    },
+    {
+      "name": "Oso Ighodaro",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685796,
+      "util_salary": 4800,
+      "cpt_id": 42685832,
+      "cpt_salary": 7200,
+      "salary": 4800,
+      "id": 42685796,
+      "avg_ppg": 18.85,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 21.0,
+        "L5": 20.4,
+        "L10": 22.7,
+        "All": 22.1
+      }
+    },
+    {
+      "name": "Royce O'Neale",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42685797,
+      "util_salary": 4600,
+      "cpt_id": 42685833,
+      "cpt_salary": 6900,
+      "salary": 4600,
+      "id": 42685797,
+      "avg_ppg": 23.47,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 25.0,
+        "L5": 23.8,
+        "L10": 22.9,
+        "All": 28.3
+      },
+      "pp_stats": {
+        "points": 6.5,
+        "rebounds": 4.5,
+        "assists": 1.0,
+        "threes": 1.5,
+        "stls_blks": 1.0
+      }
+    },
+    {
+      "name": "Cason Wallace",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42685798,
+      "util_salary": 4400,
+      "cpt_id": 42685834,
+      "cpt_salary": 6600,
+      "salary": 4400,
+      "id": 42685798,
+      "avg_ppg": 21.16,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 21.0,
+        "L5": 22.0,
+        "L10": 23.0,
+        "All": 26.6
+      },
+      "pp_stats": {
+        "points": 6.5,
+        "rebounds": 2.5,
+        "assists": 1.5,
+        "threes": 0.5,
+        "stls_blks": 1.3
+      }
+    },
+    {
+      "name": "Collin Gillespie",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42685799,
+      "util_salary": 4000,
+      "cpt_id": 42685835,
+      "cpt_salary": 6000,
+      "salary": 4000,
+      "id": 42685799,
+      "avg_ppg": 27.9,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 18.5,
+        "L5": 21.8,
+        "L10": 23.4,
+        "All": 28.2
+      }
+    },
+    {
+      "name": "Alex Caruso",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42685800,
+      "util_salary": 3800,
+      "cpt_id": 42685836,
+      "cpt_salary": 5700,
+      "salary": 3800,
+      "id": 42685800,
+      "avg_ppg": 15.84,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 13.0,
+        "L5": 12.0,
+        "L10": 16.7,
+        "All": 18.2
+      },
+      "pp_stats": {
+        "points": 5.5,
+        "rebounds": 2.5,
+        "assists": 2.0,
+        "threes": 0.5,
+        "stls_blks": 1.6
+      }
+    },
+    {
+      "name": "Luguentz Dort",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42685801,
+      "util_salary": 3400,
+      "cpt_id": 42685837,
+      "cpt_salary": 5100,
+      "salary": 3400,
+      "id": 42685801,
+      "avg_ppg": 17.77,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 20.0,
+        "L5": 20.8,
+        "L10": 21.4,
+        "All": 26.8
+      },
+      "pp_stats": {
+        "points": 6.5,
+        "rebounds": 2.5,
+        "assists": 0.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      }
+    },
+    {
+      "name": "Jaylin Williams",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685802,
+      "util_salary": 3200,
+      "cpt_id": 42685838,
+      "cpt_salary": 4800,
+      "salary": 3200,
+      "id": 42685802,
+      "avg_ppg": 20.37,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 14.0,
+        "L5": 13.3,
+        "L10": 16.4,
+        "All": 19.7
+      }
+    },
+    {
+      "name": "Isaiah Joe",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42685803,
+      "util_salary": 3000,
+      "cpt_id": 42685839,
+      "cpt_salary": 4500,
+      "salary": 3000,
+      "id": 42685803,
+      "avg_ppg": 18.9,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 23.0,
+        "L5": 18.3,
+        "L10": 15.3,
+        "All": 21.2
+      },
+      "pp_stats": {
+        "points": 5.5,
+        "rebounds": 1.5,
+        "assists": 1.0,
+        "threes": 1.5,
+        "stls_blks": 0.5
+      }
+    },
+    {
+      "name": "Haywood Highsmith",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42685804,
+      "util_salary": 2800,
+      "cpt_id": 42685840,
+      "cpt_salary": 4200,
+      "salary": 2800,
+      "id": 42685804,
+      "avg_ppg": 10.44,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 10.0,
+        "L5": 10.0,
+        "L10": 10.0,
+        "All": 12.6
+      }
+    },
+    {
+      "name": "Jared McCain",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42685805,
+      "util_salary": 2600,
+      "cpt_id": 42685841,
+      "cpt_salary": 3900,
+      "salary": 2600,
+      "id": 42685805,
+      "avg_ppg": 14.41,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 18.0,
+        "L5": 17.0,
+        "L10": 14.7,
+        "All": 17.9
+      }
+    },
+    {
+      "name": "Branden Carlson",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685806,
+      "util_salary": 2400,
+      "cpt_id": 42685842,
+      "cpt_salary": 3600,
+      "salary": 2400,
+      "id": 42685806,
+      "avg_ppg": 12.44,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 39.5,
+        "L5": 23.5,
+        "L10": 18.2,
+        "All": 11.7
+      }
+    },
+    {
+      "name": "Nikola Topic",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42685807,
+      "util_salary": 2200,
+      "cpt_id": 42685843,
+      "cpt_salary": 3300,
+      "salary": 2200,
+      "id": 42685807,
+      "avg_ppg": 14.52,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 39.0,
+        "L5": 24.0,
+        "L10": 21.6,
+        "All": 16.0
+      }
+    },
+    {
+      "name": "Kenrich Williams",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42685808,
+      "util_salary": 2000,
+      "cpt_id": 42685844,
+      "cpt_salary": 3000,
+      "salary": 2000,
+      "id": 42685808,
+      "avg_ppg": 14.15,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 23.0,
+        "L5": 17.8,
+        "L10": 13.6,
+        "All": 15.2
+      }
+    },
+    {
+      "name": "Koby Brea",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42685809,
+      "util_salary": 1800,
+      "cpt_id": 42685845,
+      "cpt_salary": 2700,
+      "salary": 1800,
+      "id": 42685809,
+      "avg_ppg": 6.38,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 29.0,
+        "L5": 21.5,
+        "L10": 10.2,
+        "All": 7.1
+      }
+    },
+    {
+      "name": "Payton Sandfort",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42685810,
+      "util_salary": 1600,
+      "cpt_id": 42685846,
+      "cpt_salary": 2400,
+      "salary": 1600,
+      "id": 42685810,
+      "avg_ppg": 13.12,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 28.0,
+        "L5": 28.0,
+        "L10": 19.3,
+        "All": 15.8
+      }
+    },
+    {
+      "name": "Aaron Wiggins",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42685811,
+      "util_salary": 1400,
+      "cpt_id": 42685847,
+      "cpt_salary": 2100,
+      "salary": 1400,
+      "id": 42685811,
+      "avg_ppg": 18.56,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 18.7,
+        "L5": 16.8,
+        "L10": 15.6,
+        "All": 21.8
+      }
+    },
+    {
+      "name": "Brooks Barnhizer",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42685812,
+      "util_salary": 1200,
+      "cpt_id": 42685848,
+      "cpt_salary": 1800,
+      "salary": 1200,
+      "id": 42685812,
+      "avg_ppg": 5.72,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 29.5,
+        "L5": 21.7,
+        "L10": 17.5,
+        "All": 8.7
+      }
+    },
+    {
+      "name": "CJ Huntley",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685813,
+      "util_salary": 1000,
+      "cpt_id": 42685849,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685813,
+      "avg_ppg": 5.81,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 29.0,
+        "L5": 16.5,
+        "L10": 11.7,
+        "All": 10.0
+      }
+    },
+    {
+      "name": "Khaman Maluach",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685814,
+      "util_salary": 1000,
+      "cpt_id": 42685850,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685814,
+      "avg_ppg": 8.18,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 17.0,
+        "L5": 18.0,
+        "L10": 11.5,
+        "All": 8.8
+      }
+    },
+    {
+      "name": "Ryan Dunn",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42685815,
+      "util_salary": 1000,
+      "cpt_id": 42685851,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685815,
+      "avg_ppg": 15.62,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 13.7,
+        "L5": 18.8,
+        "L10": 15.0,
+        "All": 19.0
+      }
+    },
+    {
+      "name": "Jamaree Bouyea",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42685816,
+      "util_salary": 1000,
+      "cpt_id": 42685852,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685816,
+      "avg_ppg": 12.26,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 20.5,
+        "L5": 18.0,
+        "L10": 11.7,
+        "All": 13.7
+      }
+    },
+    {
+      "name": "Rasheer Fleming",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42685817,
+      "util_salary": 1000,
+      "cpt_id": 42685853,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685817,
+      "avg_ppg": 9.12,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 19.5,
+        "L5": 19.0,
+        "L10": 15.6,
+        "All": 12.1
+      }
+    },
+    {
+      "name": "Amir Coffey",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42685818,
+      "util_salary": 1000,
+      "cpt_id": 42685854,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685818,
+      "avg_ppg": 6.23,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 14.0,
+        "L5": 13.8,
+        "L10": 13.8,
+        "All": 13.4
+      }
+    },
+    {
+      "name": "Isaiah Livers",
+      "team": "PHX",
+      "opponent": "OKC",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42685819,
+      "util_salary": 1000,
+      "cpt_id": 42685855,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685819,
+      "avg_ppg": 5.96,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 0.0,
+        "L5": 0.0,
+        "L10": 0.0,
+        "All": 9.7
+      }
+    },
+    {
+      "name": "Thomas Sorber",
+      "team": "OKC",
+      "opponent": "PHX",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42685820,
+      "util_salary": 1000,
+      "cpt_id": 42685856,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42685820,
+      "avg_ppg": 0.0,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": 0,
+        "L5": 0,
+        "L10": 0,
+        "All": 0
+      }
+    }
+  ],
+  "pp_lines": [
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "Fantasy Score",
+      "line": 49
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "Fantasy Score",
+      "line": 37.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "Fantasy Score",
+      "line": 36.5
+    },
+    {
+      "player": "Jalen Williams",
+      "stat": "Fantasy Score",
+      "line": 33.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "Fantasy Score",
+      "line": 29.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "Fantasy Score",
+      "line": 24
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "stat": "Fantasy Score",
+      "line": 24.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "Fantasy Score",
+      "line": 22.5
+    },
+    {
+      "player": "Mark Williams",
+      "stat": "Fantasy Score",
+      "line": 21.5
+    },
+    {
+      "player": "Ajay Mitchell",
+      "stat": "Fantasy Score",
+      "line": 21
+    },
+    {
+      "player": "Cason Wallace",
+      "stat": "Fantasy Score",
+      "line": 15.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "Fantasy Score",
+      "line": 15
+    },
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "Points",
+      "line": 29.5
+    },
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "Rebounds",
+      "line": 4.5
+    },
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "Assists",
+      "line": 6.5
+    },
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Shai Gilgeous-Alexander",
+      "stat": "Pts+Reb+Ast",
+      "line": 41.5
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "Points",
+      "line": 23.5
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "Rebounds",
+      "line": 4.5
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "Assists",
+      "line": 5.5
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "Stls+Blks",
+      "line": 1.3
+    },
+    {
+      "player": "Devin Booker",
+      "stat": "Pts+Reb+Ast",
+      "line": 33.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "Points",
+      "line": 18.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "Rebounds",
+      "line": 4.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "Assists",
+      "line": 3.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Jalen Green",
+      "stat": "Pts+Reb+Ast",
+      "line": 26.5
+    },
+    {
+      "player": "Jalen Williams",
+      "stat": "Points",
+      "line": 17.5
+    },
+    {
+      "player": "Jalen Williams",
+      "stat": "Rebounds",
+      "line": 4.5
+    },
+    {
+      "player": "Jalen Williams",
+      "stat": "Assists",
+      "line": 5.5
+    },
+    {
+      "player": "Jalen Williams",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Jalen Williams",
+      "stat": "Pts+Reb+Ast",
+      "line": 27.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "Points",
+      "line": 16.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "Rebounds",
+      "line": 9.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "Assists",
+      "line": 1.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "Stls+Blks",
+      "line": 2.5
+    },
+    {
+      "player": "Chet Holmgren",
+      "stat": "Pts+Reb+Ast",
+      "line": 27.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "Points",
+      "line": 15.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "Rebounds",
+      "line": 3.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "Assists",
+      "line": 1.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Dillon Brooks",
+      "stat": "Pts+Reb+Ast",
+      "line": 21.5
+    },
+    {
+      "player": "Ajay Mitchell",
+      "stat": "Points",
+      "line": 10.5
+    },
+    {
+      "player": "Ajay Mitchell",
+      "stat": "Rebounds",
+      "line": 2.5
+    },
+    {
+      "player": "Ajay Mitchell",
+      "stat": "Assists",
+      "line": 3.5
+    },
+    {
+      "player": "Ajay Mitchell",
+      "stat": "Stls+Blks",
+      "line": 1.1
+    },
+    {
+      "player": "Ajay Mitchell",
+      "stat": "Pts+Reb+Ast",
+      "line": 16.5
+    },
+    {
+      "player": "Grayson Allen",
+      "stat": "Points",
+      "line": 8.5
+    },
+    {
+      "player": "Grayson Allen",
+      "stat": "Rebounds",
+      "line": 3.0
+    },
+    {
+      "player": "Grayson Allen",
+      "stat": "Assists",
+      "line": 2.0
+    },
+    {
+      "player": "Grayson Allen",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Grayson Allen",
+      "stat": "Stls+Blks",
+      "line": 1.0
+    },
+    {
+      "player": "Grayson Allen",
+      "stat": "Pts+Reb+Ast",
+      "line": 12.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "Points",
+      "line": 8.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "Rebounds",
+      "line": 5.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "Assists",
+      "line": 2.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Jordan Goodwin",
+      "stat": "Pts+Reb+Ast",
+      "line": 16.5
+    },
+    {
+      "player": "Mark Williams",
+      "stat": "Points",
+      "line": 7.5
+    },
+    {
+      "player": "Mark Williams",
+      "stat": "Rebounds",
+      "line": 6.5
+    },
+    {
+      "player": "Mark Williams",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Mark Williams",
+      "stat": "Pts+Reb+Ast",
+      "line": 15.5
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "stat": "Points",
+      "line": 7.5
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "stat": "Rebounds",
+      "line": 7.5
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "stat": "Assists",
+      "line": 2.5
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "stat": "Pts+Reb+Ast",
+      "line": 18.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "Points",
+      "line": 6.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "Rebounds",
+      "line": 2.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "Stls+Blks",
+      "line": 1.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "Pts+Reb+Ast",
+      "line": 10.5
+    },
+    {
+      "player": "Cason Wallace",
+      "stat": "Points",
+      "line": 6.5
+    },
+    {
+      "player": "Cason Wallace",
+      "stat": "Rebounds",
+      "line": 2.5
+    },
+    {
+      "player": "Cason Wallace",
+      "stat": "Assists",
+      "line": 1.5
+    },
+    {
+      "player": "Cason Wallace",
+      "stat": "Stls+Blks",
+      "line": 1.3
+    },
+    {
+      "player": "Cason Wallace",
+      "stat": "Pts+Reb+Ast",
+      "line": 10.5
+    },
+    {
+      "player": "Royce O'Neale",
+      "stat": "Points",
+      "line": 6.5
+    },
+    {
+      "player": "Royce O'Neale",
+      "stat": "Rebounds",
+      "line": 4.5
+    },
+    {
+      "player": "Royce O'Neale",
+      "stat": "Assists",
+      "line": 1.0
+    },
+    {
+      "player": "Royce O'Neale",
+      "stat": "3PM",
+      "line": 1.5
+    },
+    {
+      "player": "Royce O'Neale",
+      "stat": "Stls+Blks",
+      "line": 1.0
+    },
+    {
+      "player": "Alex Caruso",
+      "stat": "Points",
+      "line": 5.5
+    },
+    {
+      "player": "Alex Caruso",
+      "stat": "Rebounds",
+      "line": 2.5
+    },
+    {
+      "player": "Alex Caruso",
+      "stat": "Assists",
+      "line": 2.0
+    },
+    {
+      "player": "Alex Caruso",
+      "stat": "Stls+Blks",
+      "line": 1.6
+    },
+    {
+      "player": "Alex Caruso",
+      "stat": "Pts+Reb+Ast",
+      "line": 10.5
+    },
+    {
+      "player": "Isaiah Joe",
+      "stat": "Points",
+      "line": 5.5
+    },
+    {
+      "player": "Isaiah Joe",
+      "stat": "Assists",
+      "line": 1.0
+    },
+    {
+      "player": "Isaiah Joe",
+      "stat": "3PM",
+      "line": 1.5
+    }
+  ],
+  "last_updated": "2026-04-19 PM MT"
+}
