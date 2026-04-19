@@ -780,7 +780,11 @@ export default function App() {
         }
         .table-wrap table { font-size: 12px !important; }
         .table-wrap th, .table-wrap td { padding: 7px 8px !important; }
-        .table-wrap td.name, .table-wrap th:first-child { position: sticky; left: 0; background: var(--card); z-index: 1; }
+        /* Ensure every row has a solid default bg so sticky cells can inherit seamlessly;
+           inline row highlights (green/red tint) override this and the sticky cell
+           inherits the highlight too — consistent coloring across all columns. */
+        .table-wrap tbody tr { background: var(--card); }
+        .table-wrap td.name, .table-wrap th:first-child { position: sticky; left: 0; background: inherit; z-index: 1; }
 
         /* Projection edit input — bigger for thumb entry */
         .proj-edit {
