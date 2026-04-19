@@ -2,27 +2,36 @@
   "sport": "tennis",
   "data_status": "loaded",
   "slates_tracked": 2,
-  "slate_dates": [
-    "2026-04-17",
-    "2026-04-18"
-  ],
+  "slate_dates": ["2026-04-17", "2026-04-18"],
   "last_updated": "2026-04-19",
   "slate_avg_fpts": 45.6,
   "featured_insight": {
-    "headline": "Trap calls split 1-for-2 out of the gate",
-    "detail": "Rybakina flagged as the 4/17 trap made the winning lineup \u2014 miss. 4/18 Molcan trap landed cleanly (excluded from 1st place). Small sample; hit rates stabilize after ~6-8 slates."
+    "headline": "Traps and gems both 2-for-2 out of the gate",
+    "detail": "On 4/17 Rybakina (73.6% chalk) scored 56.3 — below the winning lineup's 74 FPTS avg — and Rublev (27.3% owned) delivered 71.9 as the pivot. On 4/18 Molcan bricked at 16.3 and Shelton paid off at 71.9. Both trap-to-gem pivots would have improved the winning lineup. Small sample; signals stay neutral until n\u22656."
   },
   "categories": [
     {
-      "key": "top_value",
-      "label": "Top Value",
-      "description": "Top 3 pts-per-$1K plays",
-      "icon": "target",
+      "key": "biggest_trap",
+      "label": "Biggest Trap",
+      "description": "Chalk we flagged to fade",
+      "icon": "warning",
+      "type": "bust_rate",
+      "n": 2,
+      "bust_rate": 1.0,
+      "counter_edge": -37.65,
+      "edge_units": "DK FPTS vs winning lineup avg",
+      "signal": "neutral"
+    },
+    {
+      "key": "hidden_gem",
+      "label": "Hidden Gem",
+      "description": "Low-owned pivot off the trap",
+      "icon": "gem",
       "type": "hit_rate",
-      "n": 6,
-      "hit_rate": 0.333,
-      "avg_edge": 1.78,
-      "edge_units": "DK FPTS vs slate avg",
+      "n": 2,
+      "hit_rate": 1.0,
+      "avg_edge": 35.6,
+      "edge_units": "DK FPTS over paired trap",
       "signal": "neutral"
     },
     {
@@ -38,26 +47,14 @@
       "signal": "neutral"
     },
     {
-      "key": "hidden_gem",
-      "label": "Hidden Gem",
-      "description": "Low-owned high-upside play of the slate",
-      "icon": "gem",
+      "key": "top_value",
+      "label": "Top Value",
+      "description": "Top 3 pts-per-$1K plays",
+      "icon": "target",
       "type": "hit_rate",
-      "n": 2,
-      "hit_rate": 0.5,
-      "avg_edge": -0.56,
-      "edge_units": "DK FPTS vs slate avg",
-      "signal": "neutral"
-    },
-    {
-      "key": "biggest_trap",
-      "label": "Biggest Trap",
-      "description": "Chalk we flagged to fade",
-      "icon": "warning",
-      "type": "bust_rate",
-      "n": 2,
-      "bust_rate": 0.5,
-      "counter_edge": -9.33,
+      "n": 6,
+      "hit_rate": 0.333,
+      "avg_edge": 1.78,
       "edge_units": "DK FPTS vs slate avg",
       "signal": "neutral"
     }
@@ -66,155 +63,97 @@
     {
       "date": "2026-04-17",
       "first_place_points": 444.05,
+      "winning_lineup_avg": 74.0,
       "first_place_lineup": [
         "Marta Kostyuk",
-        "Tatjana Maria",
-        "Elena Rybakina",
-        "Veronika Podrez",
+        "Alexander Zverev",
         "Elina Svitolina",
-        "Alexander Zverev"
+        "Elena Rybakina",
+        "Tatjana Maria",
+        "Veronika Podrez"
       ],
       "category_results": {
-        "top_value": {
-          "n": 3,
-          "hit_names": [
-            "Veronika Podrez"
-          ],
-          "miss_names": [
-            "Francisco Cerundolo",
-            "Karolina Muchova"
-          ],
-          "hits": 1,
-          "misses": 2
-        },
-        "top_straight_sets": {
-          "n": 3,
-          "hit_names": [
-            "Elena Rybakina",
-            "Marta Kostyuk"
-          ],
-          "miss_names": [
-            "Sorana Cirstea"
-          ],
-          "hits": 2,
-          "misses": 1
-        },
+        "top_value": { "n": 3, "hit_names": ["Veronika Podrez"], "miss_names": ["Francisco Cerundolo", "Karolina Muchova"], "hits": 1, "misses": 2 },
+        "top_straight_sets": { "n": 3, "hit_names": ["Elena Rybakina", "Marta Kostyuk"], "miss_names": ["Sorana Cirstea"], "hits": 2, "misses": 1 },
         "hidden_gem": {
           "n": 1,
-          "hit_names": [],
-          "miss_names": [
-            "Iryna Shymanovich"
-          ],
-          "hits": 0,
-          "misses": 1
+          "tagged": "Andrey Rublev",
+          "gem_fpts": 71.9,
+          "trap_fpts": 56.3,
+          "hit_names": ["Andrey Rublev"],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "Pivot off Rybakina trap \u2014 outscored trap by 15.6 FPTS at 46pt ownership discount."
         },
         "biggest_trap": {
           "n": 1,
-          "hit_names": [],
-          "miss_names": [
-            "Elena Rybakina"
-          ],
-          "hits": 0,
-          "misses": 1
+          "tagged": "Elena Rybakina",
+          "trap_fpts": 56.3,
+          "winning_lineup_avg": 74.0,
+          "hit_names": ["Elena Rybakina"],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "73.6% chalk that dragged her winning lineup down by 17.7 FPTS vs avg."
         }
       },
       "tagged": {
-        "top_value": [
-          "Veronika Podrez",
-          "Francisco Cerundolo",
-          "Karolina Muchova"
-        ],
-        "top_straight_sets": [
-          "Elena Rybakina",
-          "Marta Kostyuk",
-          "Sorana Cirstea"
-        ],
-        "hidden_gem": [
-          "Iryna Shymanovich"
-        ],
-        "biggest_trap": [
-          "Elena Rybakina"
-        ]
+        "top_value": ["Veronika Podrez", "Francisco Cerundolo", "Karolina Muchova"],
+        "top_straight_sets": ["Elena Rybakina", "Marta Kostyuk", "Sorana Cirstea"],
+        "hidden_gem": ["Andrey Rublev"],
+        "biggest_trap": ["Elena Rybakina"]
       }
     },
     {
       "date": "2026-04-18",
       "first_place_points": 441.7,
+      "winning_lineup_avg": 73.6,
       "first_place_lineup": [
         "Marta Kostyuk",
         "Ben Shelton",
-        "Elena Rybakina",
-        "Flavio Cobolli",
         "Andrey Rublev",
-        "Arthur Fils"
+        "Arthur Fils",
+        "Elena Rybakina",
+        "Flavio Cobolli"
       ],
       "category_results": {
-        "top_value": {
-          "n": 3,
-          "hit_names": [
-            "Flavio Cobolli"
-          ],
-          "miss_names": [
-            "Veronika Podrez",
-            "Alex Molcan"
-          ],
-          "hits": 1,
-          "misses": 2
-        },
-        "top_straight_sets": {
-          "n": 3,
-          "hit_names": [
-            "Marta Kostyuk"
-          ],
-          "miss_names": [
-            "Sorana Cirstea",
-            "Alexander Zverev"
-          ],
-          "hits": 1,
-          "misses": 2
-        },
+        "top_value": { "n": 3, "hit_names": ["Flavio Cobolli"], "miss_names": ["Veronika Podrez", "Alex Molcan"], "hits": 1, "misses": 2 },
+        "top_straight_sets": { "n": 3, "hit_names": ["Marta Kostyuk"], "miss_names": ["Sorana Cirstea", "Alexander Zverev"], "hits": 1, "misses": 2 },
         "hidden_gem": {
           "n": 1,
-          "hit_names": [
-            "Ben Shelton"
-          ],
+          "tagged": "Ben Shelton",
+          "gem_fpts": 71.9,
+          "trap_fpts": 16.3,
+          "hit_names": ["Ben Shelton"],
           "miss_names": [],
           "hits": 1,
-          "misses": 0
+          "misses": 0,
+          "note": "Pivot off Molcan trap \u2014 +55.6 FPTS swing."
         },
         "biggest_trap": {
           "n": 1,
-          "hit_names": [
-            "Alex Molcan"
-          ],
+          "tagged": "Alex Molcan",
+          "trap_fpts": 16.3,
+          "winning_lineup_avg": 73.6,
+          "hit_names": ["Alex Molcan"],
           "miss_names": [],
           "hits": 1,
-          "misses": 0
+          "misses": 0,
+          "note": "21% chalk that cratered 57.3 FPTS below winning avg."
         }
       },
       "tagged": {
-        "top_value": [
-          "Veronika Podrez",
-          "Flavio Cobolli",
-          "Alex Molcan"
-        ],
-        "top_straight_sets": [
-          "Marta Kostyuk",
-          "Sorana Cirstea",
-          "Alexander Zverev"
-        ],
-        "hidden_gem": [
-          "Ben Shelton"
-        ],
-        "biggest_trap": [
-          "Alex Molcan"
-        ]
+        "top_value": ["Veronika Podrez", "Flavio Cobolli", "Alex Molcan"],
+        "top_straight_sets": ["Marta Kostyuk", "Sorana Cirstea", "Alexander Zverev"],
+        "hidden_gem": ["Ben Shelton"],
+        "biggest_trap": ["Alex Molcan"]
       }
     }
   ],
   "_notes": {
-    "methodology": "Tags graded against 1st-place lineup from DK contest CSV. Trap HITS when player is NOT in winning lineup (bust success); other tags HIT when player IS in winning lineup.",
-    "pp_lines_status": "PrizePicks line grading (Fantasy Score, Breaks, Aces) requires raw match stats not present in DK contest CSVs. Will be added when per-match stat collection is in place.",
-    "sample_size": "Signals are NEUTRAL below N=6 for hit_rate tags and N=3 for bust_rate tags. Patterns require larger samples."
+    "methodology": "Trap HIT: trap_fpts < winning_lineup_avg (chalk dragged winning lineups down). Gem HIT: gem_fpts > paired trap_fpts (the recommended pivot would have improved the lineup). Top Value and Straight Sets graded against 1st-place lineup inclusion.",
+    "pp_lines_status": "PrizePicks line grading (Fantasy Score, Breaks, Aces) awaiting per-match stat collection.",
+    "sample_size": "Signals stay NEUTRAL below N=6 for hit_rate tags and N=3 for bust_rate tags. Patterns require larger samples before promoting to FOLLOW/FADE/COUNTER."
   }
 }
