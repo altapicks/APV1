@@ -2717,12 +2717,43 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
 // ═══════════════════════════════════════════════════════════════════════
 
 // Team color badge
+// NBA team palette — each team gets bg (subtle tint), fg (legible on dark),
+// and br (border matching bg). Values pulled from official team primary
+// colors and lightened for contrast on the navy surface.
+const NBA_TEAM_COLORS = {
+  OKC: { bg: 'rgba(245,140,10,0.18)',  fg: '#FFB648', br: 'rgba(245,140,10,0.5)'  }, // sunset orange
+  PHX: { bg: 'rgba(159,73,172,0.18)',  fg: '#C99AD4', br: 'rgba(159,73,172,0.5)'  }, // valley purple
+  DET: { bg: 'rgba(200,16,46,0.18)',   fg: '#F0607A', br: 'rgba(200,16,46,0.5)'   }, // Pistons red
+  ORL: { bg: 'rgba(0,119,192,0.20)',   fg: '#5DAFE0', br: 'rgba(0,119,192,0.55)'  }, // Magic blue
+  BOS: { bg: 'rgba(0,122,51,0.20)',    fg: '#4ADE80', br: 'rgba(0,122,51,0.55)'   }, // Celtics green
+  LAL: { bg: 'rgba(85,37,131,0.20)',   fg: '#B99AD9', br: 'rgba(85,37,131,0.55)'  }, // Lakers purple
+  GSW: { bg: 'rgba(29,66,138,0.22)',   fg: '#FFC94D', br: 'rgba(253,185,39,0.55)' }, // Warriors blue/gold
+  MIA: { bg: 'rgba(152,0,46,0.22)',    fg: '#F57AA0', br: 'rgba(152,0,46,0.55)'   }, // Heat red
+  DEN: { bg: 'rgba(13,34,64,0.35)',    fg: '#9BB4D9', br: 'rgba(13,34,64,0.65)'   }, // Nuggets navy
+  MIN: { bg: 'rgba(15,36,80,0.30)',    fg: '#78BE20', br: 'rgba(120,190,32,0.55)' }, // Wolves green/navy
+  NYK: { bg: 'rgba(0,107,182,0.22)',   fg: '#F58426', br: 'rgba(245,132,38,0.55)' }, // Knicks orange
+  CLE: { bg: 'rgba(134,0,56,0.22)',    fg: '#F5B04E', br: 'rgba(134,0,56,0.55)'   }, // Cavs wine
+  MIL: { bg: 'rgba(0,71,27,0.24)',     fg: '#EEE1C6', br: 'rgba(0,71,27,0.6)'     }, // Bucks green
+  DAL: { bg: 'rgba(0,83,188,0.22)',    fg: '#5DAFE0', br: 'rgba(0,83,188,0.55)'   }, // Mavs blue
+  HOU: { bg: 'rgba(206,17,65,0.20)',   fg: '#F07A95', br: 'rgba(206,17,65,0.55)'  }, // Rockets red
+  MEM: { bg: 'rgba(93,118,169,0.22)',  fg: '#B8C4D9', br: 'rgba(93,118,169,0.55)' }, // Grizzlies navy
+  SAC: { bg: 'rgba(91,43,130,0.22)',   fg: '#C99AD4', br: 'rgba(91,43,130,0.55)'  }, // Kings purple
+  LAC: { bg: 'rgba(200,16,46,0.18)',   fg: '#F0607A', br: 'rgba(200,16,46,0.5)'   }, // Clippers red
+  PHI: { bg: 'rgba(0,107,182,0.22)',   fg: '#5DAFE0', br: 'rgba(0,107,182,0.55)'  }, // 76ers blue
+  TOR: { bg: 'rgba(206,17,65,0.20)',   fg: '#F07A95', br: 'rgba(206,17,65,0.55)'  }, // Raptors red
+  IND: { bg: 'rgba(253,187,48,0.18)',  fg: '#FFD73D', br: 'rgba(253,187,48,0.55)' }, // Pacers gold
+  ATL: { bg: 'rgba(225,68,52,0.20)',   fg: '#F58A75', br: 'rgba(225,68,52,0.55)'  }, // Hawks red
+  CHI: { bg: 'rgba(206,17,65,0.20)',   fg: '#F07A95', br: 'rgba(206,17,65,0.55)'  }, // Bulls red
+  WAS: { bg: 'rgba(0,43,92,0.30)',     fg: '#9BB4D9', br: 'rgba(0,43,92,0.60)'    }, // Wizards navy
+  CHA: { bg: 'rgba(29,17,96,0.30)',    fg: '#A797D4', br: 'rgba(29,17,96,0.60)'   }, // Hornets purple
+  BKN: { bg: 'rgba(40,40,40,0.40)',    fg: '#CFCFCF', br: 'rgba(90,90,90,0.60)'   }, // Nets black
+  POR: { bg: 'rgba(224,58,62,0.20)',   fg: '#F58486', br: 'rgba(224,58,62,0.55)'  }, // Blazers red
+  NOP: { bg: 'rgba(0,43,92,0.30)',     fg: '#9BB4D9', br: 'rgba(0,43,92,0.60)'    }, // Pelicans navy
+  SAS: { bg: 'rgba(110,110,110,0.25)', fg: '#D4D4D4', br: 'rgba(110,110,110,0.55)' }, // Spurs silver
+  UTA: { bg: 'rgba(0,43,92,0.28)',     fg: '#F5B04E', br: 'rgba(253,185,39,0.55)' }, // Jazz navy/gold
+};
 function TeamBadge({ team }) {
-  const colors = {
-    OKC: { bg: 'rgba(245,140,10,0.18)', fg: '#FFB648', br: 'rgba(245,140,10,0.5)' },
-    PHX: { bg: 'rgba(159,73,172,0.18)', fg: '#C99AD4', br: 'rgba(159,73,172,0.5)' },
-  };
-  const c = colors[team] || { bg: 'rgba(120,120,120,0.15)', fg: 'var(--text-muted)', br: 'var(--border)' };
+  const c = NBA_TEAM_COLORS[team] || { bg: 'rgba(120,120,120,0.15)', fg: 'var(--text-muted)', br: 'var(--border)' };
   return (
     <span style={{
       display: 'inline-block', padding: '1px 7px', borderRadius: 4,
@@ -3508,7 +3539,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     </div>
     <ul className="oo-nba-pool">{sp.filter(p => matchesSearch(p, poolQ, ['name', 'team', 'positions_str'])).map(p => {
       const ownPct = ownership[p.name] || 0;
-      const teamColor = p.team === 'OKC' ? '#FFB648' : '#C99AD4';
+      const teamColor = (NBA_TEAM_COLORS[p.team] || {}).fg || 'var(--text-muted)';
       const minVal = getCap(p.name, 'min');
       const maxVal = getCap(p.name, 'max');
       // In 'all' scope, default to globalMin/Max. In cpt/flex scope, default
