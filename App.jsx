@@ -575,6 +575,92 @@ function useSort(data, dk = 'val', dd = 'desc') {
   return { sorted, sortKey: sk, sortDir: sd, toggleSort: toggle };
 }
 function SH({ label, colKey, sortKey, sortDir, onSort }) { const a = colKey === sortKey; return <th className={a ? 'sorted' : ''} onClick={() => onSort(colKey)}>{label}{a && <span className="sort-arrow">{sortDir === 'asc' ? '▲' : '▼'}</span>}</th>; }
+
+// Shared player-table search bar. Dark card surface + magnifying glass, focus
+// ring in primary gold. Right side shows total count when empty, "N of M"
+// (in gold) plus an X clear button while filtering. Esc clears. Matches the
+// .metric / .table-wrap / input focus styling used elsewhere.
+function SearchBar({ value, onChange, placeholder = 'Search players', total, filtered }) {
+  const hasQuery = (value || '').trim().length > 0;
+  const onKey = e => { if (e.key === 'Escape') onChange(''); };
+  return (
+    <div className={`oo-search${hasQuery ? ' oo-search-active' : ''}`}>
+      <style>{`
+        .oo-search {
+          display: flex; align-items: center; gap: 0;
+          background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+          padding: 0 14px; height: 38px; margin-bottom: 14px;
+          transition: border-color 0.12s, box-shadow 0.12s;
+        }
+        .oo-search:focus-within {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(245,197,24,0.08);
+        }
+        .oo-search-icon { flex-shrink: 0; margin-right: 10px; color: var(--text-dim); }
+        .oo-search:focus-within .oo-search-icon { color: var(--primary); }
+        .oo-search input {
+          flex: 1; background: transparent; border: none; outline: none;
+          color: var(--text); font-size: 13px; font-family: inherit; height: 100%;
+          min-width: 0;
+        }
+        .oo-search input::placeholder { color: var(--text-dim); }
+        .oo-search-count {
+          font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums;
+          flex-shrink: 0; margin-left: 10px; white-space: nowrap;
+        }
+        .oo-search-active .oo-search-count { color: var(--primary); font-weight: 600; }
+        .oo-search-clear {
+          flex-shrink: 0; background: transparent; border: none;
+          color: var(--text-dim); cursor: pointer; padding: 2px; margin-left: 8px;
+          display: flex; align-items: center; border-radius: 4px;
+          transition: color 0.12s, background 0.12s;
+        }
+        .oo-search-clear:hover { color: var(--primary); background: var(--border); }
+        @media (max-width: 600px) {
+          .oo-search { height: 40px; padding: 0 12px; }
+          .oo-search input { font-size: 14px; }
+          .oo-search-count { font-size: 10px; }
+        }
+      `}</style>
+      <svg className="oo-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={onKey}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck="false"
+      />
+      {hasQuery ? (
+        <>
+          <span className="oo-search-count">{filtered} of {total}</span>
+          <button className="oo-search-clear" onClick={() => onChange('')} title="Clear (Esc)" aria-label="Clear search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </>
+      ) : (
+        <span className="oo-search-count">{total} {total === 1 ? 'player' : 'players'}</span>
+      )}
+    </div>
+  );
+}
+
+// Normalize + case-insensitive match on any of the supplied string fields.
+function matchesSearch(item, query, fields = ['name', 'player', 'team', 'opponent']) {
+  const q = (query || '').trim().toLowerCase();
+  if (!q) return true;
+  for (const f of fields) {
+    const v = item[f];
+    if (typeof v === 'string' && v.toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
 const fmt = (n, d = 1) => typeof n === 'number' ? n.toFixed(d) : '-';
 const fmtPct = n => typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '-';
 const fmtSal = n => '$' + n.toLocaleString();
@@ -1393,8 +1479,10 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
 // TENNIS COMPONENTS — UNCHANGED from v5 except BuilderTab gets contrarian
 // ═══════════════════════════════════════════════════════════════════════
 function DKTab({ players, mc, own, onOverride, overrides }) {
+  const [q, setQ] = useState('');
   const pw = useMemo(() => players.filter(p => p.salary > 0).map(p => ({ ...p, simOwn: own[p.name] || 0 })), [players, own]);
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'val', 'desc');
+  const pwFiltered = useMemo(() => pw.filter(p => matchesSearch(p, q)), [pw, q]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(pwFiltered, 'val', 'desc');
   const t3v = useMemo(() => [...players].sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [players]);
   const t3s = useMemo(() => [...players].sort((a, b) => b.pStraight - a.pStraight).slice(0, 3).map(p => p.name), [players]);
   const trap = useMemo(() => {
@@ -1435,6 +1523,7 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
       <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high upside</div></div>
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, bust risk</div></div>
     </div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" /><S label="Proj" colKey="proj" /><S label="Val" colKey="val" /><S label="P(2-0)" colKey="pStraight" /><S label="GW" colKey="gw" /><S label="GL" colKey="gl" /><S label="SW" colKey="sw" /><S label="Aces" colKey="aces" /><S label="DFs" colKey="dfs" /><S label="Breaks" colKey="breaks" /><th>Time</th>
     </tr></thead>
@@ -1472,7 +1561,9 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
 }
 
 function PPTab({ rows }) {
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(rows, 'ev', 'desc');
+  const [q, setQ] = useState('');
+  const rowsFiltered = useMemo(() => rows.filter(r => matchesSearch(r, q, ['player', 'stat', 'opponent'])), [rows, q]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(rowsFiltered, 'ev', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
@@ -1498,6 +1589,7 @@ function PPTab({ rows }) {
       <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber-text)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search plays, players, stats" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><S label="Stat" colKey="stat" />
       <S label="PP Line" colKey="line" /><S label="Projected" colKey="projected" />
@@ -1533,6 +1625,7 @@ function BuilderTab({ players: rp, ownership }) {
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
+  const [poolQ, setPoolQ] = useState('');
   // NEW: contrarian state — OFF by default (behavior preserved when off)
   const [contrarianOn, setContrarianOn] = useState(false);
   const [contrarianStrength, setContrarianStrength] = useState(0.6);
@@ -1810,7 +1903,8 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
     </div>
-    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
+    <SearchBar value={poolQ} onChange={setPoolQ} placeholder="Search pool by player or opponent" total={sp.length} filtered={sp.filter(p => matchesSearch(p, poolQ)).length} />
+    <div className="builder-controls">{sp.filter(p => matchesSearch(p, poolQ)).map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
     <button className="btn btn-primary" onClick={run} disabled={!canBuild}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
@@ -1821,16 +1915,18 @@ function BuilderTab({ players: rp, ownership }) {
 }
 
 function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild = true, overrideCount = 2 }) {
+  const [q, setQ] = useState('');
   const expData = useMemo(() => res.pData.map((p, i) => {
     const cnt = res.counts[i]; const pct = cnt / res.lineups.length * 100;
     const simOwn = ownership[p.name] || 0; const lev = Math.round((pct - simOwn) * 10) / 10;
     const val = p.projection / (p.salary / 1000);
     return { name: p.name, salary: p.salary, projection: p.projection, val, cnt, pct, simOwn, lev };
   }), [res, ownership]);
+  const expFiltered = useMemo(() => expData.filter(p => matchesSearch(p, q)), [expData, q]);
   const avgSal = Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length);
   const projMax = res.lineups.length ? Math.max(...res.lineups.map(lu => lu.proj)) : 0;
   const projMin = res.lineups.length ? Math.min(...res.lineups.map(lu => lu.proj)) : 0;
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(expData, 'pct', 'desc');
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(expFiltered, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
@@ -1842,6 +1938,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
     <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Player" colKey="name" /><S label="Salary" colKey="salary" /><S label="Proj" colKey="projection" /><S label="Value" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
     </tr></thead>
@@ -2043,8 +2140,10 @@ function LeverageTab({ players: rp }) {
 // MMA COMPONENTS — NEW
 // ═══════════════════════════════════════════════════════════════════════
 function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
+  const [q, setQ] = useState('');
   const pw = useMemo(() => fighters.filter(p => p.salary > 0).map(p => ({ ...p, simOwn: own[p.name] || 0 })), [fighters, own]);
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'proj', 'desc');
+  const pwFiltered = useMemo(() => pw.filter(p => matchesSearch(p, q)), [pw, q]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(pwFiltered, 'proj', 'desc');
   const t3v = useMemo(() => [...fighters].sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [fighters]);
   const t3f = useMemo(() => [...fighters].sort((a, b) => b.finishUpside - a.finishUpside).slice(0, 3).map(p => p.name), [fighters]);
   const trap = useMemo(() => {
@@ -2085,6 +2184,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
       <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high ceiling</div></div>
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, low ceiling</div></div>
     </div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search fighters, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="name" /><th>Opp</th>
       <S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" />
@@ -2128,7 +2228,9 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
 }
 
 function MMAPPTab({ rows }) {
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(rows, 'ev', 'desc');
+  const [q, setQ] = useState('');
+  const rowsFiltered = useMemo(() => rows.filter(r => matchesSearch(r, q, ['player', 'stat', 'opponent'])), [rows, q]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(rowsFiltered, 'ev', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
@@ -2154,6 +2256,7 @@ function MMAPPTab({ rows }) {
       <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber-text)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search plays, fighters, stats" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="player" /><S label="Stat" colKey="stat" />
       <S label="PP Line" colKey="line" /><S label="Projected" colKey="projected" />
@@ -2190,6 +2293,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
   const [mode, setMode] = useState('ceiling');  // ceiling=GPP, proj=cash
   const [contrarianOn, setContrarianOn] = useState(false);
   const [contrarianStrength, setContrarianStrength] = useState(0.6);
+  const [poolQ, setPoolQ] = useState('');
 
   const avgVal = useMemo(() => {
     const vals = rp.filter(p => p.salary > 0).map(p => (mode === 'ceiling' ? p.cval : p.val) || 0);
@@ -2398,7 +2502,8 @@ function MMABuilderTab({ fighters: rp, ownership }) {
         : <><Icon name="dollar" size={14} color="var(--primary)"/> <strong style={{ color: 'var(--primary)' }}>Cash:</strong> Builds for consistent median — best for 50/50s and head-to-heads</>
       }
     </div>
-    <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
+    <SearchBar value={poolQ} onChange={setPoolQ} placeholder="Search fighters, opponents" total={sp.length} filtered={sp.filter(p => matchesSearch(p, poolQ)).length} />
+    <div className="builder-controls">{sp.filter(p => matchesSearch(p, poolQ)).map(p => <div className="ctrl-row" key={p.name}>
       <span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
       <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
       <span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
@@ -2416,6 +2521,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
 }
 
 function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode, canBuild = true, overrideCount = 2 }) {
+  const [q, setQ] = useState('');
   const expData = useMemo(() => res.pData.map((p, i) => {
     const cnt = res.counts[i]; const pct = cnt / res.lineups.length * 100;
     const simOwn = ownership[p.name] || 0; const lev = Math.round((pct - simOwn) * 10) / 10;
@@ -2423,6 +2529,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
     const val = score / (p.salary / 1000);
     return { name: p.name, salary: p.salary, score, val, cnt, pct, simOwn, lev };
   }), [res, ownership, mode]);
+  const expFiltered = useMemo(() => expData.filter(p => matchesSearch(p, q)), [expData, q]);
   const avgSal = Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length);
   const projMax = res.lineups.length ? Math.max(...res.lineups.map(lu => lu.proj)) : 0;
   const projMin = res.lineups.length ? Math.min(...res.lineups.map(lu => lu.proj)) : 0;
@@ -2430,7 +2537,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
     const lineupOwn = lu.players.reduce((ss, pi) => ss + (ownership[res.pData[pi].name] || 0), 0) / lu.players.length;
     return s + lineupOwn;
   }, 0) / res.lineups.length);
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(expData, 'pct', 'desc');
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(expFiltered, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
@@ -2444,6 +2551,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
     <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
     </tr></thead>
@@ -2503,6 +2611,7 @@ function StatusChip({ status, onCycle }) {
 // NBA DK Tab — projections, value, ownership, status, mins/usg, cascade
 function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }) {
   const [statusMap, setStatusMap] = useState({});
+  const [q, setQ] = useState('');
   const cycleStatus = (name) => {
     setStatusMap(prev => {
       const cur = prev[name] ?? (players.find(p => p.name === name)?.status || 'ACTIVE');
@@ -2523,8 +2632,9 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       isOut: s === 'OUT',
     };
   }), [players, own, cptOwn, statusMap]);
+  const pwFiltered = useMemo(() => pw.filter(p => matchesSearch(p, q, ['name', 'team', 'opponent', 'positions_str'])), [pw, q]);
 
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(pw, 'proj', 'desc');
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(pwFiltered, 'proj', 'desc');
 
   const t3v = useMemo(() => [...pw].filter(p => !p.isOut && p.projectable).sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [pw]);
   const t3c = useMemo(() => [...pw].filter(p => !p.isOut && p.projectable).sort((a, b) => b.ceil - a.ceil).slice(0, 3).map(p => p.name), [pw]);
@@ -2541,16 +2651,78 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       : [...active].sort((a, b) => b.proj - a.proj);
     return sorted[0]?.name || '';
   }, [pw]);
+  // ═══════════════════════════════════════════════════════════════════════
+  // GEM ALGORITHM — NBA v2
+  // Two parallel candidates, whichever scores higher wins:
+  //
+  //   (A) Value gem — low-owned play in the trap's salary band that doesn't
+  //       depend on the trap failing. Pure contrarian leverage.
+  //
+  //   (B) Replacer gem — a teammate of the trap whose production would
+  //       absorb the trap's usage if the trap busts/sits/underperforms.
+  //       This is double-leverage: fading the chalk AND rostering the
+  //       direct beneficiary of the chalk's failure.
+  //
+  // The weight shifts toward the replacer when:
+  //   - the trap owns a large share of his team's production (high proj)
+  //   - the replacer plays a position that can actually absorb the usage
+  //     (primary ball-handler → guard/wing replacer, not a center)
+  //   - the replacer has meaningful role ($3k+ salary, not deep bench)
+  //
+  // The label flips based on which track wins — "Teammate replacer" vs
+  // "Price-adjacent value" — so the user immediately sees the thesis.
+  // ═══════════════════════════════════════════════════════════════════════
   const gem = useMemo(() => {
     const trapP = pw.find(p => p.name === trap);
-    if (!trapP) return '';
-    const band = pw.filter(p => !p.isOut && p.projectable && p.name !== trap &&
-                                p.salary >= trapP.salary - 2000 && p.salary <= trapP.salary + 500);
-    if (band.length === 0) return '';
-    // Best value in band, weighted by ceiling
-    const scored = band.map(p => ({ name: p.name, s: p.val * p.ceil })).sort((a, b) => b.s - a.s);
-    return scored[0]?.name || '';
+    if (!trapP) return { name: '', kind: '' };
+    const active = pw.filter(p => p.projectable && !p.isOut && p.name !== trap);
+    if (active.length === 0) return { name: '', kind: '' };
+
+    // How much production the trap "owns" — bigger star means more to absorb.
+    // Clamps to 0.3–1.0 so even low-usage traps get a nonzero replacer search.
+    const trapUsageFactor = Math.max(0.3, Math.min(1.0, (trapP.proj || 0) / 35));
+
+    // Position family buckets for usage-absorption overlap.
+    const bucketOf = (s) => {
+      const str = String(s || '');
+      if (/C|PF/.test(str)) return 'big';
+      if (/SF/.test(str)) return 'wing';
+      return 'guard';
+    };
+    const positionOverlap = (a, b) => {
+      const ab = bucketOf(a), bb = bucketOf(b);
+      if (ab === bb) return 1.0;
+      if ((ab === 'guard' && bb === 'big') || (ab === 'big' && bb === 'guard')) return 0.25;
+      return 0.55;
+    };
+
+    const scored = active.map(p => {
+      const leverage = Math.max(0, (trapP.simOwn || 0) - (p.simOwn || 0));
+      const levBoost = 1 + leverage * 0.012;
+
+      // Track A — value-adjacent (any team, rewarded for price proximity)
+      const bandClose = p.salary >= trapP.salary - 2000 && p.salary <= trapP.salary + 500;
+      const valueScore = (p.val || 0) * (p.ceil || 0) * (bandClose ? 1.0 : 0.55) * levBoost;
+
+      // Track B — same-team replacer
+      let replacerScore = 0;
+      const isReplacer = p.team === trapP.team && p.salary >= 3000;
+      if (isReplacer) {
+        const overlap = positionOverlap(p.positions_str, trapP.positions_str);
+        replacerScore = (p.ceil || 0) * (p.val || 0)
+          * (1 + overlap * 0.55)           // bigger bonus when role overlaps
+          * (1 + trapUsageFactor * 0.60)   // bigger bonus when trap has lots to give
+          * levBoost;
+      }
+      const best = Math.max(valueScore, replacerScore);
+      const kind = replacerScore > valueScore ? 'replacer' : 'value';
+      return { name: p.name, score: best, kind };
+    }).sort((a, b) => b.score - a.score);
+
+    return scored[0] || { name: '', kind: '' };
   }, [pw, trap]);
+  const gemName = gem.name;
+  const gemKind = gem.kind;
 
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
 
@@ -2563,7 +2735,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
     <div className="metrics">
       <div className="metric"><div className="metric-label"><Icon name="trophy" size={13}/> Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="rocket" size={13}/> Top Ceiling</div><div className="metric-value">{t3c.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.ceil, 1)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem || '-'}</div><div className="metric-sub">Best value in trap's salary band</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{gemName || '-'}</div><div className="metric-sub">{gemKind === 'replacer' ? 'Teammate can absorb trap\'s production' : gemKind === 'value' ? 'Low-owned value in trap\'s price band' : 'Low ownership, high upside'}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Field-converged chalk</div></div>
     </div>
     {unprojectablePlayers.length > 0 && (
@@ -2586,6 +2758,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
         <span title="Probability the game becomes a blowout — affects starter minutes">Blowout risk: <strong style={{ color: gameInfo.blowout_risk_okc > 0.6 ? 'var(--amber)' : 'var(--text)' }}>{Math.round(gameInfo.blowout_risk_okc * 100)}%</strong></span>
       </div>
     )}
+    <SearchBar value={q} onChange={setQ} placeholder="Search players, teams, positions" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
       <S label="Sal" colKey="salary" />
@@ -2598,11 +2771,11 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       <th>Status</th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
-      const iv = t3v.includes(p.name), ic = t3c.includes(p.name), ig = p.name === gem, it = p.name === trap;
+      const iv = t3v.includes(p.name), ic = t3c.includes(p.name), ig = p.name === gemName, it = p.name === trap;
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (ic) badges.push({ icon: 'rocket', label: 'Top 3 Ceiling' });
-      if (ig) badges.push({ icon: 'gem',    label: 'Hidden Gem' });
+      if (ig) badges.push({ icon: 'gem',    label: gemKind === 'replacer' ? 'Hidden Gem (replacer)' : 'Hidden Gem (value)' });
       if (it) badges.push({ icon: 'bomb',   label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
       const dimStyle = p.isOut || !p.projectable ? { opacity: p.isOut ? 0.4 : 0.6 } : {};
@@ -2643,7 +2816,9 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
 
 // NBA PP Tab — stat-by-stat EV vs PP lines
 function NBAPPTab({ rows }) {
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(rows, 'ev', 'desc');
+  const [q, setQ] = useState('');
+  const rowsFiltered = useMemo(() => rows.filter(r => matchesSearch(r, q, ['player', 'team', 'opponent'])), [rows, q]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(rowsFiltered, 'ev', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
@@ -2665,6 +2840,7 @@ function NBAPPTab({ rows }) {
       <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span></div>)}</div></div>
       <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest Fades</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
+    <SearchBar value={q} onChange={setQ} placeholder="Search players, teams" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><th>Team</th>
       <S label="PP Line" colKey="line" />
@@ -2703,6 +2879,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   const [contrarianStrength, setContrarianStrength] = useState(0.6);
   // 'all' | 'cpt' | 'flex' — which slot type the min/max inputs currently target
   const [expScope, setExpScope] = useState('all');
+  const [poolQ, setPoolQ] = useState('');
   const isShowdown = (slateType || 'showdown') === 'showdown';
 
   // Per-scope field names in the `exp` state object
@@ -2767,27 +2944,51 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     }
 
-    // GEM — salary band below trap (NBA-wide: -$2000 to +$500)
+    // GEM v2 — two parallel tracks (value-adjacent + same-team replacer),
+    // whichever scores higher wins. Mirrors the NBADKTab gem logic so the
+    // user sees the same gem pick in contrarian builds as on the DK table.
     const trapSal = trap?.salary ?? 0;
-    const inBand = (p, lo, hi) => (p.salary - trapSal) >= lo && (p.salary - trapSal) <= hi;
-    const salaryEligible = trap ? withSal.filter(p => {
-      if (p.name === trap.name || p.name === stud?.name) return false;
-      return inBand(p, -2000, 500);
-    }) : [];
-    // Best value with ceiling weighting, biased toward underowned
-    const scored = salaryEligible.map(p => {
+    const trapProj = trap?.proj ?? 0;
+    const trapUsageFactor = Math.max(0.3, Math.min(1.0, trapProj / 35));
+    const bucketOf = s => { const str = String(s || ''); if (/C|PF/.test(str)) return 'big'; if (/SF/.test(str)) return 'wing'; return 'guard'; };
+    const positionOverlap = (a, b) => { const ab = bucketOf(a), bb = bucketOf(b); if (ab === bb) return 1.0; if ((ab === 'guard' && bb === 'big') || (ab === 'big' && bb === 'guard')) return 0.25; return 0.55; };
+
+    const gemPool = trap ? withSal.filter(p => p.name !== trap.name && p.name !== stud?.name) : [];
+    const gemScored = gemPool.map(p => {
       const fieldOwn = ownership[p.name] || 0;
+      const trapOwn = ownership[trap.name] || 0;
+      const leverage = Math.max(0, trapOwn - fieldOwn);
+      const levBoost = 1 + leverage * 0.012;
       const fairOwn = computeFairOwn(p.val || 0, avgVal);
       const underownedBonus = Math.max(0, fairOwn - fieldOwn) * 0.5;
-      return { p, score: (p.val || 0) * (p.ceil || p.proj || 0) + underownedBonus };
+
+      // Track A — value-adjacent
+      const bandClose = (p.salary - trapSal) >= -2000 && (p.salary - trapSal) <= 500;
+      const valueScore = ((p.val || 0) * (p.ceil || p.proj || 0) + underownedBonus)
+        * (bandClose ? 1.0 : 0.55) * levBoost;
+
+      // Track B — same-team replacer
+      let replacerScore = 0;
+      const isReplacer = trap && p.team === trap.team && p.salary >= 3000;
+      if (isReplacer) {
+        const overlap = positionOverlap(p.positions_str, trap.positions_str);
+        replacerScore = ((p.ceil || p.proj || 0) * (p.val || 0) + underownedBonus)
+          * (1 + overlap * 0.55)
+          * (1 + trapUsageFactor * 0.60)
+          * levBoost;
+      }
+      const score = Math.max(valueScore, replacerScore);
+      const kind = replacerScore > valueScore ? 'replacer' : 'value';
+      return { p, score, kind };
     }).sort((a, b) => b.score - a.score);
-    const gem = scored[0]?.p;
+    const gem = gemScored[0]?.p;
+    const gemKind = gemScored[0]?.kind || 'value';
     if (gem) {
       const fieldOwn = Math.round(ownership[gem.name] || 0);
       caps[gem.name] = {
         min: Math.min(85, fieldOwn + boostFloor),
         max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: 'gem'
+        _isBoost: true, _leverage: boostFloor, _type: gemKind === 'replacer' ? 'gem-replacer' : 'gem'
       };
     }
 
@@ -3065,6 +3266,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         .oo-nba-r2 input { font-size: 12px !important; padding: 6px 2px !important; }
       }
     `}</style>
+    <SearchBar value={poolQ} onChange={setPoolQ} placeholder="Search pool by player, team, or position" total={sp.length} filtered={sp.filter(p => matchesSearch(p, poolQ, ['name', 'team', 'positions_str'])).length} />
     {isShowdown && (
       <div className="oo-nba-scope">
         <style>{`
@@ -3131,7 +3333,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       <b>{expScope === 'cpt' ? 'CPT Min%' : expScope === 'flex' ? 'FLEX Min%' : 'Min%'}</b>
       <b>{expScope === 'cpt' ? 'CPT Max%' : expScope === 'flex' ? 'FLEX Max%' : 'Max%'}</b>
     </div>
-    <ul className="oo-nba-pool">{sp.map(p => {
+    <ul className="oo-nba-pool">{sp.filter(p => matchesSearch(p, poolQ, ['name', 'team', 'positions_str'])).map(p => {
       const ownPct = ownership[p.name] || 0;
       const teamColor = p.team === 'OKC' ? '#FFB648' : '#C99AD4';
       const minVal = getCap(p.name, 'min');
@@ -3179,6 +3381,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
 function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount }) {
   const isShowdown = res.isShowdown;
   const [view, setView] = useState('all');   // 'all' | 'cpt' | 'flex'
+  const [q, setQ] = useState('');
 
   // Tally CPT vs FLEX occurrences across the user's built lineups
   const { cptCnt, flexCnt } = useMemo(() => {
@@ -3228,8 +3431,9 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
       return { ...p, pct, simOwn, cnt, lev };
     });
   }, [expRows, view, isShowdown]);
+  const filteredRows = useMemo(() => displayRows.filter(p => matchesSearch(p, q)), [displayRows, q]);
 
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(displayRows, 'pct', 'desc');
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filteredRows, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
 
   const avgSal = res.lineups.length ? Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length) : 0;
@@ -3282,6 +3486,7 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
       </div>
     )}
 
+    <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={displayRows.length} filtered={filteredRows.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Player" colKey="name" /><th>Team</th>
       <S label="Salary" colKey="salary" />
