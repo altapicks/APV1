@@ -492,28 +492,23 @@ function buildNBAProjections(data) {
     };
   });
 
-  // PP rows — only include when we can compute a projection for that stat
+  // PP rows — ONLY PP Fantasy Score. PrizePicks' individual Points / Rebounds /
+  // Assists / 3PM / Stls+Blks lines are intentionally NOT shown here: that
+  // would be comparing the devigged DK line for stat X against the PP line
+  // for stat X, which is a comparison of two bookmakers' lines. The PP tab's
+  // purpose is to surface PP Fantasy Score vs our devigged DK-derived PP
+  // Fantasy Score projection, and report edge.
   const ppRows = [];
   if (data.pp_lines) {
     const byName = {}; dkPlayers.forEach(p => { byName[p.name] = p; });
     data.pp_lines.forEach(line => {
+      if (line.stat !== 'Fantasy Score') return;
       const player = byName[line.player];
-      if (!player || !player.projectable) return;    // skip — no DK data
-      // Per-stat availability: only include row if we have that specific DK prop
-      const stat = String(line.stat);
-      const need = {
-        'Points':         () => player.hasStatData.points,
-        'Rebounds':       () => player.hasStatData.rebounds,
-        'Assists':        () => player.hasStatData.assists,
-        '3PM':            () => player.hasStatData.threes,
-        'Stls+Blks':      () => player.hasStatData.stls_blks,
-        'Fantasy Score':  () => player.hasStatData.points,   // FS needs at least points
-      }[stat];
-      if (need && !need()) return;
-      const projected = Math.round(nbaProjectPPStat(player.stats, stat) * 100) / 100;
+      if (!player || !player.projectable) return;
+      const projected = Math.round(nbaPpProjection(player.stats) * 100) / 100;
       const ev = nbaPpEV(projected, line.line);
       ppRows.push({
-        player: line.player, stat, line: line.line,
+        player: line.player, stat: 'Fantasy Score', line: line.line,
         projected, ev,
         opponent: player.opponent, team: player.team,
         direction: ev > 0.8 ? 'MORE' : ev < -0.8 ? 'LESS' : '-',
@@ -1200,19 +1195,6 @@ export default function App() {
 
         /* Builder controls — stack rows vertically, full-width inputs */
         .builder-controls { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
-        /* NBA builder uses grid — override the flex rules on mobile so rows
-           stack single-column with full width per card */
-        .builder-controls.nba-builder-grid {
-          display: grid !important;
-          grid-template-columns: 1fr !important;
-          gap: 8px !important;
-          flex-direction: initial !important;
-        }
-        .builder-controls.nba-builder-grid .ctrl-row {
-          grid-template-columns: 1fr 30px 56px 44px 36px 48px 48px !important;
-          padding: 9px 10px !important;
-          font-size: 12px !important;
-        }
         .ctrl-row { flex-wrap: wrap !important; gap: 8px !important; }
         .ctrl-row > * { flex: 1 1 auto; }
         .ctrl-name { min-width: 0 !important; flex: 2 1 120px !important; }
@@ -2663,13 +2645,10 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
 
 // NBA PP Tab — stat-by-stat EV vs PP lines
 function NBAPPTab({ rows }) {
-  const [statFilter, setStatFilter] = useState('all');
-  const filtered = useMemo(() => statFilter === 'all' ? rows : rows.filter(r => r.stat === statFilter), [rows, statFilter]);
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, 'ev', 'desc');
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(rows, 'ev', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
-  const uniqueStats = useMemo(() => [...new Set(rows.map(r => r.stat))], [rows]);
   return (<>
     <div className="section-hero">
       <div className="section-hero-icon-wrap">
@@ -2680,25 +2659,18 @@ function NBAPPTab({ rows }) {
         </svg>
       </div>
       <div className="section-hero-text">
-        <h2 className="section-hero-title">PrizePicks Projections</h2>
-        <div className="section-hero-sub">All NBA plays sorted by edge · Edge = Projected − PP Line</div>
+        <h2 className="section-hero-title">PrizePicks Fantasy Score</h2>
+        <div className="section-hero-sub">DK-devigged projection vs PP Fantasy Score line · Edge = Projected − PP Line</div>
       </div>
     </div>
     <div className="metrics">
-      <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>+{fmt(r.ev, 2)}</span></div>)}</div></div>
-      <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest Fades</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
-    </div>
-    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-      <button onClick={() => setStatFilter('all')} style={{ padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1px solid ${statFilter === 'all' ? 'var(--primary)' : 'var(--border)'}`, background: statFilter === 'all' ? 'rgba(245,197,24,0.14)' : 'var(--card)', color: statFilter === 'all' ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}>All ({rows.length})</button>
-      {uniqueStats.map(s => {
-        const count = rows.filter(r => r.stat === s).length;
-        return <button key={s} onClick={() => setStatFilter(s)} style={{ padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1px solid ${statFilter === s ? 'var(--primary)' : 'var(--border)'}`, background: statFilter === s ? 'rgba(245,197,24,0.14)' : 'var(--card)', color: statFilter === s ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}>{s} ({count})</button>;
-      })}
+      <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span></div>)}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest Fades</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red-text)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><th>Team</th>
-      <S label="Stat" colKey="stat" /><S label="Line" colKey="line" />
-      <S label="Projected" colKey="projected" /><S label="Edge" colKey="ev" />
+      <S label="PP Line" colKey="line" />
+      <S label="Our Proj" colKey="projected" /><S label="Edge" colKey="ev" />
       <S label="Play" colKey="direction" />
     </tr></thead>
     <tbody>{sorted.map((r, i) => {
@@ -2722,7 +2694,7 @@ function NBAPPTab({ rows }) {
 }
 
 // NBA Builder Tab — contrarian lineup building for showdown or classic
-function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
+function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
   const [nL, setNL] = useState(20);
@@ -2979,60 +2951,134 @@ function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
     </div>
-    <div className="builder-controls nba-builder-grid" style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-      gap: 8,
-    }}>{sp.map(p => {
+    <style>{`
+      /* Scoped NBA builder pool — 2-row card layout so player names always
+         fit. Names + team on row 1; salary / proj / own% / min / max on
+         row 2. Fully scoped class names avoid any collision with the
+         legacy .builder-controls / .ctrl-row rules in styles.css. */
+      .oo-nba-pool {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+        gap: 8px !important;
+        padding: 0 !important;
+        margin: 0 0 12px 0 !important;
+        list-style: none !important;
+      }
+      .oo-nba-card {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        padding: 9px 11px !important;
+        min-width: 0 !important;
+      }
+      .oo-nba-card:hover { border-color: var(--border-light) !important; }
+      .oo-nba-card > * { min-width: 0 !important; }
+      .oo-nba-r1 {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        min-width: 0 !important;
+      }
+      .oo-nba-name {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        color: var(--text) !important;
+        letter-spacing: -0.01em !important;
+      }
+      .oo-nba-team {
+        flex-shrink: 0 !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em !important;
+        padding: 2px 6px !important;
+        border-radius: 4px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+      }
+      .oo-nba-r2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr 46px 46px !important;
+        align-items: center !important;
+        gap: 6px !important;
+        font-size: 11px !important;
+        font-variant-numeric: tabular-nums !important;
+      }
+      .oo-nba-r2 > span { min-width: 0 !important; overflow: hidden !important; }
+      .oo-nba-sal { color: var(--text-dim) !important; }
+      .oo-nba-proj { color: var(--primary) !important; font-weight: 700 !important; font-size: 12px !important; }
+      .oo-nba-own { color: var(--text-muted) !important; }
+      .oo-nba-card input[type="number"] {
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 4px 2px !important;
+        background: var(--bg) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 4px !important;
+        color: var(--text) !important;
+        font-size: 11px !important;
+        text-align: center !important;
+        font-weight: 600 !important;
+        box-sizing: border-box !important;
+        -moz-appearance: textfield !important;
+      }
+      .oo-nba-card input[type="number"]::-webkit-outer-spin-button,
+      .oo-nba-card input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none !important; margin: 0 !important; }
+      .oo-nba-card input[type="number"]:focus { outline: none !important; border-color: var(--primary) !important; }
+      .oo-nba-legend {
+        display: flex !important; flex-wrap: wrap !important; gap: 12px !important;
+        font-size: 10px !important; color: var(--text-dim) !important;
+        padding: 0 6px 6px !important; letter-spacing: 0.03em !important;
+        text-transform: uppercase !important; font-weight: 600 !important;
+      }
+      .oo-nba-legend b { color: var(--primary) !important; font-weight: 700 !important; }
+      @media (max-width: 600px) {
+        .oo-nba-pool { grid-template-columns: 1fr !important; gap: 6px !important; }
+        .oo-nba-card { padding: 10px 12px !important; }
+        .oo-nba-r2 { grid-template-columns: 1fr 1fr 1fr 52px 52px !important; gap: 8px !important; }
+        .oo-nba-r2 input { font-size: 12px !important; padding: 6px 2px !important; }
+      }
+    `}</style>
+    <div className="oo-nba-legend">
+      <span>Each card shows:</span>
+      <span>Player</span>
+      <span>Team</span>
+      <span>$Sal</span>
+      <span>Proj</span>
+      <span>Own%</span>
+      <b>Min%</b>
+      <b>Max%</b>
+    </div>
+    <ul className="oo-nba-pool">{sp.map(p => {
       const ownPct = ownership[p.name] || 0;
-      return <div className="ctrl-row" key={p.name} style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 34px 50px 40px 34px 44px 44px',
-        alignItems: 'center',
-        gap: 6,
-        padding: '8px 10px',
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        fontSize: 12,
-      }}>
-        <span className="ctrl-name" style={{
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          fontWeight: 600, color: 'var(--text)',
-        }} title={p.name}>{p.name}</span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: p.team === 'OKC' ? '#FFB648' : '#C99AD4', textAlign: 'center' }}>{p.team}</span>
-        <span style={{ color: 'var(--text-dim)', fontSize: 11, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmtSal(p.salary)}</span>
-        <span className="ctrl-proj" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary)', fontVariantNumeric: 'tabular-nums' }}>{fmt(p.proj, 1)}</span>
-        <span style={{
-          color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)',
-          fontSize: 11, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-        }}>{fmt(ownPct, 0)}%</span>
-        <input type="number" min="0" max="100" value={exp[p.name]?.min ?? globalMin}
-          onChange={e => sE(p.name, 'min', +e.target.value)} title="Min exposure %"
-          style={{
-            width: '100%', padding: '4px 6px', minWidth: 0,
-            background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4,
-            color: 'var(--text)', fontSize: 12, textAlign: 'center',
-          }} />
-        <input type="number" min="0" max="100" value={exp[p.name]?.max ?? globalMax}
-          onChange={e => sE(p.name, 'max', +e.target.value)} title="Max exposure %"
-          style={{
-            width: '100%', padding: '4px 6px', minWidth: 0,
-            background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4,
-            color: 'var(--text)', fontSize: 12, textAlign: 'center',
-          }} />
-      </div>;
-    })}</div>
-    {/* Column header legend for the grid above */}
-    <div style={{
-      display: 'none', fontSize: 10, color: 'var(--text-dim)',
-      marginTop: 4, marginBottom: 8, paddingLeft: 10,
-    }} className="nba-builder-legend-spacer" />
-    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, marginBottom: 12, paddingLeft: 4 }}>
-      Columns: <strong style={{ color: 'var(--text-muted)' }}>Player</strong> · Team · Salary · Proj · Sim Own% · <strong style={{ color: 'var(--primary)' }}>Min%</strong> · <strong style={{ color: 'var(--primary)' }}>Max%</strong>
+      const teamColor = p.team === 'OKC' ? '#FFB648' : '#C99AD4';
+      return <li className="oo-nba-card" key={p.name}>
+        <div className="oo-nba-r1">
+          <span className="oo-nba-name" title={p.name}>{p.name}</span>
+          <span className="oo-nba-team" style={{ color: teamColor }}>{p.team}</span>
+        </div>
+        <div className="oo-nba-r2">
+          <span className="oo-nba-sal" title="Salary">{fmtSal(p.salary)}</span>
+          <span className="oo-nba-proj" title="DK Fantasy Projection">{fmt(p.proj, 1)}</span>
+          <span className="oo-nba-own" title="Simulated ownership" style={ownPct > 35 ? { color: 'var(--amber)', fontWeight: 600 } : {}}>{fmt(ownPct, 0)}%</span>
+          <input type="number" min="0" max="100" value={exp[p.name]?.min ?? globalMin}
+            onChange={e => sE(p.name, 'min', +e.target.value)} title={`Min exposure % for ${p.name}`} />
+          <input type="number" min="0" max="100" value={exp[p.name]?.max ?? globalMax}
+            onChange={e => sE(p.name, 'max', +e.target.value)} title={`Max exposure % for ${p.name}`} />
+        </div>
+      </li>;
+    })}</ul>
+    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 14, paddingLeft: 4 }}>
+      {sp.length} players in pool
       {sp.length < rp.filter(p => p.salary > 0).length && (
-        <span style={{ marginLeft: 12, color: 'var(--amber-text)' }}>
-          · {rp.filter(p => p.salary > 0 && !p.projectable).length} players excluded (no DK line)
+        <span style={{ marginLeft: 10, color: 'var(--amber-text)' }}>
+          · {rp.filter(p => p.salary > 0 && !p.projectable).length} excluded (no DK line, no manual projection)
         </span>
       )}
     </div>
@@ -3041,30 +3087,87 @@ function NBABuilderTab({ players: rp, ownership, slateType, gameInfo }) {
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <NBAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
+    {res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
   </>);
 }
 
-function NBAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount }) {
-  const expData = useMemo(() => res.pData.map((p, i) => {
-    const cnt = res.counts[i]; const pct = res.lineups.length ? cnt / res.lineups.length * 100 : 0;
-    const simOwn = ownership[p.name] || 0;
-    const lev = Math.round((pct - simOwn) * 10) / 10;
-    const sal = p.util_salary || p.salary;
-    const val = sal > 0 ? p.projection / (sal / 1000) : 0;
-    return { name: p.name, team: p.team, salary: sal, projection: p.projection, val, cnt, pct, simOwn, lev };
-  }), [res, ownership]);
+function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount }) {
+  const isShowdown = res.isShowdown;
+  const [view, setView] = useState('all');   // 'all' | 'cpt' | 'flex'
+
+  // Tally CPT vs FLEX occurrences across the user's built lineups
+  const { cptCnt, flexCnt } = useMemo(() => {
+    const c = new Array(res.pData.length).fill(0);
+    const f = new Array(res.pData.length).fill(0);
+    if (isShowdown) {
+      res.lineups.forEach(lu => {
+        c[lu.cpt]++;
+        lu.utils.forEach(i => f[i]++);
+      });
+    }
+    return { cptCnt: c, flexCnt: f };
+  }, [res, isShowdown]);
+
+  // Per-player breakdown — each row has both the total / CPT / FLEX numbers
+  // and the corresponding sim ownership from the top-1500 pool.
+  const expRows = useMemo(() => {
+    const N = res.lineups.length || 1;
+    return res.pData.map((p, i) => {
+      const total = res.counts[i];
+      const cpt = cptCnt[i];
+      const flex = flexCnt[i];
+      const sal = p.util_salary || p.salary;
+      const val = sal > 0 ? p.projection / (sal / 1000) : 0;
+      const simOverall = ownership[p.name] || 0;
+      const simCpt = cptOwnership[p.name] || 0;
+      const simFlex = Math.max(0, simOverall - simCpt);
+      return {
+        name: p.name, team: p.team, salary: sal, projection: p.projection, val,
+        totalCnt: total, cptCnt: cpt, flexCnt: flex,
+        totalPct: total / N * 100,
+        cptPct:   cpt   / N * 100,
+        flexPct:  flex  / N * 100,
+        simOverall, simCpt, simFlex,
+      };
+    });
+  }, [res, cptCnt, flexCnt, ownership, cptOwnership]);
+
+  // Apply view filter — compute pct/simOwn/cnt/lev relative to the chosen slot
+  const displayRows = useMemo(() => {
+    return expRows.map(p => {
+      let pct, simOwn, cnt;
+      if (isShowdown && view === 'cpt')        { pct = p.cptPct;   simOwn = p.simCpt;     cnt = p.cptCnt; }
+      else if (isShowdown && view === 'flex')  { pct = p.flexPct;  simOwn = p.simFlex;    cnt = p.flexCnt; }
+      else                                     { pct = p.totalPct; simOwn = p.simOverall; cnt = p.totalCnt; }
+      const lev = Math.round((pct - simOwn) * 10) / 10;
+      return { ...p, pct, simOwn, cnt, lev };
+    });
+  }, [expRows, view, isShowdown]);
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(displayRows, 'pct', 'desc');
+  const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
+
   const avgSal = res.lineups.length ? Math.round(res.lineups.reduce((s, lu) => s + lu.sal, 0) / res.lineups.length) : 0;
   const projMax = res.lineups.length ? Math.max(...res.lineups.map(lu => lu.proj)) : 0;
   const projMin = res.lineups.length ? Math.min(...res.lineups.map(lu => lu.proj)) : 0;
   const avgOwn = res.lineups.length ? Math.round(res.lineups.reduce((s, lu) => {
-    const all = res.isShowdown ? [lu.cpt, ...lu.utils] : lu.players;
+    const all = isShowdown ? [lu.cpt, ...lu.utils] : lu.players;
     const lineupOwn = all.reduce((ss, pi) => ss + (ownership[res.pData[pi].name] || 0), 0) / all.length;
     return s + lineupOwn;
   }, 0) / res.lineups.length) : 0;
 
-  const { sorted, sortKey, sortDir, toggleSort } = useSort(expData, 'pct', 'desc');
-  const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
+  const viewLabel = view === 'cpt' ? 'Captain' : view === 'flex' ? 'Flex' : 'All Positions';
+  const pctColLabel = view === 'cpt' ? 'CPT Exposure' : view === 'flex' ? 'FLEX Exposure' : 'Exposure';
+  const simColLabel = view === 'cpt' ? 'Sim CPT %'    : view === 'flex' ? 'Sim FLEX %'   : 'Sim Own %';
+
+  const viewTabStyle = (active) => ({
+    padding: '6px 14px', fontSize: 12, fontWeight: 700, borderRadius: 6,
+    border: `1px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+    background: active ? 'rgba(245,197,24,0.14)' : 'var(--card)',
+    color: active ? 'var(--primary)' : 'var(--text-muted)',
+    cursor: 'pointer', transition: 'all 0.12s',
+    letterSpacing: '0.03em', textTransform: 'uppercase',
+  });
 
   return (<>
     <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
@@ -3075,9 +3178,34 @@ function NBAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
-    <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
+
+    <div className="section-head" style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <span><Icon name="chart" size={16} color="#F5C518"/> Exposure <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 4 }}>· {viewLabel}</span></span>
+      {isShowdown && (
+        <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+          <button style={viewTabStyle(view === 'all')}  onClick={() => setView('all')}>All</button>
+          <button style={viewTabStyle(view === 'cpt')}  onClick={() => setView('cpt')}>Captain</button>
+          <button style={viewTabStyle(view === 'flex')} onClick={() => setView('flex')}>Flex</button>
+        </div>
+      )}
+    </div>
+    {isShowdown && (
+      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8, paddingLeft: 2 }}>
+        {view === 'all'  && 'Total exposure across all roster spots · Leverage compared to overall sim ownership'}
+        {view === 'cpt'  && 'How often each player was your captain · Leverage compared to captain-slot sim ownership'}
+        {view === 'flex' && 'How often each player was in your flex/utility slots · Leverage compared to flex-slot sim ownership'}
+      </div>
+    )}
+
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
-      <S label="Player" colKey="name" /><th>Team</th><S label="Salary" colKey="salary" /><S label="Proj" colKey="projection" /><S label="Val" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
+      <S label="Player" colKey="name" /><th>Team</th>
+      <S label="Salary" colKey="salary" />
+      <S label="Proj" colKey="projection" />
+      <S label="Val" colKey="val" />
+      <S label="Count" colKey="cnt" />
+      <S label={pctColLabel} colKey="pct" />
+      <S label={simColLabel} colKey="simOwn" />
+      <S label="Leverage" colKey="lev" />
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}>
       <td className="name">{p.name}</td>
@@ -3090,6 +3218,7 @@ function NBAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
       <td className="num muted">{fmt(p.simOwn, 1)}%</td>
       <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
     </tr>)}</tbody></table></div>
+
     <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
     <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
       if (res.isShowdown) {
