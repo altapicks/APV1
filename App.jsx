@@ -1485,50 +1485,51 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
   const { sorted, sortKey, sortDir, toggleSort } = useSort(pwFiltered, 'val', 'desc');
   const t3v = useMemo(() => [...players].sort((a, b) => b.val - a.val).slice(0, 3).map(p => p.name), [players]);
   const t3s = useMemo(() => [...players].sort((a, b) => b.pStraight - a.pStraight).slice(0, 3).map(p => p.name), [players]);
-  // Biggest Trap — highest field-simulated ownership, lightly weighted by
-  // value. The field converges on top-value plays, so the trap will
-  // typically be a top-3 value play that's become inescapable. The valTilt
-  // factor prevents rare edge cases (e.g. high-ownership sub-value plays)
-  // from hijacking the label.
+  // Biggest Trap — pp difference between ownership and win probability:
+  //     trapScore = simOwn − wp × 100
+  // The player most over-owned relative to their actual win chances wins.
+  // Positive scores = genuinely over-owned (dangerous chalk).
+  // Negative scores = under-owned relative to wp (still labeled trap if
+  // they're the LEAST under-owned player on the slate).
   const trap = useMemo(() => {
     const active = pw.filter(p => p.salary > 0);
     if (active.length === 0) return '';
     const hasOwn = active.some(p => (p.simOwn || 0) > 0);
     if (!hasOwn) return [...active].sort((a, b) => b.proj - a.proj)[0]?.name || '';
-    const avgVal = active.reduce((s, p) => s + (p.val || 0), 0) / active.length;
     const scored = active.map(p => {
-      const valTilt = avgVal > 0 ? Math.max(0.55, (p.val || 0) / avgVal) : 1;
-      return { name: p.name, score: (p.simOwn || 0) * valTilt };
+      const own = p.simOwn || 0;
+      const wp  = (p.wp || 0) * 100;
+      return { name: p.name, score: own - wp };
     }).sort((a, b) => b.score - a.score);
     return scored[0]?.name || '';
   }, [pw]);
 
-  // Hidden Gem — dual-track logic (primary + optional pivot):
+  // Hidden Gem — dual-track with primary + optional pivot:
   //   PRIMARY 1 (preferred): trap's opponent, IF they're +199 or better
-  //     (wp >= 33.4%). Close matchups mean the dog can flip the result AND
-  //     provides the exact salary-swap benefit. When this path fires, we
-  //     also compute PRIMARY 2 as the PIVOT — an alternative angle for
-  //     users who'd rather not play the close-matchup dog.
-  //   PRIMARY 2 (fallback): good-value high-ceiling player within
-  //     -$1000/+$300 of trap's salary, scored for ownership leverage vs
-  //     trap AND straight-sets upside. When opponent doesn't qualify,
-  //     this is the only gem surfaced — no pivot shown.
+  //     (wp >= 33.4%). Close matchup = salary-swap + real upset upside.
+  //   PRIMARY 2 (fallback / pivot): best player in trap's salary band.
+  //     Band starts tight (-$1000 / +$300). If no candidates (short
+  //     slates), widens to -$2500 / +$1000. If STILL nothing (very
+  //     short slate), falls back to highest-leverage player — biggest
+  //     (wp% − simOwn) gap, the inverse of the trap signal.
+  //   When opponent qualifies, salary-band winner shows as PIVOT.
+  //   When opponent doesn't qualify, salary-band winner stands alone.
   const gem = useMemo(() => {
     const trapPlayer = pw.find(p => p.name === trap);
     if (!trapPlayer) return { primary: null, pivot: null };
     const trapOwn = trapPlayer.simOwn || 0;
 
-    // Path 1: opponent
+    // Path 1: opponent (close-matchup dog)
     const opponent = pw.find(p => p.name === trapPlayer.opponent);
     const opponentQualifies = opponent && (opponent.wp || 0) >= 0.334;
 
-    // Path 2: salary-band (scored for leverage + upside)
+    // Path 2: salary-band — try tight band first, then wider, then fallback
     const trapSal = trapPlayer.salary;
-    const scored = pw.filter(p => {
+    const scoreBand = (lo, hi) => pw.filter(p => {
       if (p.name === trap) return false;
       if (opponentQualifies && opponent && p.name === opponent.name) return false;
       const diff = p.salary - trapSal;
-      return diff >= -1000 && diff <= 300;
+      return diff >= lo && diff <= hi;
     }).map(p => {
       const leverage = Math.max(0, trapOwn - (p.simOwn || 0));
       const levBoost = 1 + leverage * 0.012;
@@ -1536,7 +1537,20 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
       const score = (p.val || 0) * (p.proj || 0) * levBoost * upsideBoost;
       return { name: p.name, score };
     }).sort((a, b) => b.score - a.score);
-    const bandWinner = scored[0];
+
+    let bandWinner = scoreBand(-1000, 300)[0];
+    if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0];
+    // Final fallback — inverse of trap signal: highest (wp − simOwn) gap.
+    // Rewards underowned players with real win probability.
+    if (!bandWinner) {
+      const lev = pw.filter(p => {
+        if (p.name === trap) return false;
+        if (opponentQualifies && opponent && p.name === opponent.name) return false;
+        return (p.salary || 0) > 0;
+      }).map(p => ({ name: p.name, score: (p.wp || 0) * 100 - (p.simOwn || 0) }))
+        .sort((a, b) => b.score - a.score);
+      if (lev[0] && lev[0].score > 0) bandWinner = lev[0];
+    }
 
     if (opponentQualifies) {
       return {
@@ -1572,7 +1586,7 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">High-owned top-value play</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
@@ -2707,24 +2721,33 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
     return sorted[0]?.name || '';
   }, [pw]);
   // ═══════════════════════════════════════════════════════════════════════
-  // GEM ALGORITHM — NBA v2 (dual-track with optional pivot)
-  // Two parallel candidates, winner = primary, best from OTHER track = pivot:
+  // GEM ALGORITHM — NBA v3 (slate-type aware, dual-pivot)
   //
-  //   (A) Value gem — low-owned play in the trap's salary band that doesn't
-  //       depend on the trap failing. Pure contrarian leverage.
-  //   (B) Replacer gem — a teammate of the trap whose production would
-  //       absorb the trap's usage if the trap busts/sits/underperforms.
-  //       Double-leverage: fading the chalk AND rostering the direct
-  //       beneficiary of the chalk's failure.
+  // Showdown: position overlap is IGNORED because any player can be
+  //   slotted anywhere (CPT + 5 FLEX). A center like Holmgren absorbs a
+  //   PG's usage just as effectively as a wing via scoring output, since
+  //   the roster has no positional constraint.
+  // Classic (future): position overlap applies — the replacer has to
+  //   actually slot into a position the trap would've filled.
   //
-  // Pivot is only shown when the losing track has a viable candidate
-  // (score >= 25% of primary's score). Otherwise we don't surface noise.
+  // Pivot logic:
+  //   - If #2 overall candidate scores within 10% of primary AND is same
+  //     track, show it as pivot (two tied replacers or two tied values).
+  //     This catches the Chet/Jalen situation.
+  //   - Otherwise, show best candidate from the OTHER track as pivot
+  //     (replacer-vs-value diversification), if ≥ 25% of primary.
+  //   - If neither qualifies, no pivot — primary stands alone.
   // ═══════════════════════════════════════════════════════════════════════
   const gem = useMemo(() => {
     const trapP = pw.find(p => p.name === trap);
     if (!trapP) return { primary: null, pivot: null };
     const active = pw.filter(p => p.projectable && !p.isOut && p.name !== trap);
     if (active.length === 0) return { primary: null, pivot: null };
+
+    // Default to showdown — when classic slates are built this flips based
+    // on props / slate metadata.
+    const slateType = 'showdown';
+    const isShowdown = slateType === 'showdown';
 
     const trapUsageFactor = Math.max(0.3, Math.min(1.0, (trapP.proj || 0) / 35));
     const bucketOf = (s) => {
@@ -2748,13 +2771,14 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       const bandClose = p.salary >= trapP.salary - 2000 && p.salary <= trapP.salary + 500;
       const valueScore = (p.val || 0) * (p.ceil || 0) * (bandClose ? 1.0 : 0.55) * levBoost;
 
-      // Track B — same-team replacer
+      // Track B — same-team replacer (position overlap gated by slate type)
       let replacerScore = 0;
       const isReplacer = p.team === trapP.team && p.salary >= 3000;
       if (isReplacer) {
-        const overlap = positionOverlap(p.positions_str, trapP.positions_str);
+        const overlap = isShowdown ? 1.0 : positionOverlap(p.positions_str, trapP.positions_str);
+        const overlapBoost = isShowdown ? 1.0 : (1 + overlap * 0.55);
         replacerScore = (p.ceil || 0) * (p.val || 0)
-          * (1 + overlap * 0.55)
+          * overlapBoost
           * (1 + trapUsageFactor * 0.60)
           * levBoost;
       }
@@ -2767,16 +2791,14 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
     const primaryKind = top.replacerScore > top.valueScore ? 'replacer' : 'value';
     const primary = { name: top.name, kind: primaryKind, score: top.overall };
 
-    // Pivot — best candidate from the OTHER track, if score >= 25% of primary
+    // Pivot — simply #2 overall, if score ≥ 25% of primary. Label carries
+    // its own kind (replacer / value) so user sees whether it's same-track
+    // or cross-track at a glance.
     let pivot = null;
-    if (primaryKind === 'replacer') {
-      const byValue = scored.filter(s => s.name !== primary.name).sort((a, b) => b.valueScore - a.valueScore);
-      const pc = byValue[0];
-      if (pc && pc.valueScore >= primary.score * 0.25) pivot = { name: pc.name, kind: 'value', score: pc.valueScore };
-    } else {
-      const byRep = scored.filter(s => s.name !== primary.name && s.replacerScore > 0).sort((a, b) => b.replacerScore - a.replacerScore);
-      const pc = byRep[0];
-      if (pc && pc.replacerScore >= primary.score * 0.25) pivot = { name: pc.name, kind: 'replacer', score: pc.replacerScore };
+    const next = byOverall[1];
+    if (next && next.overall >= primary.score * 0.25) {
+      const nextKind = next.replacerScore > next.valueScore ? 'replacer' : 'value';
+      pivot = { name: next.name, kind: nextKind, score: next.overall };
     }
     return { primary, pivot };
   }, [pw, trap]);
