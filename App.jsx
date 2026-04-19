@@ -671,30 +671,32 @@ export default function App() {
         z-index: 0;
         background: radial-gradient(
           600px circle at var(--mx, 50%) var(--my, 50%),
-          rgba(245, 197, 24, 0.08),
-          rgba(245, 197, 24, 0.03) 40%,
+          rgba(245, 197, 24, 0.13),
+          rgba(245, 197, 24, 0.08) 40%,
           transparent 70%
         );
         transition: background 0.05s ease-out;
         mix-blend-mode: screen;
       }
       @media (hover: none) { .cursor-glow { display: none; } }
-      /* Projection table override input — inline edit, subtle until focused */
+      /* Projection table override input — transparent so parent cell-top3/cell-proj
+         classes handle the colors (top-value gold highlight, etc). Overridden state
+         wins over both via !important. */
       .proj-edit {
         background: transparent;
         border: 1px solid transparent;
-        color: var(--text);
+        color: inherit;
         font: inherit;
         font-variant-numeric: tabular-nums;
         text-align: right;
         width: 58px;
         padding: 2px 4px;
         border-radius: 3px;
-        transition: all 0.12s;
+        transition: border-color 0.12s, background 0.12s;
       }
-      .proj-edit:hover { border-color: var(--border); background: var(--bg); }
-      .proj-edit:focus { outline: none; border-color: var(--primary); background: var(--bg); color: var(--primary); }
-      .proj-edit.overridden { color: var(--primary); font-weight: 600; }
+      .proj-edit:hover { border-color: var(--border); background: rgba(245, 197, 24, 0.04); }
+      .proj-edit:focus { outline: none; border-color: var(--primary); background: var(--bg); }
+      .proj-edit.overridden { color: var(--primary) !important; font-weight: 700; }
       .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .proj-edit { -moz-appearance: textfield; }
     `}</style>
@@ -826,11 +828,13 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
         <td className="num">
-          <input type="number" step="0.01" className={`proj-edit ${isOver ? 'overridden' : ''} ${iv ? 'cell-top3' : ''}`}
-            value={fmt(p.proj, 2)}
-            onChange={e => onOverride && onOverride(p.name, e.target.value)}
-            onDoubleClick={() => onOverride && onOverride(p.name, null)}
-            title={isOver ? 'Overridden — double-click to reset' : 'Click to edit projection'} />
+          <span className={iv ? 'cell-top3' : 'cell-proj'}>
+            <input type="number" step="0.01" className={`proj-edit ${isOver ? 'overridden' : ''}`}
+              value={fmt(p.proj, 2)}
+              onChange={e => onOverride && onOverride(p.name, e.target.value)}
+              onDoubleClick={() => onOverride && onOverride(p.name, null)}
+              title={isOver ? 'Overridden — double-click to reset' : 'Click to edit projection'} />
+          </span>
         </td>
         <td className="num"><span className={iv ? 'cell-top3' : ''}>{fmt(p.val, 2)}</span></td>
         <td className="num"><span className={is ? 'cell-top3' : ''}>{fmtPct(p.pStraight)}</span></td>
@@ -1031,6 +1035,7 @@ function BuilderTab({ players: rp, ownership }) {
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const isShowdown = useMemo(() => sp.some(p => p.cpt_salary != null), [sp]);
   const run = () => {
+    if (!canBuild) return;                      // DK compliance gate — user must edit ≥2 projections
     // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
     // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -1115,8 +1120,20 @@ function BuilderTab({ players: rp, ownership }) {
     dl(c, 'lineups.csv');
   };
   const exportProjections = () => { let c = 'Player,Salary,Win%,Proj,Value,GW,GL,SW,Aces,DFs,Breaks,P(2-0),Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.val},${fmt(p.gw)},${fmt(p.gl)},${fmt(p.sw)},${fmt(p.aces)},${fmt(p.dfs)},${fmt(p.breaks)},${fmtPct(p.pStraight)},${p.opponent}\n`; }); dl(c, 'projections.csv'); };
+  const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
+  const canBuild = overrideCount >= 2;
   return (<>
     <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
+    {!canBuild && (
+      <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>⚠️ DraftKings Compliance Warning</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          DraftKings policies require you to make some changes to our default projections before you can build lineups.
+          Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and edit at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong> by any amount — this proves the lineups are your own work, not a shared export.
+          <span style={{ color: 'var(--text-dim)' }}> Currently changed: <strong style={{ color: overrideCount >= 2 ? 'var(--green)' : 'var(--red)' }}>{overrideCount}</strong>/2</span>
+        </div>
+      </div>
+    )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
@@ -1146,12 +1163,16 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
-    <button className="btn btn-primary" onClick={run}>⚡ Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
-    {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} />}
+    <button className="btn btn-primary" onClick={run} disabled={!canBuild}
+      title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
+      style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
+      ⚡ Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
+    </button>
+    {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
   </>);
 }
 
-function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL }) {
+function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild = true, overrideCount = 2 }) {
   const expData = useMemo(() => res.pData.map((p, i) => {
     const cnt = res.counts[i]; const pct = cnt / res.lineups.length * 100;
     const simOwn = ownership[p.name] || 0; const lev = Math.round((pct - simOwn) * 10) / 10;
@@ -1166,7 +1187,9 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
   return (<>
     <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-      {onRebuild && <button className="btn btn-primary" onClick={onRebuild} style={{ flex: '1 1 auto', width: 'auto' }}>⚡ Rebuild {nL}</button>}
+      {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
+        title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
+        style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>⚡ Rebuild {nL}</button>}
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}>📥 Download DK Upload CSV</button>}
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}>📥 Readable CSV</button>}
     </div>
@@ -1294,11 +1317,13 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
         <td className="num">
-          <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''} ${iv ? 'cell-top3' : ''}`}
-            value={fmt(p.proj, 1)}
-            onChange={e => onOverride && onOverride(p.name, e.target.value)}
-            onDoubleClick={() => onOverride && onOverride(p.name, null)}
-            title={isOver ? 'Overridden — double-click to reset. Ceiling scales proportionally.' : 'Click to edit projection'} />
+          <span className={iv ? 'cell-top3' : 'cell-proj'}>
+            <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
+              value={fmt(p.proj, 1)}
+              onChange={e => onOverride && onOverride(p.name, e.target.value)}
+              onDoubleClick={() => onOverride && onOverride(p.name, null)}
+              title={isOver ? 'Overridden — double-click to reset. Ceiling scales proportionally.' : 'Click to edit projection'} />
+          </span>
         </td>
         <td className="num"><span style={{ background: 'rgba(74,222,128,0.1)', color: 'var(--green)', padding: '4px 10px', borderRadius: 4, fontWeight: 600, minWidth: 50, display: 'inline-block', textAlign: 'center' }}>{fmt(p.ceil, 1)}</span></td>
         <td className="num" style={{ color: p.finishProb > 0.35 ? 'var(--primary)' : 'var(--text-muted)', fontWeight: p.finishProb > 0.35 ? 700 : 400 }}>{fmtPct(p.finishProb)}</td>
@@ -1467,6 +1492,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const run = () => {
+    if (!canBuild) return;                      // DK compliance gate
     // Variance jitter: each build applies a fresh ±variance% random multiplier. Same mult to proj AND ceiling
     // per fighter so their ratio stays consistent (matters because cash mode uses proj, GPP uses ceiling).
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -1501,6 +1527,8 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const r = optimizeMMA(pd, nL, 50000, 6, mode, 48000);
     setRes({ ...r, pData: pd, mode });
   };
+  const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
+  const canBuild = overrideCount >= 2;
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
   const exportDK = () => { if (!res) return; let c = 'F,F,F,F,F,F\n'; res.lineups.forEach(lu => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload_ufc.csv'); };
   const exportReadable = () => { if (!res) return; let c = 'Rank,Score,Salary,F1,F2,F3,F4,F5,F6\n'; res.lineups.forEach((lu, i) => { const ps = lu.players.map(j => res.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups_ufc.csv'); };
@@ -1509,6 +1537,16 @@ function MMABuilderTab({ fighters: rp, ownership }) {
   return (<>
     <div className="section-head">⚡ Lineup Builder</div>
     <div className="section-sub">UFC: 6 fighters, $50K cap · No opponent-vs-opponent enforced · Export to DK</div>
+    {!canBuild && (
+      <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>⚠️ DraftKings Compliance Warning</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          DraftKings policies require you to make some changes to our default projections before you can build lineups.
+          Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and edit at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong> by any amount — this proves the lineups are your own work, not a shared export.
+          <span style={{ color: 'var(--text-dim)' }}> Currently changed: <strong style={{ color: overrideCount >= 2 ? 'var(--green)' : 'var(--red)' }}>{overrideCount}</strong>/2</span>
+        </div>
+      </div>
+    )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
@@ -1555,12 +1593,16 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} />
       <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} />
     </div>)}</div>
-    <button className="btn btn-primary" onClick={run}>⚡ Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
-    {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} />}
+    <button className="btn btn-primary" onClick={run} disabled={!canBuild}
+      title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
+      style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
+      ⚡ Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
+    </button>
+    {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} />}
   </>);
 }
 
-function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode }) {
+function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode, canBuild = true, overrideCount = 2 }) {
   const expData = useMemo(() => res.pData.map((p, i) => {
     const cnt = res.counts[i]; const pct = cnt / res.lineups.length * 100;
     const simOwn = ownership[p.name] || 0; const lev = Math.round((pct - simOwn) * 10) / 10;
@@ -1582,7 +1624,9 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
       ✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
     </div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-      {onRebuild && <button className="btn btn-primary" onClick={onRebuild} style={{ flex: '1 1 auto', width: 'auto' }}>⚡ Rebuild {nL}</button>}
+      {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
+        title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
+        style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>⚡ Rebuild {nL}</button>}
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}>📥 Download DK Upload CSV</button>}
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}>📥 Readable CSV</button>}
     </div>
