@@ -3003,7 +3003,6 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
         <td className="name">
           {p.name}
           {noLine && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 3, fontSize: 9, fontWeight: 700, background: 'rgba(251,191,36,0.15)', color: 'var(--amber-text)', border: '1px solid rgba(251,191,36,0.4)' }}>NO LINE</span>}
-          {p.statCoverage > 0 && p.statCoverage < 5 && !noLine && <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text-dim)' }} title="Partial DK data">{p.statCoverage}/5 stats</span>}
         </td>
         <td><TeamBadge team={p.team} /></td>
         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.positions_str}</td>
