@@ -211,19 +211,38 @@ export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize =
     lu.players.forEach(pid => counts[pid]++);
   }
 
-  // Phase 1: Satisfy mins (highest-min first — boosted players need the richest pool)
-  const sortedMins = Object.entries(minCaps).sort((a, b) => b[1] - a[1]);
-  for (const [name] of sortedMins) {
-    const ti = idx[name];
-    while (counts[ti] < minCaps[name] && selected.length < nLineups) {
-      let placed = false;
-      for (const lu of allLineups) {
-        const key = lu.players.join(',');
-        if (usedKeys.has(key) || !lu.players.includes(ti) || !canAdd(lu.players)) continue;
-        addLU(lu); placed = true; break;
-      }
-      if (!placed) break;
+  // Phase 1: Satisfy mins with URGENCY-WEIGHTED MULTI-CONSTRAINT PAIRING
+  // For each candidate lineup, score it by summing urgency weights of unmet-min players
+  // it contains. Urgency = remaining_count / total_count (high-min binding constraints
+  // have more remaining slots → higher weight). This naturally pairs stud+gem in the
+  // same lineups because their urgency dominates small floor mins.
+  const minNames = Object.keys(minCaps);
+  while (minNames.some(name => counts[idx[name]] < minCaps[name]) && selected.length < nLineups) {
+    // Build urgency map: pid → remaining weight
+    const urgency = new Map();
+    for (const name of minNames) {
+      const pid = idx[name];
+      const needed = minCaps[name] - counts[pid];
+      if (needed <= 0) continue;
+      urgency.set(pid, needed / nLineups);                        // absolute share of slate
     }
+    if (urgency.size === 0) break;
+
+    let best = null, bestScore = 0, bestProj = -Infinity;
+    for (const lu of allLineups) {
+      const key = lu.players.join(',');
+      if (usedKeys.has(key) || !canAdd(lu.players)) continue;
+      let score = 0;
+      for (const pid of lu.players) {
+        if (urgency.has(pid)) score += urgency.get(pid);
+      }
+      if (score === 0) continue;
+      if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && lu.proj > bestProj)) {
+        best = lu; bestScore = score; bestProj = lu.proj;
+      }
+    }
+    if (best) addLU(best);
+    else break;
   }
 
   // Phase 2: Greedy fill
@@ -234,7 +253,8 @@ export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize =
     addLU(lu);
   }
 
-  selected.sort((a, b) => b.proj - a.proj);
+  // Keep phase 1 boost-pairing order at top; phase 2 greedy-proj lineups fill bottom.
+  // (No final re-sort — user wants to see Ben+Cobolli lineups as their top lineups.)
   return { lineups: selected, counts, total: allLineups.length };
 }
 
