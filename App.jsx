@@ -413,7 +413,7 @@ function simulateOwnership(players, n = 1500) {
       maxExp: 100, minExp: 0,
     }));
     try {
-      const res = optimizeShowdown(pData, n, 50000);
+      const res = optimizeShowdown(pData, n, 50000, 48000);
       const overall = {}, cpt = {};
       pData.forEach((p, i) => {
         overall[p.name] = res.lineups.length ? res.counts[i] / res.lineups.length * 100 : 0;
@@ -427,7 +427,7 @@ function simulateOwnership(players, n = 1500) {
     opponent: p.opponent, maxExp: 100, minExp: 0,
   }));
   try {
-    const res = optimize(pData, n, 50000, 6);
+    const res = optimize(pData, n, 50000, 6, 48000);
     const overall = {};
     pData.forEach((p, i) => { overall[p.name] = res.counts[i] / res.lineups.length * 100; });
     return { overall, cpt: {} };
@@ -441,7 +441,7 @@ function simulateMMAOwnership(fighters, n = 1500) {
     opponent: f.opponent, maxExp: 100, minExp: 0
   }));
   try {
-    const res = optimizeMMA(pData, n, 50000, 6, 'median');
+    const res = optimizeMMA(pData, n, 50000, 6, "median", 48000);
     const overall = {};
     pData.forEach((p, i) => { overall[p.name] = res.counts[i] / res.lineups.length * 100; });
     return { overall, cpt: {} };
@@ -544,14 +544,14 @@ function simulateNBAOwnership(players, slateType = 'showdown') {
 
   try {
     if (slateType === 'classic') {
-      const res = nbaOptimizeClassic(pData, 1500, 50000);
+      const res = nbaOptimizeClassic(pData, 1500, 50000, 48000);
       const overall = {};
       if (!res.lineups.length) return { overall, cpt: {} };
       pData.forEach((p, i) => { overall[p.name] = res.counts[i] / res.lineups.length * 100; });
       return { overall, cpt: {} };
     }
     // Showdown — top 1500 highest-scoring lineups by DK Fantasy projection
-    const res = nbaOptimizeShowdown(pData, 1500, 50000, 45000);
+    const res = nbaOptimizeShowdown(pData, 1500, 50000, 48000);
     const overall = {}, cpt = {};
     if (!res.lineups.length) return { overall, cpt };
     pData.forEach((p, i) => {
@@ -1707,7 +1707,7 @@ function BuilderTab({ players: rp, ownership }) {
         };
       });
       enforceMinNudge(pd, sp);
-      const r = optimizeShowdown(pd, nL, 50000);
+      const r = optimizeShowdown(pd, nL, 50000, 48000);
       setRes({ ...r, pData: pd, isShowdown: true });
       return;
     }
@@ -2701,7 +2701,23 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   const [globalMin, setGlobalMin] = useState(0);
   const [contrarianOn, setContrarianOn] = useState(false);
   const [contrarianStrength, setContrarianStrength] = useState(0.6);
+  // 'all' | 'cpt' | 'flex' — which slot type the min/max inputs currently target
+  const [expScope, setExpScope] = useState('all');
   const isShowdown = (slateType || 'showdown') === 'showdown';
+
+  // Per-scope field names in the `exp` state object
+  const scopeField = (kind /* 'min' | 'max' */) => {
+    if (expScope === 'cpt')  return kind === 'min' ? 'cptMin'  : 'cptMax';
+    if (expScope === 'flex') return kind === 'min' ? 'flexMin' : 'flexMax';
+    return kind; // 'all' uses base 'min' / 'max'
+  };
+  const getCap = (name, kind) => {
+    const e = exp[name] || {};
+    const f = scopeField(kind);
+    return e[f];
+  };
+  const setCap = (name, kind, val) =>
+    setExp(p => ({ ...p, [name]: { ...p[name], [scopeField(kind)]: val } }));
 
   const avgVal = useMemo(() => {
     const vals = rp.filter(p => p.salary > 0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT').map(p => p.val || 0);
@@ -2823,10 +2839,16 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           salary: p.util_salary || p.salary, id: p.util_id || p.id,
           positions: p.positions || [], status: p.status,
           maxExp: effMax, minExp: effMin,
+          // Per-slot caps — only applied when user has set them via the
+          // CPT / FLEX tabs in the builder; otherwise full range (0–100).
+          cptMinExp:  userSet.cptMin  !== undefined ? userSet.cptMin  : 0,
+          cptMaxExp:  userSet.cptMax  !== undefined ? userSet.cptMax  : 100,
+          flexMinExp: userSet.flexMin !== undefined ? userSet.flexMin : 0,
+          flexMaxExp: userSet.flexMax !== undefined ? userSet.flexMax : 100,
         };
       });
       enforceMinNudge(pd, baseProjs);
-      const r = nbaOptimizeShowdown(pd, nL, 50000, 45000);
+      const r = nbaOptimizeShowdown(pd, nL, 50000, 48000);
       setRes({ ...r, pData: pd, isShowdown: true });
       return;
     }
@@ -2846,7 +2868,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     });
     enforceMinNudge(pd, baseProjs);
-    const r = nbaOptimizeClassic(pd, nL, 50000);
+    const r = nbaOptimizeClassic(pd, nL, 50000, 48000);
     setRes({ ...r, pData: pd, isShowdown: false });
   };
 
@@ -3043,6 +3065,62 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         .oo-nba-r2 input { font-size: 12px !important; padding: 6px 2px !important; }
       }
     `}</style>
+    {isShowdown && (
+      <div className="oo-nba-scope">
+        <style>{`
+          .oo-nba-scope {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 8px 10px; margin-bottom: 10px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 8px;
+          }
+          .oo-nba-scope-label {
+            font-size: 11px; color: var(--text-dim); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            margin-right: 4px;
+          }
+          .oo-nba-scope-btns { display: flex; gap: 4px; }
+          .oo-nba-scope-btn {
+            padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 6px;
+            border: 1px solid var(--border); background: var(--bg);
+            color: var(--text-muted); cursor: pointer; transition: all 0.12s;
+            letter-spacing: 0.03em; text-transform: uppercase;
+          }
+          .oo-nba-scope-btn:hover { border-color: var(--border-light); color: var(--text); }
+          .oo-nba-scope-btn.active {
+            border-color: var(--primary); background: rgba(245,197,24,0.14);
+            color: var(--primary);
+          }
+          .oo-nba-scope-hint {
+            font-size: 11px; color: var(--text-dim); margin-left: auto;
+            font-style: italic;
+          }
+          @media (max-width: 600px) {
+            .oo-nba-scope { padding: 8px; }
+            .oo-nba-scope-btn { padding: 7px 10px; font-size: 11px; flex: 1; }
+            .oo-nba-scope-btns { flex: 1 1 100%; }
+            .oo-nba-scope-hint { margin-left: 0; flex-basis: 100%; text-align: center; margin-top: 4px; }
+          }
+        `}</style>
+        <span className="oo-nba-scope-label">Exposure scope</span>
+        <div className="oo-nba-scope-btns">
+          {[
+            { k: 'all',  label: 'All' },
+            { k: 'cpt',  label: 'Captain' },
+            { k: 'flex', label: 'Flex' },
+          ].map(({ k, label }) => (
+            <button key={k}
+              className={`oo-nba-scope-btn ${expScope === k ? 'active' : ''}`}
+              onClick={() => setExpScope(k)}>{label}</button>
+          ))}
+        </div>
+        <span className="oo-nba-scope-hint">
+          {expScope === 'all'  && 'Min/max below cap total exposure across all slots'}
+          {expScope === 'cpt'  && 'Min/max below cap captain-slot exposure only'}
+          {expScope === 'flex' && 'Min/max below cap flex-slot exposure only'}
+        </span>
+      </div>
+    )}
     <div className="oo-nba-legend">
       <span>Each card shows:</span>
       <span>Player</span>
@@ -3050,12 +3128,19 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       <span>$Sal</span>
       <span>Proj</span>
       <span>Own%</span>
-      <b>Min%</b>
-      <b>Max%</b>
+      <b>{expScope === 'cpt' ? 'CPT Min%' : expScope === 'flex' ? 'FLEX Min%' : 'Min%'}</b>
+      <b>{expScope === 'cpt' ? 'CPT Max%' : expScope === 'flex' ? 'FLEX Max%' : 'Max%'}</b>
     </div>
     <ul className="oo-nba-pool">{sp.map(p => {
       const ownPct = ownership[p.name] || 0;
       const teamColor = p.team === 'OKC' ? '#FFB648' : '#C99AD4';
+      const minVal = getCap(p.name, 'min');
+      const maxVal = getCap(p.name, 'max');
+      // In 'all' scope, default to globalMin/Max. In cpt/flex scope, default
+      // to the unconstrained range 0/100 so nothing is enforced until the
+      // user explicitly sets a per-slot cap.
+      const minDefault = expScope === 'all' ? globalMin : 0;
+      const maxDefault = expScope === 'all' ? globalMax : 100;
       return <li className="oo-nba-card" key={p.name}>
         <div className="oo-nba-r1">
           <span className="oo-nba-name" title={p.name}>{p.name}</span>
@@ -3065,10 +3150,12 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           <span className="oo-nba-sal" title="Salary">{fmtSal(p.salary)}</span>
           <span className="oo-nba-proj" title="DK Fantasy Projection">{fmt(p.proj, 1)}</span>
           <span className="oo-nba-own" title="Simulated ownership" style={ownPct > 35 ? { color: 'var(--amber)', fontWeight: 600 } : {}}>{fmt(ownPct, 0)}%</span>
-          <input type="number" min="0" max="100" value={exp[p.name]?.min ?? globalMin}
-            onChange={e => sE(p.name, 'min', +e.target.value)} title={`Min exposure % for ${p.name}`} />
-          <input type="number" min="0" max="100" value={exp[p.name]?.max ?? globalMax}
-            onChange={e => sE(p.name, 'max', +e.target.value)} title={`Max exposure % for ${p.name}`} />
+          <input type="number" min="0" max="100" value={minVal ?? minDefault}
+            onChange={e => setCap(p.name, 'min', +e.target.value)}
+            title={`${expScope === 'cpt' ? 'Captain' : expScope === 'flex' ? 'Flex' : 'Total'} min exposure % — ${p.name}`} />
+          <input type="number" min="0" max="100" value={maxVal ?? maxDefault}
+            onChange={e => setCap(p.name, 'max', +e.target.value)}
+            title={`${expScope === 'cpt' ? 'Captain' : expScope === 'flex' ? 'Flex' : 'Total'} max exposure % — ${p.name}`} />
         </div>
       </li>;
     })}</ul>
