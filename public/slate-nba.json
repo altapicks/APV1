@@ -40,6 +40,38 @@
         "L10": 32.0,
         "All": 33.3
       },
+      "dk_props": {
+        "points": {
+          "line": 30.5,
+          "over": -102,
+          "under": -125
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -116,
+          "under": -114
+        },
+        "assists": {
+          "line": 6.5,
+          "over": 101,
+          "under": -132
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -111,
+          "under": -119
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -173,
+          "under": 130
+        },
+        "pra": {
+          "line": 41.5,
+          "over": -114,
+          "under": -116
+        }
+      },
       "pp_stats": {
         "points": 29.5,
         "rebounds": 4.5,
@@ -47,7 +79,14 @@
         "threes": 1.5,
         "stls_blks": 1.5
       },
-      "dd_odds": 479,
+      "season_avg": {
+        "ppg": 31.1,
+        "rpg": 4.3,
+        "apg": 6.6,
+        "3pmpg": 1.7,
+        "pra": 42
+      },
+      "dd_odds": 493,
       "td_odds": 5200
     },
     {
@@ -73,14 +112,47 @@
         "L10": 36.3,
         "All": 33.8
       },
+      "dk_props": {
+        "points": {
+          "line": 23.5,
+          "over": -109,
+          "under": -117
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 120,
+          "under": -158
+        },
+        "assists": {
+          "line": 5.5,
+          "over": -134,
+          "under": 102
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -130,
+          "under": -101
+        },
+        "pra": {
+          "line": 34.5,
+          "over": -107,
+          "under": -123
+        }
+      },
       "pp_stats": {
         "points": 23.5,
         "rebounds": 4.5,
         "assists": 5.5,
-        "threes": 1.5,
-        "stls_blks": 1.3
+        "threes": 1.5
       },
-      "dd_odds": 730,
+      "season_avg": {
+        "ppg": 25.9,
+        "rpg": 3.8,
+        "apg": 6.0,
+        "3pmpg": 1.9,
+        "pra": 35.7
+      },
+      "dd_odds": 710,
       "td_odds": 7700
     },
     {
@@ -105,12 +177,51 @@
         "L10": 28.6,
         "All": 26.7
       },
+      "dk_props": {
+        "points": {
+          "line": 18.5,
+          "over": -115,
+          "under": -110
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 102,
+          "under": -134
+        },
+        "assists": {
+          "line": 3.5,
+          "over": 122,
+          "under": -161
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -195,
+          "under": 147
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -118,
+          "under": -113
+        },
+        "pra": {
+          "line": 26.5,
+          "over": -113,
+          "under": -117
+        }
+      },
       "pp_stats": {
         "points": 18.5,
         "rebounds": 4.5,
         "assists": 3.5,
         "threes": 1.5,
         "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 18.8,
+        "rpg": 3.7,
+        "apg": 2.9,
+        "3pmpg": 2.4,
+        "pra": 25.4
       },
       "dd_odds": 2100
     },
@@ -136,6 +247,38 @@
         "L10": 26.8,
         "All": 28.4
       },
+      "dk_props": {
+        "points": {
+          "line": 17.5,
+          "over": -104,
+          "under": -122
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -121,
+          "under": -108
+        },
+        "assists": {
+          "line": 5.5,
+          "over": 121,
+          "under": -160
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -188,
+          "under": 142
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 104,
+          "under": -138
+        },
+        "pra": {
+          "line": 27.5,
+          "over": -108,
+          "under": -121
+        }
+      },
       "pp_stats": {
         "points": 17.5,
         "rebounds": 4.5,
@@ -143,7 +286,14 @@
         "threes": 0.5,
         "stls_blks": 1.5
       },
-      "dd_odds": 1120
+      "season_avg": {
+        "ppg": 17.1,
+        "rpg": 4.6,
+        "apg": 5.5,
+        "3pmpg": 0.7,
+        "pra": 27.2
+      },
+      "dd_odds": 1060
     },
     {
       "name": "Chet Holmgren",
@@ -167,6 +317,38 @@
         "L10": 26.0,
         "All": 28.9
       },
+      "dk_props": {
+        "points": {
+          "line": 16.5,
+          "over": -101,
+          "under": -126
+        },
+        "rebounds": {
+          "line": 9.5,
+          "over": 108,
+          "under": -143
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -110,
+          "under": -120
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 128,
+          "under": -169
+        },
+        "stls_blks": {
+          "line": 2.5,
+          "over": -124,
+          "under": -107
+        },
+        "pra": {
+          "line": 27.5,
+          "over": -106,
+          "under": -124
+        }
+      },
       "pp_stats": {
         "points": 16.5,
         "rebounds": 9.5,
@@ -174,7 +356,14 @@
         "threes": 1.5,
         "stls_blks": 2.5
       },
-      "dd_odds": 126
+      "season_avg": {
+        "ppg": 17.1,
+        "rpg": 8.9,
+        "apg": 1.7,
+        "3pmpg": 1.3,
+        "pra": 27.7
+      },
+      "dd_odds": 125
     },
     {
       "name": "Dillon Brooks",
@@ -198,12 +387,51 @@
         "L10": 29.8,
         "All": 30.5
       },
+      "dk_props": {
+        "points": {
+          "line": 16.5,
+          "over": -101,
+          "under": -126
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -102,
+          "under": -129
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -129,
+          "under": -102
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -125,
+          "under": -105
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 169,
+          "under": -227
+        },
+        "pra": {
+          "line": 21.5,
+          "over": -111,
+          "under": -119
+        }
+      },
       "pp_stats": {
         "points": 15.5,
         "rebounds": 3.5,
         "assists": 1.5,
         "threes": 1.5,
         "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 20.1,
+        "rpg": 3.7,
+        "apg": 1.8,
+        "3pmpg": 2.2,
+        "pra": 25.6
       },
       "dd_odds": 3100
     },
@@ -229,14 +457,45 @@
         "L10": 19.9,
         "All": 24.3
       },
+      "dk_props": {
+        "points": {
+          "line": 7.5,
+          "over": -128,
+          "under": 100
+        },
+        "rebounds": {
+          "line": 8.5,
+          "over": 107,
+          "under": -141
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -121,
+          "under": -109
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 110,
+          "under": -146
+        },
+        "pra": {
+          "line": 18.5,
+          "over": -120,
+          "under": -110
+        }
+      },
       "pp_stats": {
         "points": 7.5,
-        "rebounds": 7.5,
-        "assists": 2.5,
-        "threes": 0.1,
-        "stls_blks": 1.5
+        "rebounds": 7.5
       },
-      "dd_odds": 436
+      "season_avg": {
+        "ppg": 9.2,
+        "rpg": 9.4,
+        "apg": 3.5,
+        "3pmpg": 0.0,
+        "pra": 22.1
+      },
+      "dd_odds": 429
     },
     {
       "name": "Grayson Allen",
@@ -261,12 +520,29 @@
         "L10": 22.4,
         "All": 28.8
       },
-      "pp_stats": {
-        "points": 8.5,
-        "rebounds": 3.0,
-        "assists": 2.0,
-        "threes": 1.5,
-        "stls_blks": 1.0
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": -124,
+          "under": -102
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -148,
+          "under": 112
+        },
+        "pra": {
+          "line": 13.5,
+          "over": 100,
+          "under": -131
+        }
+      },
+      "season_avg": {
+        "ppg": 16.6,
+        "rpg": 3.0,
+        "apg": 3.8,
+        "3pmpg": 3.2,
+        "pra": 23.4
       }
     },
     {
@@ -292,6 +568,38 @@
         "L10": 24.3,
         "All": 22.8
       },
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": 105,
+          "under": -134
+        },
+        "rebounds": {
+          "line": 6.5,
+          "over": 100,
+          "under": -131
+        },
+        "assists": {
+          "line": 2.5,
+          "over": 123,
+          "under": -163
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -143,
+          "under": 109
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -150,
+          "under": 113
+        },
+        "pra": {
+          "line": 16.5,
+          "over": -124,
+          "under": -106
+        }
+      },
       "pp_stats": {
         "points": 8.5,
         "rebounds": 5.5,
@@ -299,7 +607,14 @@
         "threes": 1.5,
         "stls_blks": 1.5
       },
-      "dd_odds": 1400
+      "season_avg": {
+        "ppg": 8.9,
+        "rpg": 4.9,
+        "apg": 2.1,
+        "3pmpg": 1.7,
+        "pra": 16.0
+      },
+      "dd_odds": 880
     },
     {
       "name": "Mark Williams",
@@ -326,11 +641,15 @@
       "pp_stats": {
         "points": 7.5,
         "rebounds": 6.5,
-        "assists": 0.5,
-        "threes": 0.2,
         "stls_blks": 1.5
       },
-      "dd_odds": 780
+      "season_avg": {
+        "ppg": 9.0,
+        "rpg": 6.5,
+        "apg": 0.5,
+        "3pmpg": 0.2,
+        "pra": 16.0
+      }
     },
     {
       "name": "Ajay Mitchell",
@@ -354,12 +673,45 @@
         "L10": 23.8,
         "All": 25.8
       },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -109,
+          "under": -117
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -144,
+          "under": 109
+        },
+        "assists": {
+          "line": 3.5,
+          "over": 121,
+          "under": -159
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -198,
+          "under": 149
+        },
+        "pra": {
+          "line": 16.5,
+          "over": -118,
+          "under": -111
+        }
+      },
       "pp_stats": {
         "points": 10.5,
         "rebounds": 2.5,
         "assists": 3.5,
-        "threes": 0.5,
-        "stls_blks": 1.1
+        "threes": 0.5
+      },
+      "season_avg": {
+        "ppg": 13.6,
+        "rpg": 3.3,
+        "apg": 3.6,
+        "3pmpg": 1.1,
+        "pra": 20.5
       }
     },
     {
@@ -407,12 +759,34 @@
         "L10": 22.9,
         "All": 28.3
       },
+      "dk_props": {
+        "points": {
+          "line": 6.5,
+          "over": -103,
+          "under": -124
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 123,
+          "under": -163
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -142,
+          "under": 108
+        }
+      },
       "pp_stats": {
         "points": 6.5,
         "rebounds": 4.5,
-        "assists": 1.0,
-        "threes": 1.5,
-        "stls_blks": 1.0
+        "threes": 1.5
+      },
+      "season_avg": {
+        "ppg": 9.8,
+        "rpg": 4.8,
+        "apg": 2.5,
+        "3pmpg": 2.7,
+        "pra": 17.0
       }
     },
     {
@@ -438,12 +812,45 @@
         "L10": 23.0,
         "All": 26.6
       },
+      "dk_props": {
+        "points": {
+          "line": 6.5,
+          "over": 100,
+          "under": -127
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": 122,
+          "under": -161
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -133,
+          "under": 101
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -212,
+          "under": 159
+        },
+        "pra": {
+          "line": 10.5,
+          "over": -109,
+          "under": -121
+        }
+      },
       "pp_stats": {
         "points": 6.5,
         "rebounds": 2.5,
         "assists": 1.5,
-        "threes": 0.5,
-        "stls_blks": 1.3
+        "threes": 0.5
+      },
+      "season_avg": {
+        "ppg": 8.6,
+        "rpg": 3.1,
+        "apg": 2.6,
+        "3pmpg": 1.3,
+        "pra": 14.3
       }
     },
     {
@@ -492,12 +899,33 @@
         "L10": 16.7,
         "All": 18.2
       },
+      "dk_props": {
+        "points": {
+          "line": 5.5,
+          "over": -129,
+          "under": 101
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -187,
+          "under": 141
+        },
+        "pra": {
+          "line": 10.5,
+          "over": -109,
+          "under": -121
+        }
+      },
       "pp_stats": {
         "points": 5.5,
-        "rebounds": 2.5,
-        "assists": 2.0,
-        "threes": 0.5,
-        "stls_blks": 1.6
+        "threes": 0.5
+      },
+      "season_avg": {
+        "ppg": 6.2,
+        "rpg": 2.5,
+        "apg": 2.5,
+        "3pmpg": 0.9,
+        "pra": 10.9
       }
     },
     {
@@ -522,12 +950,51 @@
         "L10": 21.4,
         "All": 26.8
       },
+      "dk_props": {
+        "points": {
+          "line": 6.5,
+          "over": -114,
+          "under": -112
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -167,
+          "under": 127
+        },
+        "assists": {
+          "line": 0.5,
+          "over": -202,
+          "under": 152
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -115,
+          "under": -115
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 150,
+          "under": -202
+        },
+        "pra": {
+          "line": 10.5,
+          "over": -133,
+          "under": 101
+        }
+      },
       "pp_stats": {
         "points": 6.5,
         "rebounds": 2.5,
         "assists": 0.5,
         "threes": 1.5,
         "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 8.3,
+        "rpg": 3.6,
+        "apg": 1.2,
+        "3pmpg": 1.9,
+        "pra": 13.1
       }
     },
     {
@@ -575,12 +1042,28 @@
         "L10": 15.3,
         "All": 21.2
       },
+      "dk_props": {
+        "points": {
+          "line": 5.5,
+          "over": -105,
+          "under": -122
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 137,
+          "under": -181
+        }
+      },
       "pp_stats": {
         "points": 5.5,
-        "rebounds": 1.5,
-        "assists": 1.0,
-        "threes": 1.5,
-        "stls_blks": 0.5
+        "threes": 1.5
+      },
+      "season_avg": {
+        "ppg": 11.1,
+        "rpg": 1.5,
+        "apg": 1.0,
+        "3pmpg": 2.5,
+        "pra": 13.5
       }
     },
     {
@@ -604,7 +1087,8 @@
         "L5": 10.0,
         "L10": 10.0,
         "All": 12.6
-      }
+      },
+      "manual_proj": 7.07
     },
     {
       "name": "Jared McCain",
@@ -628,7 +1112,8 @@
         "L5": 17.0,
         "L10": 14.7,
         "All": 17.9
-      }
+      },
+      "manual_proj": 7.06
     },
     {
       "name": "Branden Carlson",
@@ -768,7 +1253,8 @@
         "L5": 16.8,
         "L10": 15.6,
         "All": 21.8
-      }
+      },
+      "manual_proj": 2.25
     },
     {
       "name": "Brooks Barnhizer",
@@ -838,7 +1324,8 @@
         "L5": 18.0,
         "L10": 11.5,
         "All": 8.8
-      }
+      },
+      "manual_proj": 6.72
     },
     {
       "name": "Ryan Dunn",
@@ -861,7 +1348,8 @@
         "L5": 18.8,
         "L10": 15.0,
         "All": 19.0
-      }
+      },
+      "manual_proj": 5.56
     },
     {
       "name": "Jamaree Bouyea",
@@ -908,7 +1396,8 @@
         "L5": 19.0,
         "L10": 15.6,
         "All": 12.1
-      }
+      },
+      "manual_proj": 3.31
     },
     {
       "name": "Amir Coffey",
@@ -1068,11 +1557,6 @@
       "line": 1.5
     },
     {
-      "player": "Shai Gilgeous-Alexander",
-      "stat": "Pts+Reb+Ast",
-      "line": 41.5
-    },
-    {
       "player": "Devin Booker",
       "stat": "Points",
       "line": 23.5
@@ -1091,16 +1575,6 @@
       "player": "Devin Booker",
       "stat": "3PM",
       "line": 1.5
-    },
-    {
-      "player": "Devin Booker",
-      "stat": "Stls+Blks",
-      "line": 1.3
-    },
-    {
-      "player": "Devin Booker",
-      "stat": "Pts+Reb+Ast",
-      "line": 33.5
     },
     {
       "player": "Jalen Green",
@@ -1128,11 +1602,6 @@
       "line": 1.5
     },
     {
-      "player": "Jalen Green",
-      "stat": "Pts+Reb+Ast",
-      "line": 26.5
-    },
-    {
       "player": "Jalen Williams",
       "stat": "Points",
       "line": 17.5
@@ -1149,13 +1618,13 @@
     },
     {
       "player": "Jalen Williams",
-      "stat": "Stls+Blks",
-      "line": 1.5
+      "stat": "3PM",
+      "line": 0.5
     },
     {
       "player": "Jalen Williams",
-      "stat": "Pts+Reb+Ast",
-      "line": 27.5
+      "stat": "Stls+Blks",
+      "line": 1.5
     },
     {
       "player": "Chet Holmgren",
@@ -1183,11 +1652,6 @@
       "line": 2.5
     },
     {
-      "player": "Chet Holmgren",
-      "stat": "Pts+Reb+Ast",
-      "line": 27.5
-    },
-    {
       "player": "Dillon Brooks",
       "stat": "Points",
       "line": 15.5
@@ -1213,11 +1677,6 @@
       "line": 1.5
     },
     {
-      "player": "Dillon Brooks",
-      "stat": "Pts+Reb+Ast",
-      "line": 21.5
-    },
-    {
       "player": "Ajay Mitchell",
       "stat": "Points",
       "line": 10.5
@@ -1234,43 +1693,8 @@
     },
     {
       "player": "Ajay Mitchell",
-      "stat": "Stls+Blks",
-      "line": 1.1
-    },
-    {
-      "player": "Ajay Mitchell",
-      "stat": "Pts+Reb+Ast",
-      "line": 16.5
-    },
-    {
-      "player": "Grayson Allen",
-      "stat": "Points",
-      "line": 8.5
-    },
-    {
-      "player": "Grayson Allen",
-      "stat": "Rebounds",
-      "line": 3.0
-    },
-    {
-      "player": "Grayson Allen",
-      "stat": "Assists",
-      "line": 2.0
-    },
-    {
-      "player": "Grayson Allen",
       "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Grayson Allen",
-      "stat": "Stls+Blks",
-      "line": 1.0
-    },
-    {
-      "player": "Grayson Allen",
-      "stat": "Pts+Reb+Ast",
-      "line": 12.5
+      "line": 0.5
     },
     {
       "player": "Jordan Goodwin",
@@ -1298,11 +1722,6 @@
       "line": 1.5
     },
     {
-      "player": "Jordan Goodwin",
-      "stat": "Pts+Reb+Ast",
-      "line": 16.5
-    },
-    {
       "player": "Mark Williams",
       "stat": "Points",
       "line": 7.5
@@ -1318,11 +1737,6 @@
       "line": 1.5
     },
     {
-      "player": "Mark Williams",
-      "stat": "Pts+Reb+Ast",
-      "line": 15.5
-    },
-    {
       "player": "Isaiah Hartenstein",
       "stat": "Points",
       "line": 7.5
@@ -1333,29 +1747,19 @@
       "line": 7.5
     },
     {
-      "player": "Isaiah Hartenstein",
+      "player": "Luguentz Dort",
+      "stat": "Points",
+      "line": 6.5
+    },
+    {
+      "player": "Luguentz Dort",
+      "stat": "Rebounds",
+      "line": 2.5
+    },
+    {
+      "player": "Luguentz Dort",
       "stat": "Assists",
-      "line": 2.5
-    },
-    {
-      "player": "Isaiah Hartenstein",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Isaiah Hartenstein",
-      "stat": "Pts+Reb+Ast",
-      "line": 18.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "Points",
-      "line": 6.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "Rebounds",
-      "line": 2.5
+      "line": 0.5
     },
     {
       "player": "Luguentz Dort",
@@ -1368,11 +1772,6 @@
       "line": 1.5
     },
     {
-      "player": "Luguentz Dort",
-      "stat": "Pts+Reb+Ast",
-      "line": 10.5
-    },
-    {
       "player": "Cason Wallace",
       "stat": "Points",
       "line": 6.5
@@ -1389,13 +1788,8 @@
     },
     {
       "player": "Cason Wallace",
-      "stat": "Stls+Blks",
-      "line": 1.3
-    },
-    {
-      "player": "Cason Wallace",
-      "stat": "Pts+Reb+Ast",
-      "line": 10.5
+      "stat": "3PM",
+      "line": 0.5
     },
     {
       "player": "Royce O'Neale",
@@ -1409,53 +1803,23 @@
     },
     {
       "player": "Royce O'Neale",
-      "stat": "Assists",
-      "line": 1.0
-    },
-    {
-      "player": "Royce O'Neale",
       "stat": "3PM",
       "line": 1.5
     },
     {
-      "player": "Royce O'Neale",
-      "stat": "Stls+Blks",
-      "line": 1.0
-    },
-    {
       "player": "Alex Caruso",
       "stat": "Points",
       "line": 5.5
     },
     {
       "player": "Alex Caruso",
-      "stat": "Rebounds",
-      "line": 2.5
-    },
-    {
-      "player": "Alex Caruso",
-      "stat": "Assists",
-      "line": 2.0
-    },
-    {
-      "player": "Alex Caruso",
-      "stat": "Stls+Blks",
-      "line": 1.6
-    },
-    {
-      "player": "Alex Caruso",
-      "stat": "Pts+Reb+Ast",
-      "line": 10.5
+      "stat": "3PM",
+      "line": 0.5
     },
     {
       "player": "Isaiah Joe",
       "stat": "Points",
       "line": 5.5
-    },
-    {
-      "player": "Isaiah Joe",
-      "stat": "Assists",
-      "line": 1.0
     },
     {
       "player": "Isaiah Joe",
