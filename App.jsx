@@ -1,5 +1,5 @@
 import { Component, useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { processMatch, dkProjection, ppProjection, ppEV, optimize } from './engine.js';
+import { processMatch, dkProjection, ppProjection, ppEV, optimize, optimizeShowdown } from './engine.js';
 import { processFight, dkMMAProjection, dkMMACeiling, ppMMAProjection, ppMMACeiling, optimizeMMA } from './engine-mma.js';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -194,7 +194,12 @@ function buildProjections(data) {
       const name = match[side]; const dk = dkMap[name]; if (!dk) return;
       const proj = dkProjection(s);
       const val = dk.salary > 0 ? Math.round(proj / (dk.salary / 1000) * 100) / 100 : 0;
-      dkPlayers.push({ name, salary: dk.salary, id: dk.id, avgPPG: dk.avg_ppg, opponent: oppMap[name] || '', tournament: mtMap[name]?.t || '', startTime: mtMap[name]?.time || '', wp: s.wp, proj, val, pStraight: s.pStraightWin, p3set: s.p3set, gw: s.gw, gl: s.gl, sw: s.setsWon, sl: s.setsLost, aces: s.aces, dfs: s.dfs, breaks: s.breaks, p10ace: s.p10ace, pNoDF: s.pNoDF, ppProj: ppProjection(s), stats: s });
+      dkPlayers.push({ name, salary: dk.salary, id: dk.id, avgPPG: dk.avg_ppg, opponent: oppMap[name] || '', tournament: mtMap[name]?.t || '', startTime: mtMap[name]?.time || '', wp: s.wp, proj, val, pStraight: s.pStraightWin, p3set: s.p3set, gw: s.gw, gl: s.gl, sw: s.setsWon, sl: s.setsLost, aces: s.aces, dfs: s.dfs, breaks: s.breaks, p10ace: s.p10ace, pNoDF: s.pNoDF, ppProj: ppProjection(s), stats: s,
+        // Showdown tiers — undefined for classic slates (harmless)
+        cpt_id: dk.cpt_id, cpt_salary: dk.cpt_salary,
+        acpt_id: dk.acpt_id, acpt_salary: dk.acpt_salary,
+        flex_id: dk.flex_id, flex_salary: dk.flex_salary,
+      });
     });
   });
   const ppRows = [];
@@ -349,6 +354,21 @@ function buildMMAProjections(data) {
 // OWNERSHIP SIMULATORS
 // ═══════════════════════════════════════════════════════════════════════
 function simulateOwnership(players, n = 1300) {
+  const isShowdown = players.some(p => p.salary > 0 && p.cpt_salary != null);
+  if (isShowdown) {
+    const pData = players.filter(p => p.salary > 0).map(p => ({
+      name: p.name, projection: p.proj, opponent: p.opponent,
+      cpt_salary: p.cpt_salary, acpt_salary: p.acpt_salary, flex_salary: p.flex_salary,
+      cpt_id: p.cpt_id, acpt_id: p.acpt_id, flex_id: p.flex_id,
+      maxExp: 100, minExp: 0,
+    }));
+    try {
+      const res = optimizeShowdown(pData, n, 50000);
+      const own = {};
+      pData.forEach((p, i) => { own[p.name] = res.lineups.length ? res.counts[i] / res.lineups.length * 100 : 0; });
+      return own;
+    } catch { return {}; }
+  }
   const pData = players.filter(p => p.salary > 0).map(p => ({ name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: 100, minExp: 0 }));
   try { const res = optimize(pData, n, 50000, 6); const own = {}; pData.forEach((p, i) => { own[p.name] = res.counts[i] / res.lineups.length * 100; }); return own; } catch { return {}; }
 }
@@ -925,7 +945,29 @@ function BuilderTab({ players: rp, ownership }) {
   const sp = useMemo(() => [...adjRp].filter(p => p.salary > 0).sort((a, b) => b.val - a.val), [adjRp]);
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
+  const isShowdown = useMemo(() => sp.some(p => p.cpt_salary != null), [sp]);
   const run = () => {
+    if (isShowdown) {
+      const pd = sp.map(p => {
+        const cap = contrarianCaps[p.name] || {};
+        const userSet = exp[p.name] || {};
+        const userMin = userSet.min !== undefined ? userSet.min : globalMin;
+        const userMax = userSet.max !== undefined ? userSet.max : globalMax;
+        const effMin = Math.max(userMin, cap.min || 0);
+        const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
+        return {
+          name: p.name, projection: p.proj, opponent: p.opponent,
+          // Salary field kept for exposure table value calc (uses FLEX baseline)
+          salary: p.flex_salary ?? p.salary, id: p.flex_id ?? p.id,
+          cpt_salary: p.cpt_salary, acpt_salary: p.acpt_salary, flex_salary: p.flex_salary,
+          cpt_id: p.cpt_id, acpt_id: p.acpt_id, flex_id: p.flex_id,
+          maxExp: effMax, minExp: effMin,
+        };
+      });
+      const r = optimizeShowdown(pd, nL, 50000);
+      setRes({ ...r, pData: pd, isShowdown: true });
+      return;
+    }
     const pd = sp.map(p => {
       const cap = contrarianCaps[p.name] || {};
       const userSet = exp[p.name] || {};
@@ -938,11 +980,39 @@ function BuilderTab({ players: rp, ownership }) {
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     const r = optimize(pd, nL, 50000, 6, 48000);
-    setRes({ ...r, pData: pd });
+    setRes({ ...r, pData: pd, isShowdown: false });
   };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
-  const exportDK = () => { if (!res) return; let c = 'P,P,P,P,P,P\n'; res.lineups.forEach(lu => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload.csv'); };
-  const exportReadable = () => { if (!res) return; let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6\n'; res.lineups.forEach((lu, i) => { const ps = lu.players.map(j => res.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups.csv'); };
+  const exportDK = () => {
+    if (!res) return;
+    if (res.isShowdown) {
+      let c = 'CPT,A-CPT,P\n';
+      res.lineups.forEach(lu => {
+        const cptP = res.pData[lu.cpt], acptP = res.pData[lu.acpt], flexP = res.pData[lu.flex];
+        c += `${cptP.cpt_id},${acptP.acpt_id},${flexP.flex_id}\n`;
+      });
+      dl(c, 'dk_upload_showdown.csv');
+      return;
+    }
+    let c = 'P,P,P,P,P,P\n';
+    res.lineups.forEach(lu => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; });
+    dl(c, 'dk_upload.csv');
+  };
+  const exportReadable = () => {
+    if (!res) return;
+    if (res.isShowdown) {
+      let c = 'Rank,Proj,Salary,CPT,A-CPT,FLEX\n';
+      res.lineups.forEach((lu, i) => {
+        const cptP = res.pData[lu.cpt], acptP = res.pData[lu.acpt], flexP = res.pData[lu.flex];
+        c += `${i + 1},${lu.proj},${lu.sal},${cptP.name},${acptP.name},${flexP.name}\n`;
+      });
+      dl(c, 'lineups_showdown.csv');
+      return;
+    }
+    let c = 'Rank,Proj,Salary,P1,P2,P3,P4,P5,P6\n';
+    res.lineups.forEach((lu, i) => { const ps = lu.players.map(j => res.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; });
+    dl(c, 'lineups.csv');
+  };
   const exportProjections = () => { let c = 'Player,Salary,Win%,Proj,Value,GW,GL,SW,Aces,DFs,Breaks,P(2-0),Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.val},${fmt(p.gw)},${fmt(p.gl)},${fmt(p.sw)},${fmt(p.aces)},${fmt(p.dfs)},${fmt(p.breaks)},${fmtPct(p.pStraight)},${p.opponent}\n`; }); dl(c, 'projections.csv'); };
   return (<>
     <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
@@ -970,7 +1040,7 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
-    <button className="btn btn-primary" onClick={run}>⚡ Build {nL} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
+    <button className="btn btn-primary" onClick={run}>⚡ Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}</button>
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} />}
   </>);
 }
@@ -1000,7 +1070,30 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.projection, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
     <div className="section-head">🎯 Lineups</div>
-    <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>; })}</div>
+    <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
+      if (res.isShowdown) {
+        // Showdown: render in CPT → A-CPT → FLEX order with role badge + tier salary + multiplied projection
+        const slots = [
+          { role: 'CPT',   p: res.pData[lu.cpt],  sal: res.pData[lu.cpt].cpt_salary,   mult: 1.5,  color: '#F5C518' },
+          { role: 'A-CPT', p: res.pData[lu.acpt], sal: res.pData[lu.acpt].acpt_salary, mult: 1.25, color: '#C084FC' },
+          { role: 'FLEX',  p: res.pData[lu.flex], sal: res.pData[lu.flex].flex_salary, mult: 1.0,  color: 'var(--text-muted)' },
+        ];
+        return <div className="lu-card" key={idx}>
+          <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
+          {slots.map(s => <div className="lu-row" key={s.role}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: s.color, width: 44, flexShrink: 0, letterSpacing: 0.5 }}>{s.role}</span>
+            <span className="lu-name">{s.p.name}</span>
+            <span className="lu-opp">vs {s.p.opponent}</span>
+            <span className="lu-sal">${s.sal.toLocaleString()}</span>
+            <span className="lu-pts">{fmt(s.p.projection * s.mult, 1)}</span>
+          </div>)}
+          <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div>
+        </div>;
+      }
+      // Classic: unchanged
+      const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
+      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
+    })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
   </>);
 }
