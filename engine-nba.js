@@ -298,10 +298,12 @@ export function buildPlayerStats(player, /* ctx */ _ctx = {}) {
   const stl = (stlBlkSum || 0) * stlPct;
   const blk = (stlBlkSum || 0) * blkPct;
 
-  // Turnovers: we only use this for the DK scoring component (-0.5 × TO).
-  // Back-calculated from a simple creation-load proxy, capped so missing data
-  // doesn't over-penalize.
-  const to = estimateTurnovers(ast || 0, pts || 0);
+  // Turnovers: prefer explicit per-player value from the slate (user-supplied
+  // rotation data); fall back to the creation-load estimator when absent.
+  // DK scoring: -0.5 × TO, PP scoring: -1 × TO.
+  const to = (player.turnovers != null)
+    ? Number(player.turnovers)
+    : estimateTurnovers(ast || 0, pts || 0);
 
   // DD/TD probabilities — direct from odds when present, else 0.
   // These also come from DraftKings markets (Same Game Parlay screen).
