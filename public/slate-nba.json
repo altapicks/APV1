@@ -1,7 +1,7 @@
 {
   "date": "2026-04-19",
   "slate_type": "showdown",
-  "notes": "ORL @ DET showdown (playoffs). DK salaries + roster IDs integrated. All prop data from PP + DK screenshots. Game metadata + playoff-adjusted minutes applied. Minute adjustments: starters (\u226528 base) +2, role (22-28) +1, bench (15-22) -1, deep (<15) -2.",
+  "notes": "ORL @ DET showdown (playoffs). DK salaries + IDs integrated. Prop data from PP + DK screenshots. Game metadata + playoff-adjusted minutes applied. Missing stats auto-filled via position/role inference (flagged _source: inferred). Turnovers: explicit per player from rotation list.",
   "game": {
     "away": "ORL",
     "home": "DET",
@@ -87,7 +87,8 @@
         "blkpg": null
       },
       "dd_odds": -169,
-      "td_odds": 960
+      "td_odds": 960,
+      "turnovers": 3.7
     },
     {
       "name": "Jalen Duren",
@@ -134,13 +135,19 @@
           "_source": "synthetic_sum",
           "_stl_line": 0.5,
           "_blk_line": 0.5
+        },
+        "threes": {
+          "line": 0.0,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 19.5,
         "rebounds": 11.5,
         "assists": 2.5,
-        "threes": null,
+        "threes": 0.0,
         "stls_blks": 1.06
       },
       "season_avg": {
@@ -151,7 +158,8 @@
         "stlpg": 0.8,
         "blkpg": 0.8
       },
-      "dd_odds": -230
+      "dd_odds": -230,
+      "turnovers": 1.8
     },
     {
       "name": "Ausar Thompson",
@@ -198,13 +206,19 @@
           "_source": "synthetic_sum",
           "_stl_line": 1.5,
           "_blk_line": 0.5
+        },
+        "threes": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 9.5,
         "rebounds": 5.5,
         "assists": 2.5,
-        "threes": null,
+        "threes": 0.2,
         "stls_blks": 2.09
       },
       "season_avg": {
@@ -215,7 +229,8 @@
         "stlpg": 2.0,
         "blkpg": 0.9
       },
-      "dd_odds": 1740
+      "dd_odds": 1740,
+      "turnovers": 1.5
     },
     {
       "name": "Tobias Harris",
@@ -284,7 +299,8 @@
         "stlpg": 0.9,
         "blkpg": 0.4
       },
-      "dd_odds": 1500
+      "dd_odds": 1500,
+      "turnovers": 1.0
     },
     {
       "name": "Duncan Robinson",
@@ -352,7 +368,8 @@
         "3pmpg": 2.9,
         "stlpg": 0.6,
         "blkpg": null
-      }
+      },
+      "turnovers": 0.7
     },
     {
       "name": "Daniss Jenkins",
@@ -396,6 +413,12 @@
           "line": 0.5,
           "over": -113,
           "under": -116
+        },
+        "stls_blks": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
@@ -403,7 +426,7 @@
         "rebounds": 1.5,
         "assists": 2.5,
         "threes": 0.5,
-        "stls_blks": null
+        "stls_blks": 0.6
       },
       "season_avg": {
         "ppg": 9.3,
@@ -412,7 +435,8 @@
         "3pmpg": 1.0,
         "stlpg": null,
         "blkpg": null
-      }
+      },
+      "turnovers": 1.3
     },
     {
       "name": "Isaiah Stewart",
@@ -447,14 +471,32 @@
           "line": 3.5,
           "over": -145,
           "under": 110
+        },
+        "assists": {
+          "line": 1.2,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "threes": {
+          "line": 1.2,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "stls_blks": {
+          "line": 1.0,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 7.5,
         "rebounds": 3.5,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "assists": 1.2,
+        "threes": 1.2,
+        "stls_blks": 1.0
       },
       "season_avg": {
         "ppg": 10.0,
@@ -464,7 +506,8 @@
         "stlpg": null,
         "blkpg": null
       },
-      "dd_odds": 3300
+      "dd_odds": 3300,
+      "turnovers": 1.1
     },
     {
       "name": "Kevin Huerter",
@@ -494,14 +537,38 @@
           "line": 5.5,
           "over": -107,
           "under": -119
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "assists": {
+          "line": 2.0,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 5.5,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "rebounds": 2.5,
+        "assists": 2.0,
+        "threes": 1.5,
+        "stls_blks": 0.5
       },
       "season_avg": {
         "ppg": 10.0,
@@ -510,7 +577,8 @@
         "3pmpg": null,
         "stlpg": null,
         "blkpg": null
-      }
+      },
+      "turnovers": 0.5
     },
     {
       "name": "Paolo Banchero",
@@ -580,7 +648,8 @@
         "blkpg": 0.6
       },
       "dd_odds": 173,
-      "td_odds": 3200
+      "td_odds": 3200,
+      "turnovers": 3.1
     },
     {
       "name": "Jalen Suggs",
@@ -649,7 +718,8 @@
         "stlpg": 1.8,
         "blkpg": null
       },
-      "dd_odds": 1200
+      "dd_odds": 1200,
+      "turnovers": 2.7
     },
     {
       "name": "Desmond Bane",
@@ -718,7 +788,8 @@
         "stlpg": 1.1,
         "blkpg": null
       },
-      "dd_odds": 3300
+      "dd_odds": 3300,
+      "turnovers": 2.0
     },
     {
       "name": "Franz Wagner",
@@ -787,7 +858,8 @@
         "stlpg": 0.9,
         "blkpg": null
       },
-      "dd_odds": 2400
+      "dd_odds": 2400,
+      "turnovers": 1.7
     },
     {
       "name": "Wendell Carter Jr.",
@@ -856,7 +928,8 @@
         "stlpg": 0.8,
         "blkpg": null
       },
-      "dd_odds": 553
+      "dd_odds": 553,
+      "turnovers": 1.3
     },
     {
       "name": "Anthony Black",
@@ -925,7 +998,8 @@
         "3pmpg": 1.5,
         "stlpg": 1.4,
         "blkpg": null
-      }
+      },
+      "turnovers": 2.1
     },
     {
       "name": "Tristan da Silva",
@@ -960,14 +1034,32 @@
           "line": 2.5,
           "over": 111,
           "under": -146
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "threes": {
+          "line": 1.0,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "stls_blks": {
+          "line": 0.7,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 4.5,
         "rebounds": 2.5,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "assists": 1.5,
+        "threes": 1.0,
+        "stls_blks": 0.7
       },
       "season_avg": {
         "ppg": 9.8,
@@ -976,7 +1068,8 @@
         "3pmpg": null,
         "stlpg": null,
         "blkpg": null
-      }
+      },
+      "turnovers": 0.9
     },
     {
       "name": "Goga Bitadze",
@@ -1010,14 +1103,32 @@
           "line": 3.5,
           "over": -144,
           "under": 109
+        },
+        "assists": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "threes": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "stls_blks": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 3.5,
         "rebounds": 3.5,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "assists": 0.6,
+        "threes": 0.2,
+        "stls_blks": 1.3
       },
       "season_avg": {
         "ppg": 5.8,
@@ -1026,7 +1137,8 @@
         "3pmpg": null,
         "stlpg": null,
         "blkpg": null
-      }
+      },
+      "turnovers": 0.7
     },
     {
       "name": "Alex Morales",
@@ -1166,14 +1278,32 @@
           "line": 2.5,
           "over": -108,
           "under": -122
+        },
+        "assists": {
+          "line": 0.8,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
+        },
+        "stls_blks": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "inferred"
         }
       },
       "pp_stats": {
         "points": 5.5,
         "rebounds": 2.5,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "assists": 0.8,
+        "threes": 0.5,
+        "stls_blks": 1.3
       },
       "season_avg": {
         "ppg": 8.2,
@@ -1182,7 +1312,8 @@
         "3pmpg": null,
         "stlpg": null,
         "blkpg": null
-      }
+      },
+      "turnovers": 1.3
     },
     {
       "name": "Jonathan Isaac",
@@ -1367,7 +1498,8 @@
       },
       "dk_props": {},
       "pp_stats": {},
-      "season_avg": {}
+      "season_avg": {},
+      "turnovers": 0.9
     },
     {
       "name": "Chaz Lanier",
@@ -1472,7 +1604,8 @@
       },
       "dk_props": {},
       "pp_stats": {},
-      "season_avg": {}
+      "season_avg": {},
+      "turnovers": 1.4
     },
     {
       "name": "Marcus Sasser",
