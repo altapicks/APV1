@@ -671,8 +671,7 @@ function SplashScreen({ sport }) {
                   </radialGradient>
                 </defs>
                 <circle cx="20" cy="20" r="18" fill="url(#ballGrad)" stroke="#8BA132" strokeWidth="0.6"/>
-                <path d="M 4 14 Q 20 26 36 14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M 4 26 Q 20 14 36 26" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M 3 20 C 9 13, 15 13, 20 20 C 25 27, 31 27, 37 20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
           </div>
@@ -742,8 +741,7 @@ function SportSwitchLoader({ sport }) {
             <div style={{ transformOrigin: '50% 100%', animation: 'sw-preserve 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite' }}>
               <svg width="28" height="28" viewBox="0 0 40 40">
                 <circle cx="20" cy="20" r="18" fill="#DDFF4F" stroke="#95A835" strokeWidth="0.8" />
-                <path d="M 4 14 Q 20 26 36 14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 4 26 Q 20 14 36 26" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                <path d="M 3 20 C 9 13, 15 13, 20 20 C 25 27, 31 27, 37 20" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </div>
           </div>
