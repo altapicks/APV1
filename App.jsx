@@ -735,12 +735,11 @@ export default function App() {
       .proj-edit.overridden { color: var(--primary) !important; font-weight: 700; }
       .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .proj-edit { -moz-appearance: textfield; }
-      /* Icon-only tabs — compact square buttons with hover tooltip.
-         Every tab has a subtle gold border so the cell boundaries are always
-         visible (helps spacing readability). Active tab gets a solid gold
-         border, soft outer glow, and gold-tinted background — static, no
-         animation. Identical box dimensions across all states via pinned
-         width/padding and border: 1px everywhere (transparent never used). */
+      /* Icon-only tabs — compact square buttons with hover tooltip (native title attr handles the label).
+         CRITICAL: active/inactive states MUST have identical box dimensions.
+         We achieve this by (a) pinning width/padding/margin on all states and
+         (b) using inset box-shadow (not border) for the active highlight,
+         so the highlight is purely decorative and never affects layout width. */
       .tab.tab-icon,
       .tab.tab-icon.active,
       .tab.tab-icon:hover,
@@ -748,27 +747,20 @@ export default function App() {
         width: 56px !important;
         min-width: 56px !important;
         max-width: 56px !important;
+        height: 40px !important;
         padding: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
+        border: 1px solid transparent !important;
         outline: none !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         gap: 0 !important;
-        border: 1px solid rgba(245, 197, 24, 0.18) !important;
-        transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
-      }
-      .tab.tab-icon:hover {
-        border-color: rgba(245, 197, 24, 0.4) !important;
-        background: rgba(245, 197, 24, 0.04) !important;
       }
       .tab.tab-icon.active {
-        border-color: #F5C518 !important;
+        box-shadow: inset 0 0 0 2px var(--primary) !important;
         background: rgba(245, 197, 24, 0.12) !important;
-        box-shadow:
-          0 0 10px rgba(245, 197, 24, 0.35),
-          inset 0 0 0 1px rgba(245, 197, 24, 0.3) !important;
       }
       .tab.tab-icon svg {
         width: 22px;
@@ -1002,19 +994,11 @@ export default function App() {
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
     <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} />
-    <div className="tab-bar">{tabs.map(t => {
-      const isActive = tab === t.id;
-      return (
-        <button key={t.id} className={`tab tab-icon ${isActive ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
-          {t.icon}
-          {isActive && (
-            <svg className="tab-outline" viewBox="0 0 56 40" preserveAspectRatio="none" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="53" height="37" rx="5.5" ry="5.5" fill="none" stroke="#F5C518" strokeWidth="2" strokeDasharray="42 150" pathLength="188"/>
-            </svg>
-          )}
-        </button>
-      );
-    })}</div>
+    <div className="tab-bar">{tabs.map(t => (
+      <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
+        {t.icon}
+      </button>
+    ))}</div>
     <div className="content">
       {buildError && <div className="empty" style={{ padding: '40px 20px' }}>
         <h2 style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Projection build failed</h2>
