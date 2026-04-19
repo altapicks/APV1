@@ -23,7 +23,7 @@ class ErrorBoundary extends Component {
       return (
         <div style={{ padding: '40px 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <h2 style={{ color: '#EF4444', margin: 0 }}>⚠️ Runtime error</h2>
+            <h2 style={{ color: '#EF4444', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Runtime error</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>The app crashed rendering this view. Details below — please share this with support.</p>
           </div>
           <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, padding: 16, maxWidth: 900, margin: '0 auto', fontSize: 12, fontFamily: 'monospace', color: '#EF4444', whiteSpace: 'pre-wrap', overflow: 'auto', wordBreak: 'break-word' }}>
@@ -48,20 +48,20 @@ class ErrorBoundary extends Component {
 // GLOSSARIES — one per sport
 // ═══════════════════════════════════════════════════════════════════════
 const GLOSSARY_TENNIS = [
-  { emoji: '🏆', label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
-  { emoji: '🎯', label: 'Top 3 Straight Sets', desc: 'Most likely straight-set win (+6 bonus)' },
-  { emoji: '💎', label: 'Hidden Gem', desc: 'Low ownership + high upside' },
-  { emoji: '💣', label: 'Trap', desc: 'High ownership + bust risk' },
-  { emoji: '🔥', label: 'Top PP EV', desc: 'Best expected value vs PP line' },
-  { emoji: '📉', label: 'Worst PP EV', desc: 'Strong LESS play' },
+  { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
+  { icon: 'target',        label: 'Top 3 Straight Sets', desc: 'Most likely straight-set win (+6 bonus)' },
+  { icon: 'gem',           label: 'Hidden Gem', desc: 'Low ownership + high upside' },
+  { icon: 'bomb',          label: 'Trap', desc: 'High ownership + bust risk' },
+  { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
+  { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
 const GLOSSARY_MMA = [
-  { emoji: '🏆', label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
-  { emoji: '👊', label: 'Top 3 Finish Path', desc: 'Highest R1/R2 finish upside (+90/+70 bonus)' },
-  { emoji: '💎', label: 'Hidden Gem', desc: 'Low ownership + high ceiling' },
-  { emoji: '💣', label: 'Trap', desc: 'High ownership + low ceiling' },
-  { emoji: '🔥', label: 'Top PP EV', desc: 'Best expected value vs PP line' },
-  { emoji: '📉', label: 'Worst PP EV', desc: 'Strong LESS play' },
+  { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
+  { icon: 'fist',          label: 'Top 3 Finish Path', desc: 'Highest R1/R2 finish upside (+90/+70 bonus)' },
+  { icon: 'gem',           label: 'Hidden Gem', desc: 'Low ownership + high ceiling' },
+  { icon: 'bomb',          label: 'Trap', desc: 'High ownership + low ceiling' },
+  { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
+  { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -116,7 +116,7 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enabled ? 12 : 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>
-          ⚔️ Contrarian Mode
+          <Icon name="swords" size={15} color="#F5C518"/> Contrarian Mode
           <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 500, marginLeft: 8 }}>
             (fade chalk, leverage dogs)
           </span>
@@ -403,7 +403,35 @@ const fmt = (n, d = 1) => typeof n === 'number' ? n.toFixed(d) : '-';
 const fmtPct = n => typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '-';
 const fmtSal = n => '$' + n.toLocaleString();
 const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(AM|PM)/i); if (m) { let h = parseInt(m[4]); const ap = m[6].toUpperCase(); if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return (h > 12 ? h - 12 : h || 12) + ':' + m[5] + ' ' + ap; } try { const d = new Date(s); if (!isNaN(d)) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch {} return s; };
-function Tip({ emoji, label }) { const [s, setS] = useState(false); return <span style={{ position: 'relative', cursor: 'help' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#E2E8F0', whiteSpace: 'nowrap', zIndex: 999, fontWeight: 500 }}>{label}</span>}</span>; }
+function Icon({ name, size = 14, color, style, className }) {
+  const commonStyle = { width: size, height: size, flexShrink: 0, verticalAlign: '-0.15em', display: 'inline-block', ...style };
+  const p = { viewBox: '0 0 24 24', fill: 'none', stroke: color || 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', style: commonStyle, className };
+  switch (name) {
+    case 'warning':        return <svg {...p}><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5"/><circle cx="12" cy="18.5" r="0.7" fill={color || 'currentColor'} stroke="none"/></svg>;
+    case 'trophy':         return <svg {...p}><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h3"/><path d="M17 6h3a2 2 0 0 1 0 4h-3"/><path d="M12 13v4"/><path d="M8 21h8"/></svg>;
+    case 'target':         return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>;
+    case 'gem':            return <svg {...p}><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="M9 3l3 6 3-6"/></svg>;
+    case 'bomb':           return <svg {...p}><circle cx="10" cy="14" r="7"/><path d="M14 8l3-3"/><path d="M18 3h3M19.5 1.5v3"/></svg>;
+    case 'flame':          return <svg {...p}><path d="M12 2c-3 4-5 7-5 10a5 5 0 0 0 10 0c0-3-2-6-5-10z"/><path d="M12 20a2 2 0 0 0 2-2c0-1-1-2-2-3-1 1-2 2-2 3a2 2 0 0 0 2 2z"/></svg>;
+    case 'trending-down':  return <svg {...p}><path d="M2 7l6.5 6.5 5-5 8.5 8.5"/><path d="M16 17h6v-6"/></svg>;
+    case 'fist':           return <svg {...p}><path d="M9 4h5a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/><path d="M5 10a1.5 1.5 0 0 0 0 3"/><path d="M8 17v3h6v-3"/></svg>;
+    case 'swords':         return <svg {...p}><path d="M7 6l6 6-6 6"/><path d="M17 6l-6 6 6 6"/></svg>;
+    case 'bolt':           return <svg {...p} fill={color || 'currentColor'} stroke="none"><path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/></svg>;
+    case 'link':           return <svg {...p}><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>;
+    case 'download':       return <svg {...p}><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>;
+    case 'check':          return <svg {...p}><path d="M5 12l5 5 9-10"/></svg>;
+    case 'chart':          return <svg {...p}><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/><rect x="19" y="13" width="2" height="5"/></svg>;
+    case 'refresh':        return <svg {...p}><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>;
+    case 'dollar':         return <svg {...p}><path d="M12 3v18"/><path d="M17 7h-6a3 3 0 0 0 0 6h2a3 3 0 0 1 0 6H6"/></svg>;
+    case 'rocket':         return <svg {...p}><path d="M12 3c3 2 5 5 5 9v6l-5-3-5 3v-6c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M7 17l-3 4M17 17l3 4"/></svg>;
+    case 'tennis':         return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M5 6c3 3 3 9 0 12"/><path d="M19 6c-3 3-3 9 0 12"/></svg>;
+    default: return null;
+  }
+}
+function Tip({ icon, emoji, label, size = 14 }) {
+  const [s, setS] = useState(false);
+  return <span style={{ position: 'relative', cursor: 'help', display: 'inline-flex', alignItems: 'center' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{icon ? <Icon name={icon} size={size}/> : emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#E2E8F0', whiteSpace: 'nowrap', zIndex: 999, fontWeight: 500 }}>{label}</span>}</span>;
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // SPLASH SCREEN — cinematic first-load brand intro
@@ -512,7 +540,7 @@ function SportSwitchLoader({ sport }) {
         @keyframes sw-dot       { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
       `}</style>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 24, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.1s forwards' }}>
-        Switching to {isTennis ? '🎾 Tennis' : '🥊 UFC'}
+        Switching to <span style={{display:"inline-flex",alignItems:"center",gap:6,verticalAlign:"-0.2em"}}><Icon name={isTennis ? "tennis" : "fist"} size={16} color="#F5C518"/> {isTennis ? "Tennis" : "UFC"}</span>
       </div>
       {isTennis ? (
         <div style={{ position: 'relative', width: 100, height: 70, margin: '0 auto 20px', opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
@@ -620,7 +648,7 @@ export default function App() {
     return <div className="app">
       <Topbar sport={sport} onSportChange={setSport} data={null} />
       <div className="empty" style={{ padding: '40px 20px' }}>
-        <h2>⚠️ Slate not loaded</h2>
+        <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Slate not loaded</h2>
         <p style={{ marginTop: 12 }}>Fetch failed for <code style={{ background: 'var(--card)', padding: '2px 8px', borderRadius: 4, color: 'var(--primary)' }}>{expectedUrl}</code></p>
         <p style={{ marginTop: 8, fontSize: 13 }}>Error: <span style={{ color: 'var(--red)' }}>{error}</span></p>
         <div style={{ marginTop: 20, padding: '16px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, maxWidth: 600, margin: '20px auto', textAlign: 'left', fontSize: 13 }}>
@@ -721,6 +749,77 @@ export default function App() {
          bleed-through is possible. Applies to ALL tables universally. */
       .row-hl-green { background: color-mix(in srgb, #22C55E 6%, var(--card)) !important; }
       .row-hl-red   { background: color-mix(in srgb, #EF4444 6%, var(--card)) !important; }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         PRIZEPICKS SECTION HEADER — editorial display treatment
+         Icon badge + stroked-gradient title + accent bar.
+         Used on tennis & MMA PP tabs.
+         ═══════════════════════════════════════════════════════════════════ */
+      .pp-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 4px 22px;
+        margin-bottom: 18px;
+        position: relative;
+      }
+      .pp-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 4px;
+        width: 68px;
+        height: 2px;
+        background: linear-gradient(90deg, #F5C518 0%, rgba(245,197,24,0.35) 55%, transparent 100%);
+        border-radius: 2px;
+      }
+      .pp-header-icon-wrap {
+        width: 54px;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 30% 30%, rgba(245,197,24,0.28), rgba(245,197,24,0.04));
+        border: 1px solid rgba(245,197,24,0.35);
+        border-radius: 14px;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 1px rgba(245,197,24,0.08) inset, 0 8px 22px -10px rgba(245,197,24,0.3);
+      }
+      .pp-header-icon {
+        width: 26px;
+        height: 26px;
+        stroke-width: 1.75;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .pp-header-text { flex: 1; min-width: 0; }
+      .pp-header-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.05;
+        margin: 0 0 5px;
+        background: linear-gradient(175deg, #FFFFFF 0%, #F5C518 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-stroke: 0.5px rgba(245,197,24,0.35);
+        filter: drop-shadow(0 2px 14px rgba(245,197,24,0.15));
+      }
+      .pp-header-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+        letter-spacing: 0.02em;
+      }
+      @media (max-width: 768px) {
+        .pp-header { gap: 12px; padding: 16px 4px 18px; margin-bottom: 14px; }
+        .pp-header-icon-wrap { width: 44px; height: 44px; border-radius: 11px; }
+        .pp-header-icon { width: 22px; height: 22px; }
+        .pp-header-title { font-size: 22px; letter-spacing: -0.02em; }
+        .pp-header-sub { font-size: 11px; }
+        .pp-header::after { width: 54px; }
+      }
 
       /* ═══════════════════════════════════════════════════════════════════
          MOBILE RESPONSIVE — phones and small tablets
@@ -858,7 +957,7 @@ export default function App() {
     ))}</div>
     <div className="content">
       {buildError && <div className="empty" style={{ padding: '40px 20px' }}>
-        <h2 style={{ color: '#EF4444' }}>⚠️ Projection build failed</h2>
+        <h2 style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Projection build failed</h2>
         <p style={{ marginTop: 12, fontFamily: 'monospace', fontSize: 13, color: 'var(--red)' }}>{buildError}</p>
         <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>Check that slate-{sport === 'mma' ? 'mma' : ''}.json has valid odds fields for all {sport === 'mma' ? 'fights' : 'matches'}.</p>
       </div>}
@@ -977,21 +1076,25 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div className="metrics">
-      <div className="metric"><div className="metric-label">🏆 Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label">🎯 Top Straight Sets</div><div className="metric-value">{t3s.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.pStraight)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label">💎 Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high upside</div></div>
-      <div className="metric"><div className="metric-label">💣 Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, bust risk</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="trophy" size={13}/> Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="target" size={13}/> Top Straight Sets</div><div className="metric-value">{t3s.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.pStraight)}</span></div>; })}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high upside</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, bust risk</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" /><S label="Proj" colKey="proj" /><S label="Val" colKey="val" /><S label="P(2-0)" colKey="pStraight" /><S label="GW" colKey="gw" /><S label="GL" colKey="gl" /><S label="SW" colKey="sw" /><S label="Aces" colKey="aces" /><S label="DFs" colKey="dfs" /><S label="Breaks" colKey="breaks" /><th>Time</th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name), ig = p.name === gem, it = p.name === trap;
-      let b = ''; if (iv) b += '🏆'; if (is) b += '🎯'; if (ig) b += '💎'; if (it) b += '💣';
+      const badges = [];
+      if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
+      if (is) badges.push({ icon: 'target',  label: 'Top 3 Straight Sets' });
+      if (ig) badges.push({ icon: 'gem',     label: 'Hidden Gem' });
+      if (it) badges.push({ icon: 'bomb',    label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
       return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
-        <td style={{ fontSize: 14 }}>{b && [...b].filter((_, j) => j % 2 === 0).map((e, j) => { const em = b.substring(j*2, j*2+2); return <Tip key={j} emoji={em} label={em === '🏆' ? 'Top 3 Value' : em === '🎯' ? 'Top 3 Straight Sets' : em === '💎' ? 'Hidden Gem' : 'Trap'} />; })}</td>
+        <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
         <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
@@ -1020,15 +1123,26 @@ function PPTab({ rows }) {
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
   return (<>
-    <div className="section-head">🎾 PrizePicks Projections</div>
-    <div className="section-sub">All plays sorted by edge · Edge = Projected - PP Line</div>
+    <div className="pp-header">
+      <div className="pp-header-icon-wrap">
+        <svg className="pp-header-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="5"/>
+          <circle cx="12" cy="12" r="1.5" fill="#F5C518" stroke="none"/>
+        </svg>
+      </div>
+      <div className="pp-header-text">
+        <h2 className="pp-header-title">PrizePicks Projections</h2>
+        <div className="pp-header-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
+      </div>
+    </div>
     <div style={{ background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-      <span style={{ fontSize: 18 }}>📉</span>
+      <Icon name="trending-down" size={18} color="#F5C518"/>
       <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Hint:</strong> PrizePicks bad value will typically reverse</span>
     </div>
     <div className="metrics">
-      <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
-      <div className="metric"><div className="metric-label">📉 Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><S label="Stat" colKey="stat" />
@@ -1042,7 +1156,7 @@ function PPTab({ rows }) {
       const playDir = r.direction;
       return <tr key={r.player + r.stat} className={isBest ? 'row-hl-green' : isWorst ? 'row-hl-red' : ''}>
         <td className="muted">{i+1}</td>
-        <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
+        <td>{isBest ? <Tip icon="flame" label="Best edge" /> : isWorst ? <Tip icon="trending-down" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
         <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}</td>
         <td className="num">{fmt(r.line, 1)}</td>
@@ -1076,7 +1190,7 @@ function BuilderTab({ players: rp, ownership }) {
   // CONTRARIAN MODE
   //  (1) TRAP — highest-owned MID/LOW-TIER play (stars excluded, they aren't traps)
   //  (2a) ⭐ STUD BOOST — highest-owned top-projection play (leverage the good chalk)
-  //  (2b) 💎 GEM BOOST — below-avg-val underowned (DK-priced-down, field avoiding)
+  //  (2b) GEM BOOST — below-avg-val underowned (DK-priced-down, field avoiding)
   //  (3) UNIVERSAL LEVERAGE CAP — no player above field+20pp (user rule: never smart in DK)
   //  (4) GLOBAL FLOOR — everyone has min exposure, prevents DK-salary tunneling
   const contrarianCaps = useMemo(() => {
@@ -1292,10 +1406,10 @@ function BuilderTab({ players: rp, ownership }) {
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
   return (<>
-    <div className="section-head">⚡ Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
+    <div className="section-head"><Icon name="bolt" size={16} color="#F5C518"/> Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
     {!canBuild && (
       <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>⚠️ DraftKings Compliance Warning</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="warning" size={15} color="#F5C518"/> DraftKings Compliance Warning</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           DraftKings policies require you to make some changes to our default projections before you can build lineups.
           Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and edit at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong> by any amount — this proves the lineups are your own work, not a shared export.
@@ -1311,11 +1425,11 @@ function BuilderTab({ players: rp, ownership }) {
       const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
+          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
           {boostEntries.map(([name, c]) => (
-            <span key={name}>{c._type === 'stud' ? '⭐ Stud' : '💎 Gem'} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
+            <span key={name}><span style={{display:"inline-flex",alignItems:"center",gap:4}}>{c._type === 'stud' ? <><Icon name="trophy" size={12}/> Stud</> : <><Icon name="gem" size={12}/> Gem</>}</span> <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
           ))}
-          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
+          {floorEntry && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
         </div>
       );
     })()}
@@ -1329,13 +1443,13 @@ function BuilderTab({ players: rp, ownership }) {
         <span style={{ fontWeight: 700, color: variance > 0 ? 'var(--primary)' : 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>{variance}%</span>
       </label>
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
-      <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
+      <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
     <button className="btn btn-primary" onClick={run} disabled={!canBuild}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
-      ⚡ Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
+      <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
   </>);
@@ -1354,20 +1468,20 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
   const { sorted, sortKey, sortDir, toggleSort } = useSort(expData, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
+    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
         title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
-        style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>⚡ Rebuild {nL}</button>}
-      {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}>📥 Download DK Upload CSV</button>}
-      {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}>📥 Readable CSV</button>}
+        style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
+      {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
+      {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
-    <div className="section-head" style={{ marginTop: 20 }}>📊 Exposure</div>
+    <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Player" colKey="name" /><S label="Salary" colKey="salary" /><S label="Proj" colKey="projection" /><S label="Value" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.projection, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
-    <div className="section-head">🎯 Lineups</div>
+    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
     <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
       if (res.isShowdown) {
         // Showdown: render in CPT → A-CPT → FLEX order with role badge + tier salary + multiplied projection
@@ -1402,21 +1516,21 @@ function LeverageTab({ players: rp }) {
   const handleUser = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = evt => { try { const lines = evt.target.result.split('\n'); const cnt = {}; let lc = 0; for (const line of lines) { if (!line.trim() || line.startsWith('P,') || line.startsWith('Rank')) continue; const hasP = rp.some(p => line.includes(p.name) || line.includes(String(p.id))); if (hasP) { lc++; for (const p of rp) { if (line.includes(p.name) || line.includes(String(p.id))) cnt[p.name] = (cnt[p.name] || 0) + 1; } } } if (lc > 0) { const ep = {}; for (const [n, c] of Object.entries(cnt)) ep[n] = Math.round(c / lc * 1000) / 10; setUl({ counts: ep, total: lc }); } } catch (e) { setErr(e.message); } }; r.readAsText(f); };
   const ld = useMemo(() => { if (!cd || !ul) return []; return rp.filter(p => p.salary > 0).map(p => ({ name: p.name, salary: p.salary, proj: p.proj, val: p.val, userExp: ul.counts[p.name] || 0, fieldOwn: cd[p.name] || 0, leverage: Math.round(((ul.counts[p.name] || 0) - (cd[p.name] || 0)) * 10) / 10, opponent: p.opponent })).sort((a, b) => b.leverage - a.leverage); }, [cd, ul, rp]);
   return (<>
-    <div className="section-head">🔄 Live Leverage</div><div className="section-sub">Upload contest CSV + your lineups to compare vs the field</div>
+    <div className="section-head"><Icon name="refresh" size={16} color="#F5C518"/> Live Leverage</div><div className="section-sub">Upload contest CSV + your lineups to compare vs the field</div>
     <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-      <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 1: Contest CSV</div><div className="metric-sub" style={{ marginTop: 4 }}>DK contest file after lock</div><input type="file" accept=".csv" onChange={handleContest} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{cd && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4 }}>✅ {Object.keys(cd).length} players</div>}</div>
-      <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 2: Your Lineups</div><div className="metric-sub" style={{ marginTop: 4 }}>Your DK upload or readable CSV</div><input type="file" accept=".csv" onChange={handleUser} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{ul && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4 }}>✅ {ul.total} lineups</div>}</div>
+      <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 1: Contest CSV</div><div className="metric-sub" style={{ marginTop: 4 }}>DK contest file after lock</div><input type="file" accept=".csv" onChange={handleContest} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{cd && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={12} color="var(--green)"/> {Object.keys(cd).length} players</div>}</div>
+      <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 2: Your Lineups</div><div className="metric-sub" style={{ marginTop: 4 }}>Your DK upload or readable CSV</div><input type="file" accept=".csv" onChange={handleUser} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{ul && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={12} color="var(--green)"/> {ul.total} lineups</div>}</div>
     </div>
-    {err && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>⚠️ {err}</div>}
+    {err && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="warning" size={14} color="var(--red)"/> {err}</div>}
     {ld.length > 0 && <>
       <div className="metrics">
-        <div className="metric"><div className="metric-label">💎 Top Leverage</div><div className="metric-value" style={{ color: 'var(--green)' }}>{ld[0]?.name}</div><div className="metric-sub">You: {ld[0]?.userExp}% · Field: {ld[0]?.fieldOwn}% · +{ld[0]?.leverage}%</div></div>
-        <div className="metric"><div className="metric-label">💣 Most Underweight</div><div className="metric-value" style={{ color: 'var(--red)' }}>{ld[ld.length - 1]?.name}</div><div className="metric-sub">You: {ld[ld.length - 1]?.userExp}% · Field: {ld[ld.length - 1]?.fieldOwn}% · {ld[ld.length - 1]?.leverage}%</div></div>
+        <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Top Leverage</div><div className="metric-value" style={{ color: 'var(--green)' }}>{ld[0]?.name}</div><div className="metric-sub">You: {ld[0]?.userExp}% · Field: {ld[0]?.fieldOwn}% · +{ld[0]?.leverage}%</div></div>
+        <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Most Underweight</div><div className="metric-value" style={{ color: 'var(--red)' }}>{ld[ld.length - 1]?.name}</div><div className="metric-sub">You: {ld[ld.length - 1]?.userExp}% · Field: {ld[ld.length - 1]?.fieldOwn}% · {ld[ld.length - 1]?.leverage}%</div></div>
       </div>
       <div className="table-wrap"><table><thead><tr><th>#</th><th></th><th>Player</th><th>Opp</th><th>Proj</th><th>Your Exp</th><th>Field Own</th><th>Leverage</th></tr></thead>
-      <tbody>{ld.map((p, i) => <tr key={p.name} className={p.leverage > 10 ? 'row-hl-green' : p.leverage < -10 ? 'row-hl-red' : ''}><td className="muted">{i + 1}</td><td>{p.leverage > 10 ? <Tip emoji="💎" label="Strong overweight" /> : p.leverage < -10 ? <Tip emoji="💣" label="Underweight" /> : ''}</td><td className="name">{p.name}</td><td className="muted">{p.opponent}</td><td className="num">{fmt(p.proj, 1)}</td><td className="num" style={{ color: 'var(--primary-glow)' }}>{fmt(p.userExp, 1)}%</td><td className="num muted">{fmt(p.fieldOwn, 1)}%</td><td className="num"><span style={{ color: p.leverage > 0 ? 'var(--green)' : p.leverage < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.leverage) > 10 ? 700 : 500, background: Math.abs(p.leverage) > 15 ? (p.leverage > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)') : 'transparent', padding: '2px 8px', borderRadius: 4 }}>{p.leverage > 0 ? '+' : ''}{fmt(p.leverage, 1)}%</span></td></tr>)}</tbody></table></div>
+      <tbody>{ld.map((p, i) => <tr key={p.name} className={p.leverage > 10 ? 'row-hl-green' : p.leverage < -10 ? 'row-hl-red' : ''}><td className="muted">{i + 1}</td><td>{p.leverage > 10 ? <Tip icon="gem" label="Strong overweight" /> : p.leverage < -10 ? <Tip icon="bomb" label="Underweight" /> : ''}</td><td className="name">{p.name}</td><td className="muted">{p.opponent}</td><td className="num">{fmt(p.proj, 1)}</td><td className="num" style={{ color: 'var(--primary-glow)' }}>{fmt(p.userExp, 1)}%</td><td className="num muted">{fmt(p.fieldOwn, 1)}%</td><td className="num"><span style={{ color: p.leverage > 0 ? 'var(--green)' : p.leverage < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.leverage) > 10 ? 700 : 500, background: Math.abs(p.leverage) > 15 ? (p.leverage > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)') : 'transparent', padding: '2px 8px', borderRadius: 4 }}>{p.leverage > 0 ? '+' : ''}{fmt(p.leverage, 1)}%</span></td></tr>)}</tbody></table></div>
     </>}
-    {!cd && !ul && <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' }}><div style={{ fontSize: 32, marginBottom: 8 }}>🔄</div><div style={{ fontSize: 14 }}>Upload both CSVs to see leverage vs field</div></div>}
+    {!cd && !ul && <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' }}><div style={{ marginBottom: 8, color: 'var(--text-muted)' }}><Icon name="refresh" size={32}/></div><div style={{ fontSize: 14 }}>Upload both CSVs to see leverage vs field</div></div>}
   </>);
 }
 
@@ -1461,10 +1575,10 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div className="metrics">
-      <div className="metric"><div className="metric-label">🏆 Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = fighters.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label">👊 Top Finish Path</div><div className="metric-value">{t3f.map((n, i) => { const p = fighters.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.finishProb)}</span></div>; })}</div></div>
-      <div className="metric"><div className="metric-label">💎 Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high ceiling</div></div>
-      <div className="metric"><div className="metric-label">💣 Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, low ceiling</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="trophy" size={13}/> Top Value</div><div className="metric-value">{t3v.map((n, i) => { const p = fighters.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{i + 1}. {n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmt(p?.val, 2)}</span></div>; })}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="fist" size={13}/> Top Finish Path</div><div className="metric-value">{t3f.map((n, i) => { const p = fighters.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.finishProb)}</span></div>; })}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div><div className="metric-value" style={{ color: 'var(--green)' }}>{gem || '-'}</div><div className="metric-sub">Low ownership, high ceiling</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red)' }}>{trap || '-'}</div><div className="metric-sub">High ownership, low ceiling</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="name" /><th>Opp</th>
@@ -1476,11 +1590,15 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), isf = t3f.includes(p.name), ig = p.name === gem, it = p.name === trap;
-      let b = ''; if (iv) b += '🏆'; if (isf) b += '👊'; if (ig) b += '💎'; if (it) b += '💣';
+      const badges = [];
+      if (iv)  badges.push({ icon: 'trophy', label: 'Top 3 Value' });
+      if (isf) badges.push({ icon: 'fist',   label: 'Top 3 Finish Path' });
+      if (ig)  badges.push({ icon: 'gem',    label: 'Hidden Gem' });
+      if (it)  badges.push({ icon: 'bomb',   label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
       return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
-        <td style={{ fontSize: 14 }}>{b && [...b].filter((_, j) => j % 2 === 0).map((e, j) => { const em = b.substring(j*2, j*2+2); return <Tip key={j} emoji={em} label={em === '🏆' ? 'Top 3 Value' : em === '👊' ? 'Top 3 Finish Path' : em === '💎' ? 'Hidden Gem' : 'Trap'} />; })}</td>
+        <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
         <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
@@ -1510,15 +1628,26 @@ function MMAPPTab({ rows }) {
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
   return (<>
-    <div className="section-head">🥊 PrizePicks Projections</div>
-    <div className="section-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
+    <div className="pp-header">
+      <div className="pp-header-icon-wrap">
+        <svg className="pp-header-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="5"/>
+          <circle cx="12" cy="12" r="1.5" fill="#F5C518" stroke="none"/>
+        </svg>
+      </div>
+      <div className="pp-header-text">
+        <h2 className="pp-header-title">PrizePicks Projections</h2>
+        <div className="pp-header-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
+      </div>
+    </div>
     <div style={{ background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-      <span style={{ fontSize: 18 }}>📉</span>
+      <Icon name="trending-down" size={18} color="#F5C518"/>
       <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--primary)', fontWeight: 700 }}>Hint:</strong> PrizePicks bad value will typically reverse</span>
     </div>
     <div className="metrics">
-      <div className="metric"><div className="metric-label">🔥 Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
-      <div className="metric"><div className="metric-label">📉 Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="flame" size={13}/> Best Edge</div><div className="metric-value">{best.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span>{r.mult && <span style={{fontSize:10,color: i === 0 ? 'var(--amber)' : 'var(--text-dim)',marginLeft:4}}>{r.mult}</span>}</div>)}</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="trending-down" size={13}/> Biggest "Fades"</div><div className="metric-value">{worst.map((r, i) => <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--red)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 500 }}>{r.player} · {r.stat} <span style={{fontSize:11, color: i === 0 ? undefined : 'var(--text-dim)'}}>{fmt(r.ev, 2)}</span></div>)}</div></div>
     </div>
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="player" /><S label="Stat" colKey="stat" />
@@ -1533,7 +1662,7 @@ function MMAPPTab({ rows }) {
       const isFT = r.stat === 'Fight Time';
       return <tr key={r.player + r.stat} className={isBest ? 'row-hl-green' : isWorst ? 'row-hl-red' : ''}>
         <td className="muted">{i+1}</td>
-        <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
+        <td>{isBest ? <Tip icon="flame" label="Best edge" /> : isWorst ? <Tip icon="trending-down" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
         <td style={{fontSize:11,color:'var(--text-muted)'}}>{r.stat}</td>
         <td className="num">{fmt(r.line, 2)}{isFT && <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 2 }}>m</span>}</td>
@@ -1704,11 +1833,11 @@ function MMABuilderTab({ fighters: rp, ownership }) {
   const exportProjections = () => { let c = 'Fighter,Salary,Win%,Median,Ceiling,Val,CVal,Finish%,SigStr,TDs,CT,Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.ceil},${p.val},${p.cval},${(p.finishProb*100).toFixed(0)}%,${fmt(p.sigStr)},${fmt(p.takedowns)},${fmt(p.ctMin)},${p.opponent}\n`; }); dl(c, 'projections_ufc.csv'); };
 
   return (<>
-    <div className="section-head">⚡ Lineup Builder</div>
+    <div className="section-head"><Icon name="bolt" size={16} color="#F5C518"/> Lineup Builder</div>
     <div className="section-sub">UFC: 6 fighters, $50K cap · No opponent-vs-opponent enforced · Export to DK</div>
     {!canBuild && (
       <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>⚠️ DraftKings Compliance Warning</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="warning" size={15} color="#F5C518"/> DraftKings Compliance Warning</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           DraftKings policies require you to make some changes to our default projections before you can build lineups.
           Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and edit at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong> by any amount — this proves the lineups are your own work, not a shared export.
@@ -1724,18 +1853,18 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {trapEntry && <span>💣 Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
+          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
           {boostEntries.map(([name, c]) => (
-            <span key={name}>{c._type === 'stud' ? '⭐ Stud' : '💎 Gem'} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
+            <span key={name}><span style={{display:"inline-flex",alignItems:"center",gap:4}}>{c._type === 'stud' ? <><Icon name="trophy" size={12}/> Stud</> : <><Icon name="gem" size={12}/> Gem</>}</span> <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
           ))}
-          {floorEntry && <span>🔗 {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
+          {floorEntry && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
         </div>
       );
     })()}
     <div style={{ display: 'flex', gap: 12, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
       <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border-light)', borderRadius: 6, overflow: 'hidden' }}>
-        <button onClick={() => setMode('proj')} style={{ background: mode === 'proj' ? 'var(--primary)' : 'transparent', color: mode === 'proj' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>💰 Cash (median)</button>
-        <button onClick={() => setMode('ceiling')} style={{ background: mode === 'ceiling' ? 'var(--primary)' : 'transparent', color: mode === 'ceiling' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>🚀 GPP (ceiling)</button>
+        <button onClick={() => setMode('proj')} style={{ background: mode === 'proj' ? 'var(--primary)' : 'transparent', color: mode === 'proj' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="dollar" size={13}/> Cash (median)</button>
+        <button onClick={() => setMode('ceiling')} style={{ background: mode === 'ceiling' ? 'var(--primary)' : 'transparent', color: mode === 'ceiling' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="rocket" size={13}/> GPP (ceiling)</button>
       </div>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
@@ -1746,12 +1875,12 @@ function MMABuilderTab({ fighters: rp, ownership }) {
         <span style={{ fontWeight: 700, color: variance > 0 ? 'var(--primary)' : 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>{variance}%</span>
       </label>
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
-      <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
+      <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
     </div>
     <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 14, marginLeft: 2 }}>
       {mode === 'ceiling'
-        ? <>🚀 <strong style={{ color: 'var(--primary)' }}>GPP:</strong> Builds for ceiling — best for big tournaments with many entries (your 39.6K-entry contest is GPP)</>
-        : <>💰 <strong style={{ color: 'var(--primary)' }}>Cash:</strong> Builds for consistent median — best for 50/50s and head-to-heads</>
+        ? <><Icon name="rocket" size={14} color="var(--primary)"/> <strong style={{ color: 'var(--primary)' }}>GPP:</strong> Builds for ceiling — best for big tournaments with many entries (your 39.6K-entry contest is GPP)</>
+        : <><Icon name="dollar" size={14} color="var(--primary)"/> <strong style={{ color: 'var(--primary)' }}>Cash:</strong> Builds for consistent median — best for 50/50s and head-to-heads</>
       }
     </div>
     <div className="builder-controls">{sp.map(p => <div className="ctrl-row" key={p.name}>
@@ -1765,7 +1894,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     <button className="btn btn-primary" onClick={run} disabled={!canBuild}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
-      ⚡ Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
+      <Icon name="bolt" size={14}/> Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
     {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} />}
   </>);
@@ -1790,21 +1919,21 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-      ✅ Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
+      <Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
     </div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
         title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
-        style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}>⚡ Rebuild {nL}</button>}
-      {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}>📥 Download DK Upload CSV</button>}
-      {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}>📥 Readable CSV</button>}
+        style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
+      {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
+      {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
-    <div className="section-head" style={{ marginTop: 20 }}>📊 Exposure</div>
+    <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.score, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
-    <div className="section-head">🎯 Lineups</div>
+    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
     <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
       const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
       const lineupAvgOwn = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0) / ps.length);
