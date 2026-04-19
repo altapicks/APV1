@@ -118,6 +118,10 @@ export function projectMinutes(minsObj) {
   const L5  = Number(minsObj.L5)  || 0;
   const L10 = Number(minsObj.L10) || 0;
   const All = Number(minsObj.All) || 0;
+  // Only All available (e.g. playoff slate where rest/DNPs skew L3/L5/L10)
+  if (L3 === 0 && L5 === 0 && L10 === 0 && All > 0) {
+    return All;
+  }
   // If L3/L5 are both zero (rest/injury return), fall back to L10/All weighted
   if (L3 === 0 && L5 === 0 && (L10 > 0 || All > 0)) {
     return 0.55 * L10 + 0.45 * All;
