@@ -679,7 +679,31 @@ function DKTab({ players, mc, own }) {
     const s = hasOwn ? [...pw].sort((a, b) => b.simOwn - a.simOwn) : [...pw].sort((a, b) => b.proj - a.proj);
     return s[0]?.name || '';
   }, [pw]);
-  const gem = useMemo(() => { const t = pw.find(p => p.name === trap); return t?.opponent || ''; }, [pw, trap]);
+  // Hidden Gem — two-path logic:
+  //   (1) If trap's opponent is +199 or better (wp >= 33.4%), they ARE the gem.
+  //       In tennis, close matchups mean the dog often flips the result — and they
+  //       come with the exact salary swap benefit.
+  //   (2) If trap's opponent is +200 or worse (wp < 33.4%), the dog is too big.
+  //       Fall back to a good-value high-ceiling player within -$1000/+$300 of trap.
+  const gem = useMemo(() => {
+    const trapPlayer = pw.find(p => p.name === trap);
+    if (!trapPlayer) return '';
+    const opponent = pw.find(p => p.name === trapPlayer.opponent);
+    if (opponent && (opponent.wp || 0) >= 0.334) return opponent.name;
+    // Salary-band fallback: -$1000 to +$300 of trap
+    const trapSal = trapPlayer.salary;
+    const candidates = pw.filter(p => {
+      if (p.name === trap) return false;
+      const diff = p.salary - trapSal;
+      return diff >= -1000 && diff <= 300;
+    });
+    if (candidates.length === 0) return '';
+    const scored = candidates.map(p => {
+      const val = p.proj / (p.salary / 1000);
+      return { name: p.name, s: val * p.proj };
+    }).sort((a, b) => b.s - a.s);
+    return scored[0]?.name || '';
+  }, [pw, trap]);
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 16, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
@@ -1018,7 +1042,31 @@ function MMADKTab({ fighters, fc, own }) {
     const s = hasOwn ? [...pw].sort((a, b) => b.simOwn - a.simOwn) : [...pw].sort((a, b) => b.proj - a.proj);
     return s[0]?.name || '';
   }, [pw]);
-  const gem = useMemo(() => { const t = pw.find(p => p.name === trap); return t?.opponent || ''; }, [pw, trap]);
+  // Hidden Gem — two-path logic:
+  //   (1) If trap's opponent is +199 or better (wp >= 33.4%), they ARE the gem.
+  //       In UFC, a fighter with realistic win path can flip result with a single
+  //       finish — they come with the exact salary swap benefit too.
+  //   (2) If trap's opponent is +200 or worse (wp < 33.4%), fall back to good-value
+  //       high-ceiling player within -$1000/+$300 of trap's salary.
+  const gem = useMemo(() => {
+    const trapPlayer = pw.find(p => p.name === trap);
+    if (!trapPlayer) return '';
+    const opponent = pw.find(p => p.name === trapPlayer.opponent);
+    if (opponent && (opponent.wp || 0) >= 0.334) return opponent.name;
+    const trapSal = trapPlayer.salary;
+    const candidates = pw.filter(p => {
+      if (p.name === trap) return false;
+      const diff = p.salary - trapSal;
+      return diff >= -1000 && diff <= 300;
+    });
+    if (candidates.length === 0) return '';
+    const scored = candidates.map(p => {
+      const ceil = p.ceil || p.proj;
+      const val = ceil / (p.salary / 1000);
+      return { name: p.name, s: val * ceil };
+    }).sort((a, b) => b.s - a.s);
+    return scored[0]?.name || '';
+  }, [pw, trap]);
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 16, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
