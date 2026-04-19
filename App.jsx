@@ -523,6 +523,14 @@ function SplashScreen({ sport }) {
         </div>
       )}
 
+      {/* Loader text */}
+      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: 'rgba(248,250,252,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0, animation: 'oo-fade-in 0.6s ease-out 1.7s forwards' }}>
+        Loading {isTennis ? 'Tennis' : 'UFC'} slate
+        <span style={{ marginLeft: 10 }}>
+          {[0, 1, 2].map(i => <span key={i} style={{ display: 'inline-block', width: 4, height: 4, borderRadius: '50%', background: '#F5C518', margin: '0 1px', animation: `oo-dot-blink 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
+        </span>
+      </div>
+
       {/* Vignette */}
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)', pointerEvents: 'none' }} />
     </div>
@@ -678,7 +686,7 @@ export default function App() {
   // Shared icon set — tennis and MMA use the same tabs.
   // Label `l` becomes a hover tooltip via the title attribute; the tab bar shows icons only for a cleaner look.
   const buildTabs = () => [
-    { id: 'dk', l: 'DraftKings Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 19V7l5 5 4-8 4 8 5-5v12z"/></svg> },
+    { id: 'dk', l: 'DraftKings Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17V9.5l4 3 2-6.5 3 6 3-6 2 6.5 4-3V17z"/><path d="M3 19h18"/></svg> },
     { id: 'pp', l: 'PrizePicks Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg> },
     { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/></svg> },
     { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3v18M4 7l3-4 3 4"/><path d="M17 21V3M14 17l3 4 3-4"/></svg> },
@@ -735,12 +743,11 @@ export default function App() {
       .proj-edit.overridden { color: var(--primary) !important; font-weight: 700; }
       .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .proj-edit { -moz-appearance: textfield; }
-      /* Icon-only tabs — compact square buttons with hover tooltip.
-         Every tab has a subtle gold border so the cell boundaries are always
-         visible (helps spacing readability). Active tab gets a solid gold
-         border, soft outer glow, and gold-tinted background — static, no
-         animation. Identical box dimensions across all states via pinned
-         width/padding and border: 1px everywhere (transparent never used). */
+      /* Icon-only tabs — compact square buttons with hover tooltip (native title attr handles the label).
+         CRITICAL: active/inactive states MUST have identical box dimensions.
+         We achieve this by (a) pinning width/padding/margin on all states and
+         (b) using inset box-shadow (not border) for the active highlight,
+         so the highlight is purely decorative and never affects layout width. */
       .tab.tab-icon,
       .tab.tab-icon.active,
       .tab.tab-icon:hover,
@@ -748,43 +755,19 @@ export default function App() {
         width: 56px !important;
         min-width: 56px !important;
         max-width: 56px !important;
-        height: 40px !important;
-        min-height: 40px !important;
-        max-height: 40px !important;
         padding: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
+        border: 1px solid transparent !important;
         outline: none !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         gap: 0 !important;
-        border: 1px solid rgba(245, 197, 24, 0.18) !important;
-        border-radius: 7px !important;
-        box-shadow: none !important;
-        background-image: none !important;
-        font-size: 0 !important;
-        line-height: 1 !important;
-        text-indent: 0 !important;
-        overflow: hidden !important;
-        position: relative !important;
-        transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
-      }
-      /* Kill any ::before / ::after decorations from the base .tab class that
-         might be rendering a stray line, indicator, or separator inside the cell. */
-      .tab.tab-icon::before,
-      .tab.tab-icon::after {
-        content: none !important;
-        display: none !important;
-      }
-      .tab.tab-icon:hover {
-        border-color: rgba(245, 197, 24, 0.42) !important;
-        background: rgba(245, 197, 24, 0.04) !important;
       }
       .tab.tab-icon.active {
-        border-color: #F5C518 !important;
+        box-shadow: inset 0 0 0 2px var(--primary) !important;
         background: rgba(245, 197, 24, 0.12) !important;
-        box-shadow: 0 0 8px rgba(245, 197, 24, 0.4) !important;
       }
       .tab.tab-icon svg {
         width: 22px;
@@ -938,8 +921,6 @@ export default function App() {
           min-width: 0 !important;
           max-width: none !important;
           height: 48px !important;
-          min-height: 48px !important;
-          max-height: 48px !important;
         }
         .tab.tab-icon svg {
           width: 24px !important;
@@ -1009,7 +990,7 @@ export default function App() {
         .topbar { padding: 8px 10px !important; }
         .topbar-brand { font-size: 16px !important; gap: 6px !important; }
         .topbar-brand svg { width: 22px !important; height: 22px !important; }
-        .tab.tab-icon { height: 44px !important; min-height: 44px !important; max-height: 44px !important; }
+        .tab.tab-icon { height: 44px !important; }
         .tab.tab-icon svg { width: 22px !important; height: 22px !important; }
         .table-wrap table { font-size: 11px !important; }
         .table-wrap th, .table-wrap td { padding: 6px 6px !important; }
@@ -1020,19 +1001,11 @@ export default function App() {
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
     <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} />
-    <div className="tab-bar">{tabs.map(t => {
-      const isActive = tab === t.id;
-      return (
-        <button key={t.id} className={`tab tab-icon ${isActive ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
-          {t.icon}
-          {isActive && (
-            <svg className="tab-outline" viewBox="0 0 56 40" preserveAspectRatio="none" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="53" height="37" rx="5.5" ry="5.5" fill="none" stroke="#F5C518" strokeWidth="2" strokeDasharray="42 150" pathLength="188"/>
-            </svg>
-          )}
-        </button>
-      );
-    })}</div>
+    <div className="tab-bar">{tabs.map(t => (
+      <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
+        {t.icon}
+      </button>
+    ))}</div>
     <div className="content">
       {buildError && <div className="empty" style={{ padding: '40px 20px' }}>
         <h2 style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Projection build failed</h2>
