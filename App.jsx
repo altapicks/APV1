@@ -412,7 +412,7 @@ function Icon({ name, size = 14, color, style, className }) {
     case 'target':         return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>;
     case 'gem':            return <svg {...p}><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="M9 3l3 6 3-6"/></svg>;
     case 'bomb':           return <svg {...p}><circle cx="10" cy="14" r="7"/><path d="M14 8l3-3"/><path d="M18 3h3M19.5 1.5v3"/></svg>;
-    case 'flame':          return <svg {...p}><path d="M12 3c.5 3 2.5 3.5 2.5 6.5 0 1-.5 1.5-1.5 1.5 1 1 1.5 2 1.5 3.5a4 4 0 0 1-8 0c0-2 1.5-3.5 3-4.5-1.5-1-2-2.5-2-4 2 0 4-1 4.5-3z"/></svg>;
+    case 'flame':          return <svg {...p}><path d="M13 2C13 5 14 7 15 8C15 6 16 5 16 5C18 7 19 11 19 14A7 7 0 0 1 5 14C5 11 7 10 8 9C9 10 10 11 10 10C10 7 11 5 13 2Z"/><path d="M12 13C11 14 10 15 10 17A2.5 2.5 0 0 0 15 17C15 15 14 14 12 13Z"/></svg>;
     case 'trending-down':  return <svg {...p}><path d="M2 7l6.5 6.5 5-5 8.5 8.5"/><path d="M16 17h6v-6"/></svg>;
     case 'fist':           return <svg {...p}><path d="M9 4h5a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/><path d="M5 10a1.5 1.5 0 0 0 0 3"/><path d="M8 17v3h6v-3"/></svg>;
     case 'swords':         return <svg {...p}><path d="M7 6l6 6-6 6"/><path d="M17 6l-6 6 6 6"/></svg>;
@@ -744,18 +744,18 @@ export default function App() {
       .row-hl-red   { background: color-mix(in srgb, #EF4444 6%, var(--card)) !important; }
 
       /* ═══════════════════════════════════════════════════════════════════
-         PRIZEPICKS SECTION HEADER — editorial display treatment
+         SECTION HERO HEADER — editorial display treatment
          Icon badge + stroked-gradient title.
-         Used on tennis & MMA PP tabs.
+         Used on PrizePicks, Lineup Builder, Live Leverage (tennis + MMA).
          ═══════════════════════════════════════════════════════════════════ */
-      .pp-header {
+      .section-hero {
         display: flex;
         align-items: center;
         gap: 16px;
         padding: 20px 4px 18px;
         margin-bottom: 16px;
       }
-      .pp-header-icon-wrap {
+      .section-hero-icon-wrap {
         width: 54px;
         height: 54px;
         display: flex;
@@ -767,15 +767,15 @@ export default function App() {
         flex-shrink: 0;
         box-shadow: 0 0 0 1px rgba(245,197,24,0.08) inset, 0 8px 22px -10px rgba(245,197,24,0.3);
       }
-      .pp-header-icon {
+      .section-hero-icon {
         width: 26px;
         height: 26px;
         stroke-width: 1.75;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
-      .pp-header-text { flex: 1; min-width: 0; }
-      .pp-header-title {
+      .section-hero-text { flex: 1; min-width: 0; }
+      .section-hero-title {
         font-size: 28px;
         font-weight: 800;
         letter-spacing: -0.025em;
@@ -788,18 +788,18 @@ export default function App() {
         -webkit-text-stroke: 0.5px rgba(245,197,24,0.35);
         filter: drop-shadow(0 2px 14px rgba(245,197,24,0.15));
       }
-      .pp-header-sub {
+      .section-hero-sub {
         font-size: 12px;
         color: var(--text-muted);
         font-weight: 500;
         letter-spacing: 0.02em;
       }
       @media (max-width: 768px) {
-        .pp-header { gap: 12px; padding: 16px 4px 14px; margin-bottom: 12px; }
-        .pp-header-icon-wrap { width: 44px; height: 44px; border-radius: 11px; }
-        .pp-header-icon { width: 22px; height: 22px; }
-        .pp-header-title { font-size: 22px; letter-spacing: -0.02em; }
-        .pp-header-sub { font-size: 11px; }
+        .section-hero { gap: 12px; padding: 16px 4px 14px; margin-bottom: 12px; }
+        .section-hero-icon-wrap { width: 44px; height: 44px; border-radius: 11px; }
+        .section-hero-icon { width: 22px; height: 22px; }
+        .section-hero-title { font-size: 22px; letter-spacing: -0.02em; }
+        .section-hero-sub { font-size: 11px; }
       }
 
       /* Softer text colors — for inline (non-boxed) colored text.
@@ -1115,17 +1115,17 @@ function PPTab({ rows }) {
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
   return (<>
-    <div className="pp-header">
-      <div className="pp-header-icon-wrap">
-        <svg className="pp-header-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
           <circle cx="12" cy="12" r="9"/>
           <circle cx="12" cy="12" r="5"/>
           <circle cx="12" cy="12" r="1.5" fill="#F5C518" stroke="none"/>
         </svg>
       </div>
-      <div className="pp-header-text">
-        <h2 className="pp-header-title">PrizePicks Projections</h2>
-        <div className="pp-header-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">PrizePicks Projections</h2>
+        <div className="section-hero-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
       </div>
     </div>
     <div style={{ background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
@@ -1398,7 +1398,17 @@ function BuilderTab({ players: rp, ownership }) {
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
   return (<>
-    <div className="section-head"><Icon name="bolt" size={16} color="#F5C518"/> Lineup Builder</div><div className="section-sub">Set exposure %, build optimized lineups, export to DK</div>
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="#F5C518" stroke="none">
+          <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+        </svg>
+      </div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">Lineup Builder</h2>
+        <div className="section-hero-sub">Set exposure %, build optimized lineups, export to DK</div>
+      </div>
+    </div>
     {!canBuild && (
       <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="warning" size={15} color="#F5C518"/> DraftKings Compliance Warning</div>
@@ -1508,7 +1518,20 @@ function LeverageTab({ players: rp }) {
   const handleUser = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = evt => { try { const lines = evt.target.result.split('\n'); const cnt = {}; let lc = 0; for (const line of lines) { if (!line.trim() || line.startsWith('P,') || line.startsWith('Rank')) continue; const hasP = rp.some(p => line.includes(p.name) || line.includes(String(p.id))); if (hasP) { lc++; for (const p of rp) { if (line.includes(p.name) || line.includes(String(p.id))) cnt[p.name] = (cnt[p.name] || 0) + 1; } } } if (lc > 0) { const ep = {}; for (const [n, c] of Object.entries(cnt)) ep[n] = Math.round(c / lc * 1000) / 10; setUl({ counts: ep, total: lc }); } } catch (e) { setErr(e.message); } }; r.readAsText(f); };
   const ld = useMemo(() => { if (!cd || !ul) return []; return rp.filter(p => p.salary > 0).map(p => ({ name: p.name, salary: p.salary, proj: p.proj, val: p.val, userExp: ul.counts[p.name] || 0, fieldOwn: cd[p.name] || 0, leverage: Math.round(((ul.counts[p.name] || 0) - (cd[p.name] || 0)) * 10) / 10, opponent: p.opponent })).sort((a, b) => b.leverage - a.leverage); }, [cd, ul, rp]);
   return (<>
-    <div className="section-head"><Icon name="refresh" size={16} color="#F5C518"/> Live Leverage</div><div className="section-sub">Upload contest CSV + your lineups to compare vs the field</div>
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+      </div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">Live Leverage</h2>
+        <div className="section-hero-sub">Upload contest CSV + your lineups to compare vs the field</div>
+      </div>
+    </div>
     <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
       <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 1: Contest CSV</div><div className="metric-sub" style={{ marginTop: 4 }}>DK contest file after lock</div><input type="file" accept=".csv" onChange={handleContest} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{cd && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={12} color="var(--green)"/> {Object.keys(cd).length} players</div>}</div>
       <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 2: Your Lineups</div><div className="metric-sub" style={{ marginTop: 4 }}>Your DK upload or readable CSV</div><input type="file" accept=".csv" onChange={handleUser} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{ul && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={12} color="var(--green)"/> {ul.total} lineups</div>}</div>
@@ -1620,17 +1643,17 @@ function MMAPPTab({ rows }) {
   const best = useMemo(() => [...rows].sort((a, b) => b.ev - a.ev).slice(0, 3), [rows]);
   const worst = useMemo(() => [...rows].sort((a, b) => a.ev - b.ev).slice(0, 3), [rows]);
   return (<>
-    <div className="pp-header">
-      <div className="pp-header-icon-wrap">
-        <svg className="pp-header-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="none" stroke="#F5C518">
           <circle cx="12" cy="12" r="9"/>
           <circle cx="12" cy="12" r="5"/>
           <circle cx="12" cy="12" r="1.5" fill="#F5C518" stroke="none"/>
         </svg>
       </div>
-      <div className="pp-header-text">
-        <h2 className="pp-header-title">PrizePicks Projections</h2>
-        <div className="pp-header-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">PrizePicks Projections</h2>
+        <div className="section-hero-sub">All plays sorted by edge · Edge = Projected − PP Line</div>
       </div>
     </div>
     <div style={{ background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
@@ -1825,7 +1848,17 @@ function MMABuilderTab({ fighters: rp, ownership }) {
   const exportProjections = () => { let c = 'Fighter,Salary,Win%,Median,Ceiling,Val,CVal,Finish%,SigStr,TDs,CT,Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.ceil},${p.val},${p.cval},${(p.finishProb*100).toFixed(0)}%,${fmt(p.sigStr)},${fmt(p.takedowns)},${fmt(p.ctMin)},${p.opponent}\n`; }); dl(c, 'projections_ufc.csv'); };
 
   return (<>
-    <div className="section-head"><Icon name="bolt" size={16} color="#F5C518"/> Lineup Builder</div>
+    <div className="section-hero">
+      <div className="section-hero-icon-wrap">
+        <svg className="section-hero-icon" viewBox="0 0 24 24" fill="#F5C518" stroke="none">
+          <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+        </svg>
+      </div>
+      <div className="section-hero-text">
+        <h2 className="section-hero-title">Lineup Builder</h2>
+        <div className="section-hero-sub">Set exposure %, build optimized lineups, export to DK</div>
+      </div>
+    </div>
     <div className="section-sub">UFC: 6 fighters, $50K cap · No opponent-vs-opponent enforced · Export to DK</div>
     {!canBuild && (
       <div style={{ padding: '14px 18px', marginBottom: 16, background: 'rgba(245,197,24,0.08)', border: '1px solid rgba(245,197,24,0.35)', borderRadius: 10 }}>
