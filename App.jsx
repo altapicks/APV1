@@ -638,17 +638,15 @@ export default function App() {
     {hasLoadedOnce ? <SportSwitchLoader sport={sport} /> : <SplashScreen sport={sport} />}
   </div>;
 
-  const tabs = sport === 'tennis' ? [
-    { id: 'dk', l: 'DK Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 L4 21 L20 21 Z M12 3 L12 21"/></svg> },
-    { id: 'pp', l: 'PP Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg> },
-    { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 Z"/></svg> },
-    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 L9 6 L13 10 L21 4"/><path d="M21 4 L21 10"/><path d="M21 4 L15 4"/><path d="M3 20 L21 20"/></svg> }
-  ] : [
-    { id: 'dk', l: 'DK Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 L4 21 L20 21 Z M12 3 L12 21"/></svg> },
-    { id: 'pp', l: 'PP Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg> },
-    { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 Z"/></svg> },
-    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 L9 6 L13 10 L21 4"/><path d="M21 4 L21 10"/><path d="M21 4 L15 4"/><path d="M3 20 L21 20"/></svg> }
+  // Shared icon set — tennis and MMA use the same tabs.
+  // Label `l` becomes a hover tooltip via the title attribute; the tab bar shows icons only for a cleaner look.
+  const buildTabs = () => [
+    { id: 'dk', l: 'DraftKings Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17V9.5l4 3 2-6.5 3 6 3-6 2 6.5 4-3V17z"/><path d="M3 19h18"/></svg> },
+    { id: 'pp', l: 'PrizePicks Projections', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg> },
+    { id: 'build', l: 'Lineup Builder', icon: <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/></svg> },
+    { id: 'leverage', l: 'Live Leverage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v16M5 7l3-3 3 3"/><path d="M16 20V4M13 17l3 3 3-3"/></svg> }
   ];
+  const tabs = buildTabs();
 
   return (<div className="app">
     <style>{`
@@ -699,10 +697,135 @@ export default function App() {
       .proj-edit.overridden { color: var(--primary) !important; font-weight: 700; }
       .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .proj-edit { -moz-appearance: textfield; }
+      /* Icon-only tabs — compact square buttons with hover tooltip (native title attr handles the label) */
+      .tab.tab-icon {
+        width: 56px;
+        min-width: 56px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+      }
+      .tab.tab-icon svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         MOBILE RESPONSIVE — phones and small tablets
+         Touch targets ≥44px (iOS HIG), readable 12-13px body text,
+         tables get horizontal scroll, controls stack vertically.
+         ═══════════════════════════════════════════════════════════════════ */
+      @media (max-width: 768px) {
+        /* Content padding — tighter on mobile */
+        .content { padding: 14px 10px !important; }
+
+        /* Topbar — wrap the sport toggle + date underneath brand on narrow screens */
+        .topbar { flex-wrap: wrap !important; gap: 10px !important; padding: 10px 12px !important; }
+        .topbar-brand { font-size: 18px !important; }
+        .topbar-brand svg { width: 26px !important; height: 26px !important; }
+        .topbar-right { gap: 8px !important; flex-wrap: wrap; justify-content: flex-end; }
+        .topbar-date { font-size: 11px !important; width: 100%; text-align: right; }
+        .mountain-watermark { display: none; }
+
+        /* Tab bar — stretch to full width, 4 icons fill evenly, bigger touch targets */
+        .tab-bar {
+          display: flex !important;
+          width: 100%;
+          padding: 4px !important;
+          gap: 4px !important;
+          justify-content: space-between !important;
+          margin: 0 0 12px 0 !important;
+        }
+        .tab.tab-icon {
+          flex: 1 1 0 !important;
+          width: auto !important;
+          min-width: 0 !important;
+          max-width: none !important;
+          height: 48px !important;
+        }
+        .tab.tab-icon svg {
+          width: 24px !important;
+          height: 24px !important;
+        }
+
+        /* Tables — horizontal scroll with touch-inertia, tighter cells, smaller text */
+        .table-wrap {
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch;
+          margin-left: -10px;
+          margin-right: -10px;
+          padding: 0 10px;
+        }
+        .table-wrap table { font-size: 12px !important; }
+        .table-wrap th, .table-wrap td { padding: 7px 8px !important; }
+        .table-wrap td.name, .table-wrap th:first-child { position: sticky; left: 0; background: var(--card); z-index: 1; }
+
+        /* Projection edit input — bigger for thumb entry */
+        .proj-edit {
+          width: 56px !important;
+          padding: 6px 4px !important;
+          font-size: 14px !important;
+        }
+
+        /* Section headers — slightly smaller */
+        .section-head { font-size: 15px !important; }
+        .section-sub { font-size: 12px !important; }
+
+        /* Builder controls — stack rows vertically, full-width inputs */
+        .builder-controls { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+        .ctrl-row { flex-wrap: wrap !important; gap: 8px !important; }
+        .ctrl-row > * { flex: 1 1 auto; }
+        .ctrl-name { min-width: 0 !important; flex: 2 1 120px !important; }
+        .ctrl-proj { flex: 0 0 80px !important; }
+
+        /* Buttons — ≥44px tap targets, full-width in stacked layouts */
+        button { min-height: 40px; }
+        .btn.btn-primary, .btn.btn-outline { font-size: 13px; padding: 10px 14px; }
+
+        /* Lineup cards — single column on phones, stacked layout */
+        .lineup-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+        .lu-card { padding: 12px !important; }
+        .lu-row { gap: 8px !important; font-size: 12px !important; }
+        .lu-name { font-size: 13px !important; }
+
+        /* Metrics grid — 2 cols on tablet, single col on small phones handled below */
+        .metrics { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+        .metric { padding: 10px !important; }
+        .metric-value { font-size: 18px !important; }
+        .metric-label { font-size: 10px !important; }
+
+        /* Compliance warning banner — full width, comfortable padding */
+        .compliance-warning { padding: 12px !important; font-size: 12px !important; }
+
+        /* Cursor glow — already disabled by hover:none media query above, just belt-and-suspenders */
+        .cursor-glow { display: none !important; }
+      }
+
+      /* Narrow phones (iPhone SE, etc.) — even more compression */
+      @media (max-width: 420px) {
+        .content { padding: 10px 6px !important; }
+        .topbar { padding: 8px 10px !important; }
+        .topbar-brand { font-size: 16px !important; gap: 6px !important; }
+        .topbar-brand svg { width: 22px !important; height: 22px !important; }
+        .tab.tab-icon { height: 44px !important; }
+        .tab.tab-icon svg { width: 22px !important; height: 22px !important; }
+        .table-wrap table { font-size: 11px !important; }
+        .table-wrap th, .table-wrap td { padding: 6px 6px !important; }
+        .metrics { grid-template-columns: 1fr 1fr !important; }
+        .proj-edit { width: 52px !important; font-size: 13px !important; }
+        .section-head { font-size: 14px !important; }
+      }
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
     <Topbar sport={sport} onSportChange={setSport} data={data} />
-    <div className="tab-bar">{tabs.map(t => <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.icon}{t.l}</button>)}</div>
+    <div className="tab-bar">{tabs.map(t => (
+      <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
+        {t.icon}
+      </button>
+    ))}</div>
     <div className="content">
       {buildError && <div className="empty" style={{ padding: '40px 20px' }}>
         <h2 style={{ color: '#EF4444' }}>⚠️ Projection build failed</h2>
