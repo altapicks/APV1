@@ -155,6 +155,7 @@ export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minS
   players.forEach((p, i) => { idx[p.name] = i; });
 
   // Enumerate all valid (CPT, A-CPT, FLEX) triples with distinct players
+  // Rule: no two players in the same lineup may face each other (no opponent-vs-opponent)
   const allLineups = [];
   for (let c = 0; c < N; c++) {
     const cp = players[c];
@@ -162,12 +163,14 @@ export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minS
     for (let a = 0; a < N; a++) {
       if (a === c) continue;
       const ap = players[a];
+      if (ap.opponent === cp.name) continue;                 // A-CPT would be CPT's opponent
       const partial = cSal + ap.acpt_salary;
       if (partial > salaryCap) continue;
       const aProj = 1.25 * ap.projection;
       for (let f = 0; f < N; f++) {
         if (f === c || f === a) continue;
         const fp = players[f];
+        if (fp.opponent === cp.name || fp.opponent === ap.name) continue;  // FLEX faces CPT or A-CPT
         const ts = partial + fp.flex_salary;
         if (ts > salaryCap || ts < minSalary) continue;
         const tp = cProj + aProj + fp.projection;
