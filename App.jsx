@@ -715,6 +715,13 @@ export default function App() {
         display: block;
       }
 
+      /* Row-highlight classes — OPAQUE versions of the old rgba tints.
+         color-mix() renders exactly the same visual as "card + 6% green/red"
+         but as a solid color, so sticky cells stay opaque and no scroll-through
+         bleed-through is possible. Applies to ALL tables universally. */
+      .row-hl-green { background: color-mix(in srgb, #22C55E 6%, var(--card)) !important; }
+      .row-hl-red   { background: color-mix(in srgb, #EF4444 6%, var(--card)) !important; }
+
       /* ═══════════════════════════════════════════════════════════════════
          MOBILE RESPONSIVE — phones and small tablets
          Touch targets ≥44px (iOS HIG), readable 12-13px body text,
@@ -982,7 +989,7 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name), ig = p.name === gem, it = p.name === trap;
       let b = ''; if (iv) b += '🏆'; if (is) b += '🎯'; if (ig) b += '💎'; if (it) b += '💣';
       const isOver = overrides && overrides[p.name] != null;
-      return <tr key={p.name} style={ig ? { background: 'rgba(34,197,94,0.06)' } : it ? { background: 'rgba(239,68,68,0.06)' } : undefined}>
+      return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td style={{ fontSize: 14 }}>{b && [...b].filter((_, j) => j % 2 === 0).map((e, j) => { const em = b.substring(j*2, j*2+2); return <Tip key={j} emoji={em} label={em === '🏆' ? 'Top 3 Value' : em === '🎯' ? 'Top 3 Straight Sets' : em === '💎' ? 'Hidden Gem' : 'Trap'} />; })}</td>
         <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
@@ -1033,7 +1040,7 @@ function PPTab({ rows }) {
       const isBest = best.some(t => t.player === r.player && t.stat === r.stat);
       const isWorst = worst.some(t => t.player === r.player && t.stat === r.stat);
       const playDir = r.direction;
-      return <tr key={r.player + r.stat} style={isBest ? {background:'rgba(34,197,94,0.06)'} : isWorst ? {background:'rgba(239,68,68,0.06)'} : undefined}>
+      return <tr key={r.player + r.stat} className={isBest ? 'row-hl-green' : isWorst ? 'row-hl-red' : ''}>
         <td className="muted">{i+1}</td>
         <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
@@ -1407,7 +1414,7 @@ function LeverageTab({ players: rp }) {
         <div className="metric"><div className="metric-label">💣 Most Underweight</div><div className="metric-value" style={{ color: 'var(--red)' }}>{ld[ld.length - 1]?.name}</div><div className="metric-sub">You: {ld[ld.length - 1]?.userExp}% · Field: {ld[ld.length - 1]?.fieldOwn}% · {ld[ld.length - 1]?.leverage}%</div></div>
       </div>
       <div className="table-wrap"><table><thead><tr><th>#</th><th></th><th>Player</th><th>Opp</th><th>Proj</th><th>Your Exp</th><th>Field Own</th><th>Leverage</th></tr></thead>
-      <tbody>{ld.map((p, i) => <tr key={p.name} style={p.leverage > 10 ? { background: 'rgba(34,197,94,0.06)' } : p.leverage < -10 ? { background: 'rgba(239,68,68,0.06)' } : undefined}><td className="muted">{i + 1}</td><td>{p.leverage > 10 ? <Tip emoji="💎" label="Strong overweight" /> : p.leverage < -10 ? <Tip emoji="💣" label="Underweight" /> : ''}</td><td className="name">{p.name}</td><td className="muted">{p.opponent}</td><td className="num">{fmt(p.proj, 1)}</td><td className="num" style={{ color: 'var(--primary-glow)' }}>{fmt(p.userExp, 1)}%</td><td className="num muted">{fmt(p.fieldOwn, 1)}%</td><td className="num"><span style={{ color: p.leverage > 0 ? 'var(--green)' : p.leverage < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.leverage) > 10 ? 700 : 500, background: Math.abs(p.leverage) > 15 ? (p.leverage > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)') : 'transparent', padding: '2px 8px', borderRadius: 4 }}>{p.leverage > 0 ? '+' : ''}{fmt(p.leverage, 1)}%</span></td></tr>)}</tbody></table></div>
+      <tbody>{ld.map((p, i) => <tr key={p.name} className={p.leverage > 10 ? 'row-hl-green' : p.leverage < -10 ? 'row-hl-red' : ''}><td className="muted">{i + 1}</td><td>{p.leverage > 10 ? <Tip emoji="💎" label="Strong overweight" /> : p.leverage < -10 ? <Tip emoji="💣" label="Underweight" /> : ''}</td><td className="name">{p.name}</td><td className="muted">{p.opponent}</td><td className="num">{fmt(p.proj, 1)}</td><td className="num" style={{ color: 'var(--primary-glow)' }}>{fmt(p.userExp, 1)}%</td><td className="num muted">{fmt(p.fieldOwn, 1)}%</td><td className="num"><span style={{ color: p.leverage > 0 ? 'var(--green)' : p.leverage < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.leverage) > 10 ? 700 : 500, background: Math.abs(p.leverage) > 15 ? (p.leverage > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)') : 'transparent', padding: '2px 8px', borderRadius: 4 }}>{p.leverage > 0 ? '+' : ''}{fmt(p.leverage, 1)}%</span></td></tr>)}</tbody></table></div>
     </>}
     {!cd && !ul && <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' }}><div style={{ fontSize: 32, marginBottom: 8 }}>🔄</div><div style={{ fontSize: 14 }}>Upload both CSVs to see leverage vs field</div></div>}
   </>);
@@ -1471,7 +1478,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
       const iv = t3v.includes(p.name), isf = t3f.includes(p.name), ig = p.name === gem, it = p.name === trap;
       let b = ''; if (iv) b += '🏆'; if (isf) b += '👊'; if (ig) b += '💎'; if (it) b += '💣';
       const isOver = overrides && overrides[p.name] != null;
-      return <tr key={p.name} style={ig ? { background: 'rgba(34,197,94,0.06)' } : it ? { background: 'rgba(239,68,68,0.06)' } : undefined}>
+      return <tr key={p.name} className={ig ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td style={{ fontSize: 14 }}>{b && [...b].filter((_, j) => j % 2 === 0).map((e, j) => { const em = b.substring(j*2, j*2+2); return <Tip key={j} emoji={em} label={em === '🏆' ? 'Top 3 Value' : em === '👊' ? 'Top 3 Finish Path' : em === '💎' ? 'Hidden Gem' : 'Trap'} />; })}</td>
         <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
@@ -1524,7 +1531,7 @@ function MMAPPTab({ rows }) {
       const isWorst = worst.some(t => t.player === r.player && t.stat === r.stat);
       const playDir = r.direction;
       const isFT = r.stat === 'Fight Time';
-      return <tr key={r.player + r.stat} style={isBest ? {background:'rgba(34,197,94,0.06)'} : isWorst ? {background:'rgba(239,68,68,0.06)'} : undefined}>
+      return <tr key={r.player + r.stat} className={isBest ? 'row-hl-green' : isWorst ? 'row-hl-red' : ''}>
         <td className="muted">{i+1}</td>
         <td>{isBest ? <Tip emoji="🔥" label="Best edge" /> : isWorst ? <Tip emoji="📉" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
