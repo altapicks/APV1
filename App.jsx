@@ -121,8 +121,10 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
             (fade chalk, leverage dogs)
           </span>
         </div>
-        <button onClick={() => onToggle(!enabled)} style={{
-          width: 40, height: 22, background: enabled ? 'var(--primary)' : 'var(--border)',
+        <button onClick={() => onToggle(!enabled)} aria-label="Toggle Contrarian Mode" style={{
+          width: 40, minWidth: 40, height: 22, minHeight: 22, maxHeight: 22,
+          padding: 0, flexShrink: 0,
+          background: enabled ? 'var(--primary)' : 'var(--border)',
           borderRadius: 11, position: 'relative', cursor: 'pointer', border: 'none',
           transition: 'background 0.15s',
         }}>
@@ -798,8 +800,8 @@ export default function App() {
         .ctrl-name { min-width: 0 !important; flex: 2 1 120px !important; }
         .ctrl-proj { flex: 0 0 80px !important; }
 
-        /* Buttons — ≥44px tap targets, full-width in stacked layouts */
-        button { min-height: 40px; }
+        /* Buttons — ≥40px tap targets for action buttons only (NOT toggles/icon buttons) */
+        .btn { min-height: 40px; }
         .btn.btn-primary, .btn.btn-outline { font-size: 13px; padding: 10px 14px; }
 
         /* Lineup cards — single column on phones, stacked layout */
