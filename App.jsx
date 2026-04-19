@@ -747,7 +747,6 @@ export default function App() {
         width: 56px !important;
         min-width: 56px !important;
         max-width: 56px !important;
-        height: 40px !important;
         padding: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
@@ -758,6 +757,7 @@ export default function App() {
         justify-content: center !important;
         gap: 0 !important;
       }
+      .tab.tab-icon { height: 40px !important; }
       .tab.tab-icon.active {
         box-shadow: inset 0 0 0 2px var(--primary) !important;
         background: rgba(245, 197, 24, 0.12) !important;
