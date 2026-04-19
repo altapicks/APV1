@@ -533,7 +533,7 @@ function SportSwitchLoader({ sport }) {
         @keyframes sw-dot       { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
       `}</style>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 24, opacity: 0, animation: 'sw-fade 0.4s ease-out 0.1s forwards' }}>
-        Switching to <span style={{display:"inline-flex",alignItems:"center",gap:6,verticalAlign:"-0.2em"}}>{isTennis ? "Tennis" : "UFC"} <Icon name={isTennis ? "tennis" : "fist"} size={16} color="#F5C518"/></span>
+        Switching to {isTennis ? "Tennis" : "UFC"} <Icon name={isTennis ? "tennis" : "fist"} size={16} color="#F5C518"/>
       </div>
       {isTennis ? (
         <div style={{ position: 'relative', width: 100, height: 70, margin: '0 auto 20px', opacity: 0, animation: 'sw-fade 0.4s ease-out 0.2s forwards' }}>
