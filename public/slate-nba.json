@@ -735,7 +735,8 @@
         "L5": 20.4,
         "L10": 22.7,
         "All": 22.1
-      }
+      },
+      "manual_proj": 32.0
     },
     {
       "name": "Royce O'Neale",
@@ -874,7 +875,8 @@
         "L5": 21.8,
         "L10": 23.4,
         "All": 28.2
-      }
+      },
+      "manual_proj": 21.19
     },
     {
       "name": "Alex Caruso",
@@ -1018,7 +1020,8 @@
         "L5": 13.3,
         "L10": 16.4,
         "All": 19.7
-      }
+      },
+      "manual_proj": 16.6
     },
     {
       "name": "Isaiah Joe",
@@ -1530,301 +1533,6 @@
       "player": "Luguentz Dort",
       "stat": "Fantasy Score",
       "line": 15
-    },
-    {
-      "player": "Shai Gilgeous-Alexander",
-      "stat": "Points",
-      "line": 29.5
-    },
-    {
-      "player": "Shai Gilgeous-Alexander",
-      "stat": "Rebounds",
-      "line": 4.5
-    },
-    {
-      "player": "Shai Gilgeous-Alexander",
-      "stat": "Assists",
-      "line": 6.5
-    },
-    {
-      "player": "Shai Gilgeous-Alexander",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Shai Gilgeous-Alexander",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Devin Booker",
-      "stat": "Points",
-      "line": 23.5
-    },
-    {
-      "player": "Devin Booker",
-      "stat": "Rebounds",
-      "line": 4.5
-    },
-    {
-      "player": "Devin Booker",
-      "stat": "Assists",
-      "line": 5.5
-    },
-    {
-      "player": "Devin Booker",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Jalen Green",
-      "stat": "Points",
-      "line": 18.5
-    },
-    {
-      "player": "Jalen Green",
-      "stat": "Rebounds",
-      "line": 4.5
-    },
-    {
-      "player": "Jalen Green",
-      "stat": "Assists",
-      "line": 3.5
-    },
-    {
-      "player": "Jalen Green",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Jalen Green",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Jalen Williams",
-      "stat": "Points",
-      "line": 17.5
-    },
-    {
-      "player": "Jalen Williams",
-      "stat": "Rebounds",
-      "line": 4.5
-    },
-    {
-      "player": "Jalen Williams",
-      "stat": "Assists",
-      "line": 5.5
-    },
-    {
-      "player": "Jalen Williams",
-      "stat": "3PM",
-      "line": 0.5
-    },
-    {
-      "player": "Jalen Williams",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Chet Holmgren",
-      "stat": "Points",
-      "line": 16.5
-    },
-    {
-      "player": "Chet Holmgren",
-      "stat": "Rebounds",
-      "line": 9.5
-    },
-    {
-      "player": "Chet Holmgren",
-      "stat": "Assists",
-      "line": 1.5
-    },
-    {
-      "player": "Chet Holmgren",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Chet Holmgren",
-      "stat": "Stls+Blks",
-      "line": 2.5
-    },
-    {
-      "player": "Dillon Brooks",
-      "stat": "Points",
-      "line": 15.5
-    },
-    {
-      "player": "Dillon Brooks",
-      "stat": "Rebounds",
-      "line": 3.5
-    },
-    {
-      "player": "Dillon Brooks",
-      "stat": "Assists",
-      "line": 1.5
-    },
-    {
-      "player": "Dillon Brooks",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Dillon Brooks",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Ajay Mitchell",
-      "stat": "Points",
-      "line": 10.5
-    },
-    {
-      "player": "Ajay Mitchell",
-      "stat": "Rebounds",
-      "line": 2.5
-    },
-    {
-      "player": "Ajay Mitchell",
-      "stat": "Assists",
-      "line": 3.5
-    },
-    {
-      "player": "Ajay Mitchell",
-      "stat": "3PM",
-      "line": 0.5
-    },
-    {
-      "player": "Jordan Goodwin",
-      "stat": "Points",
-      "line": 8.5
-    },
-    {
-      "player": "Jordan Goodwin",
-      "stat": "Rebounds",
-      "line": 5.5
-    },
-    {
-      "player": "Jordan Goodwin",
-      "stat": "Assists",
-      "line": 2.5
-    },
-    {
-      "player": "Jordan Goodwin",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Jordan Goodwin",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Mark Williams",
-      "stat": "Points",
-      "line": 7.5
-    },
-    {
-      "player": "Mark Williams",
-      "stat": "Rebounds",
-      "line": 6.5
-    },
-    {
-      "player": "Mark Williams",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Isaiah Hartenstein",
-      "stat": "Points",
-      "line": 7.5
-    },
-    {
-      "player": "Isaiah Hartenstein",
-      "stat": "Rebounds",
-      "line": 7.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "Points",
-      "line": 6.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "Rebounds",
-      "line": 2.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "Assists",
-      "line": 0.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Luguentz Dort",
-      "stat": "Stls+Blks",
-      "line": 1.5
-    },
-    {
-      "player": "Cason Wallace",
-      "stat": "Points",
-      "line": 6.5
-    },
-    {
-      "player": "Cason Wallace",
-      "stat": "Rebounds",
-      "line": 2.5
-    },
-    {
-      "player": "Cason Wallace",
-      "stat": "Assists",
-      "line": 1.5
-    },
-    {
-      "player": "Cason Wallace",
-      "stat": "3PM",
-      "line": 0.5
-    },
-    {
-      "player": "Royce O'Neale",
-      "stat": "Points",
-      "line": 6.5
-    },
-    {
-      "player": "Royce O'Neale",
-      "stat": "Rebounds",
-      "line": 4.5
-    },
-    {
-      "player": "Royce O'Neale",
-      "stat": "3PM",
-      "line": 1.5
-    },
-    {
-      "player": "Alex Caruso",
-      "stat": "Points",
-      "line": 5.5
-    },
-    {
-      "player": "Alex Caruso",
-      "stat": "3PM",
-      "line": 0.5
-    },
-    {
-      "player": "Isaiah Joe",
-      "stat": "Points",
-      "line": 5.5
-    },
-    {
-      "player": "Isaiah Joe",
-      "stat": "3PM",
-      "line": 1.5
     }
   ],
   "last_updated": "2026-04-19 PM MT"
