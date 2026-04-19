@@ -146,7 +146,7 @@ export function ppEV(projectedScore, ppLine) {
 // ============================================================
 // LINEUP OPTIMIZER
 // ============================================================
-export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6) {
+export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6, minSalary = 0) {
   // Build match pairs
   const idx = {};
   players.forEach((p, i) => { idx[p.name] = i; });
@@ -178,7 +178,7 @@ export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize =
         const opt = matchOpts[mc[i]][side];
         ts += opt.sal; tp += opt.proj; pidxs.push(opt.idx);
       }
-      if (ts <= salaryCap) {
+      if (ts <= salaryCap && ts >= minSalary) {
         allLineups.push({ proj: round2(tp), sal: ts, players: pidxs });
       }
     }
