@@ -6,8 +6,8 @@
   "last_updated": "2026-04-19",
   "slate_avg_fpts": 45.6,
   "featured_insight": {
-    "headline": "Traps and gems both 2-for-2 out of the gate",
-    "detail": "On 4/17 Rybakina (73.6% chalk) scored 56.3 — below the winning lineup's 74 FPTS avg — and Rublev (27.3% owned) delivered 71.9 as the pivot. On 4/18 Molcan bricked at 16.3 and Shelton paid off at 71.9. Both trap-to-gem pivots would have improved the winning lineup. Small sample; signals stay neutral until n\u22656."
+    "headline": "Traps and gems both 2-for-2; PP fade calls need recalibration",
+    "detail": "Trap + gem pivots are a clean 100% through 2 slates (Rybakina\u2192Rublev, Molcan\u2192Shelton). PP Edge is 3/6 (50%) \u2014 Kostyuk and Rybakina overs on 4/18 cashed, Fonseca and Shymanovich reversed hard on 4/17. PP Fade is 0/6 with 2 reverses: engine is systematically projecting below PP lines, so the strongest \u2018fade\u2019 signals are often players the model is simply under-rating. Worth reviewing the projection baseline before signals go live."
   },
   "categories": [
     {
@@ -33,6 +33,35 @@
       "avg_edge": 35.6,
       "edge_units": "DK FPTS over paired trap",
       "signal": "neutral"
+    },
+    {
+      "key": "pp_edge",
+      "label": "PP Edge",
+      "description": "Top 3 MORE plays by projection vs line",
+      "icon": "flame",
+      "type": "hit_rate",
+      "n": 6,
+      "hit_rate": 0.5,
+      "reverse_rate": 0.5,
+      "push_rate": 0.0,
+      "avg_edge": 2.92,
+      "edge_units": "PP FS vs line",
+      "signal": "neutral"
+    },
+    {
+      "key": "pp_fade",
+      "label": "PP Fade",
+      "description": "Top 3 LESS plays by projection vs line",
+      "icon": "trending-down",
+      "type": "hit_rate",
+      "n": 6,
+      "hit_rate": 0.0,
+      "reverse_rate": 0.333,
+      "push_rate": 0.667,
+      "avg_edge": 1.25,
+      "edge_units": "PP FS vs line",
+      "signal": "neutral",
+      "note": "Engine projections sitting systematically below PP lines \u2014 fade picks are low-conviction. Recalibrate before elevating."
     },
     {
       "key": "top_straight_sets",
@@ -96,13 +125,33 @@
           "hits": 1,
           "misses": 0,
           "note": "73.6% chalk that dragged her winning lineup down by 17.7 FPTS vs avg."
+        },
+        "pp_edge": {
+          "n": 3,
+          "picks": [
+            { "player": "Arthur Fils", "line": 13, "proj": 11.5, "actual": 22.0, "grade": "hit" },
+            { "player": "Joao Fonseca", "line": 17, "proj": 14.4, "actual": 5.5, "grade": "reverse" },
+            { "player": "Iryna Shymanovich", "line": 13, "proj": 10.4, "actual": -1.0, "grade": "reverse" }
+          ],
+          "hits": 1, "reverses": 2, "pushes": 0
+        },
+        "pp_fade": {
+          "n": 3,
+          "picks": [
+            { "player": "Sorana Cirstea", "line": 21, "proj": 14.7, "actual": 21.5, "grade": "push" },
+            { "player": "Rafael Jodar", "line": 21, "proj": 15.1, "actual": 24.5, "grade": "reverse" },
+            { "player": "Alexander Zverev", "line": 20.5, "proj": 14.8, "actual": 21.0, "grade": "push" }
+          ],
+          "hits": 0, "reverses": 1, "pushes": 2
         }
       },
       "tagged": {
         "top_value": ["Veronika Podrez", "Francisco Cerundolo", "Karolina Muchova"],
         "top_straight_sets": ["Elena Rybakina", "Marta Kostyuk", "Sorana Cirstea"],
         "hidden_gem": ["Andrey Rublev"],
-        "biggest_trap": ["Elena Rybakina"]
+        "biggest_trap": ["Elena Rybakina"],
+        "pp_edge": ["Arthur Fils", "Joao Fonseca", "Iryna Shymanovich"],
+        "pp_fade": ["Sorana Cirstea", "Rafael Jodar", "Alexander Zverev"]
       }
     },
     {
@@ -141,19 +190,39 @@
           "hits": 1,
           "misses": 0,
           "note": "21% chalk that cratered 57.3 FPTS below winning avg."
+        },
+        "pp_edge": {
+          "n": 3,
+          "picks": [
+            { "player": "Marta Kostyuk", "line": 22, "proj": 19.8, "actual": 25.0, "grade": "hit" },
+            { "player": "Elina Svitolina", "line": 13.5, "proj": 11.0, "actual": 6.5, "grade": "reverse" },
+            { "player": "Elena Rybakina", "line": 15, "proj": 12.4, "actual": 26.5, "grade": "hit" }
+          ],
+          "hits": 2, "reverses": 1, "pushes": 0
+        },
+        "pp_fade": {
+          "n": 3,
+          "picks": [
+            { "player": "Ben Shelton", "line": 19.5, "proj": 14.0, "actual": 23.0, "grade": "reverse" },
+            { "player": "Andrey Rublev", "line": 17, "proj": 12.5, "actual": 19.5, "grade": "push" },
+            { "player": "Arthur Fils", "line": 15.5, "proj": 11.6, "actual": 16.0, "grade": "push" }
+          ],
+          "hits": 0, "reverses": 1, "pushes": 2
         }
       },
       "tagged": {
         "top_value": ["Veronika Podrez", "Flavio Cobolli", "Alex Molcan"],
         "top_straight_sets": ["Marta Kostyuk", "Sorana Cirstea", "Alexander Zverev"],
         "hidden_gem": ["Ben Shelton"],
-        "biggest_trap": ["Alex Molcan"]
+        "biggest_trap": ["Alex Molcan"],
+        "pp_edge": ["Marta Kostyuk", "Elina Svitolina", "Elena Rybakina"],
+        "pp_fade": ["Ben Shelton", "Andrey Rublev", "Arthur Fils"]
       }
     }
   ],
   "_notes": {
-    "methodology": "Trap HIT: trap_fpts < winning_lineup_avg (chalk dragged winning lineups down). Gem HIT: gem_fpts > paired trap_fpts (the recommended pivot would have improved the lineup). Top Value and Straight Sets graded against 1st-place lineup inclusion.",
-    "pp_lines_status": "PrizePicks line grading (Fantasy Score, Breaks, Aces) awaiting per-match stat collection.",
-    "sample_size": "Signals stay NEUTRAL below N=6 for hit_rate tags and N=3 for bust_rate tags. Patterns require larger samples before promoting to FOLLOW/FADE/COUNTER."
+    "methodology": "Trap HIT: trap_fpts < winning_lineup_avg. Gem HIT: gem_fpts > paired trap_fpts. Top Value and Straight Sets: 1st-place lineup inclusion. PP Edge HIT: actual \u2265 line+3, PUSH within \u00b13, REVERSE \u2264 line-3. PP Fade is inverse. Breaks lines not graded (stat CSV does not track service-game breaks).",
+    "pp_projection_note": "Engine is systematically projecting Fantasy Score ~3-5 points below PP lines across the board. This inflates the size of 'fade' edges artificially and suppresses genuine 'edge' calls. Recommend reviewing set-count + game-count projection constants before signals go live.",
+    "sample_size": "Signals stay NEUTRAL below N=6 for hit_rate tags and N=3 for bust_rate tags."
   }
 }
