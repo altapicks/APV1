@@ -142,12 +142,12 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
           <input type="range" min="0" max="100" value={Math.round(strength * 100)}
             onChange={e => onStrengthChange(+e.target.value / 100)}
             style={{ flex: 1, accentColor: 'var(--primary)' }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', minWidth: 40, textAlign: 'right' }}>
-            {Math.round(strength * 100)}%
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', minWidth: 90, textAlign: 'right' }}>
+            {Math.round(strength * 100)}% · −{Math.round(strength * 50)}pp
           </span>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>
-          Fade good value, take bad value — DK prices things for a reason. The chalky trap gets capped, below-avg-value underowned plays get boosted (differentiation), and every player gets a floor so nobody is tunneled out.
+          Trap is capped at <strong style={{ color: 'var(--text-muted)' }}>field_own − {Math.round(strength * 50)}pp</strong> (defaults to −30 at 60%, max −50 at 100%). Below-avg-value underowned plays get boosted for differentiation.
         </div>
       </>)}
     </div>
@@ -1304,7 +1304,7 @@ function BuilderTab({ players: rp, ownership }) {
       : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 40));
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
@@ -1950,7 +1950,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 40));
+      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
       caps[trap.name] = { max: maxCap, _isTrap: true };
     }
 
