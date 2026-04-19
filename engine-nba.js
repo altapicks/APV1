@@ -155,6 +155,18 @@ function stlBlkSplit(positions) {
   return { stlPct: 0.55, blkPct: 0.45 };                       // wing / hybrid
 }
 
+// Share of (rebounds + assists) combined, by position. Used when DK prices
+// the PRA composite but not the individual Rebounds / Assists markets.
+// Bigs rebound more and pass less; PGs pass more and rebound less.
+function rebAstSplit(positions) {
+  const pos = Array.isArray(positions) ? positions.join('/') : String(positions || '');
+  if (/C/i.test(pos))  return { rebShare: 0.75, astShare: 0.25 };   // center
+  if (/PF/i.test(pos)) return { rebShare: 0.65, astShare: 0.35 };   // power forward
+  if (/SF/i.test(pos)) return { rebShare: 0.55, astShare: 0.45 };   // small forward / wing
+  if (/PG/i.test(pos)) return { rebShare: 0.30, astShare: 0.70 };   // point guard
+  return { rebShare: 0.40, astShare: 0.60 };                        // shooting guard / default
+}
+
 // Build a player stats object ENTIRELY from devigged DraftKings prop lines.
 // No minute scaling, pace factor, blowout adjustment, cascade multiplier,
 // or fallback estimation. If a stat has no DK line, it is treated as 0
@@ -192,10 +204,41 @@ export function buildPlayerStats(player, /* ctx */ _ctx = {}) {
   }
 
   const pts       = readProp('points');
-  const reb       = readProp('rebounds');
-  const ast       = readProp('assists');
+  let   reb       = readProp('rebounds');
+  let   ast       = readProp('assists');
   const threesM   = readProp('threes');
   const stlBlkSum = readProp('stls_blks');
+  const pra       = readProp('pra');      // DK Points+Rebounds+Assists market
+
+  // ─────────────────────────────────────────────────────────────────────
+  // PRA BACK-CALC — when DK offers a PRA market but is missing one or
+  // both of the component individual markets, back-calculate the missing
+  // component(s). This is still PURE DK-market data (nothing fabricated),
+  // just cross-sourced from the composite prop when the individual isn't
+  // priced. Without this, players like Grayson Allen (PRA 13.5, Points
+  // 8.5, but no Rebounds/Assists market) get projected using only their
+  // Points line and badly underprojected.
+  // ─────────────────────────────────────────────────────────────────────
+  let rebFromPra = false, astFromPra = false;
+  if (pra != null && pts != null && pra > pts) {
+    const ra = Math.max(0, pra - pts);     // projected rebounds + assists
+    if (reb == null && ast == null) {
+      // Split the composite by position archetype
+      const split = rebAstSplit(player.positions);
+      reb = ra * split.rebShare;
+      ast = ra * split.astShare;
+      rebFromPra = true;
+      astFromPra = true;
+    } else if (reb == null && ast != null) {
+      reb = Math.max(0, ra - ast);
+      rebFromPra = true;
+    } else if (ast == null && reb != null) {
+      ast = Math.max(0, ra - reb);
+      astFromPra = true;
+    }
+    // If both individual lines existed, we don't overwrite — those are the
+    // most precise numbers. PRA just confirms the sum roughly matches.
+  }
 
   const hasStatData = {
     points:    pts       != null,
@@ -203,6 +246,8 @@ export function buildPlayerStats(player, /* ctx */ _ctx = {}) {
     assists:   ast       != null,
     threes:    threesM   != null,
     stls_blks: stlBlkSum != null,
+    rebFromPra, astFromPra,
+    pra:       pra       != null,
   };
 
   // Needs Points at minimum to be "projectable" via DK prop devig.
