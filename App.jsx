@@ -776,7 +776,7 @@ function BuilderTab({ players: rp, ownership }) {
     if (withSal.length === 0) return {};
     const caps = {};
 
-    // Stars (top 30% by projection) — excluded from trap candidates
+    // Stars (top 30% by projection) — used for stud selection, NOT for trap exclusion
     const byProj = [...withSal].sort((a, b) => b.proj - a.proj);
     const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
     const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
@@ -785,12 +785,13 @@ function BuilderTab({ players: rp, ownership }) {
     const boostFloor = Math.round(10 + contrarianStrength * 10);   // 13-20pp by strength
     const LEV_CAP = 30;
 
-    // (1) TRAP — highest-owned non-star
-    const trapCandidates = withSal.filter(p => !topProjSet.has(p.name));
+    // (1) TRAP — highest-owned player (matches DK tab's "Biggest Trap" definition).
+    //     DK tab defines trap as simply highest ownership. Contrarian respects that —
+    //     if the field has converged on a player, fade them regardless of star status.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const trap = trapCandidates.length && hasOwn
-      ? [...trapCandidates].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
-      : byProj[0];  // fallback if no ownership data
+    const trap = hasOwn
+      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
+      : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
       const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 30));
@@ -818,26 +819,44 @@ function BuilderTab({ players: rp, ownership }) {
       };
     }
 
-    // (2b) GEM — below-avg val + most underowned (relative to fair). DK-priced-down play
-    //      the field writes off, boosted into the portfolio for differentiation. Primary:
-    //      strict filter (field < fair). Fallback: any below-avg-val player with highest
-    //      under-fair gap, so the gem always gets populated if any low-val play exists.
-    const gemPool = [...withSal].filter(p => {
-      if (p.name === trap?.name || p.name === stud?.name) return false;
-      return (p.val || 0) < avgVal;
-    });
-    const strictGem = gemPool.filter(p => {
-      const fieldOwn = ownership[p.name] || 0;
-      return fieldOwn < computeFairOwn(p.val || 0, avgVal);
-    }).sort((a, b) => b.proj - a.proj)[0];
-    // Fallback: pick below-avg-val play with biggest gap below fair (most "field-avoided")
-    const fallbackGem = gemPool.sort((a, b) => {
+    // (2b) GEM — salary substitute for trap (-$1000 to +$300 band). Cascade:
+    //        (1) bad-val + underowned in band       [DK-priced-down + field missing = pure gem]
+    //        (2) good-val + underowned in band      [field ignoring an overlooked elite]
+    //        (3) any bad-val in band                [field-avoided at that price, even if chalky]
+    //        (4) lowest-owned in band               [anyone unappreciated at that price]
+    //        (5) widen band to -$1500/+$500 and retry lowest-owned
+    // Order rationale: true underownership (underowned relative to fair) beats pure bad-val
+    // signal. If the only bad-val play is itself overowned (like Moises at 38%), it's not
+    // really a "field-missed" play — boost a genuinely underowned alternative instead.
+    const trapSal = trap?.salary ?? 0;
+    const inBand = (p, lo, hi) => (p.salary - trapSal) >= lo && (p.salary - trapSal) <= hi;
+    const salaryEligible = trap ? withSal.filter(p => {
+      if (p.name === trap.name || p.name === stud?.name) return false;
+      return inBand(p, -1000, 300);
+    }) : [];
+    const sameBandBadVal = salaryEligible.filter(p => (p.val || 0) < avgVal);
+    // (1) Bad-val AND underowned: the ideal gem
+    const strictGem = sameBandBadVal
+      .filter(p => (ownership[p.name] || 0) < computeFairOwn(p.val || 0, avgVal))
+      .sort((a, b) => b.proj - a.proj)[0];
+    // (2) Good-val underowned: overlooked elite at same price point as trap
+    const goodValUnderowned = salaryEligible
+      .filter(p => (p.val || 0) >= avgVal && (ownership[p.name] || 0) < computeFairOwn(p.val || 0, avgVal) - 3)
+      .sort((a, b) => b.proj - a.proj)[0];
+    // (3) Any bad-val (even chalky) — last resort for DK-priced-down differentiation
+    const badValFallback = sameBandBadVal.sort((a, b) => {
       const aGap = computeFairOwn(a.val || 0, avgVal) - (ownership[a.name] || 0);
       const bGap = computeFairOwn(b.val || 0, avgVal) - (ownership[b.name] || 0);
-      if (Math.abs(bGap - aGap) > 1) return bGap - aGap;     // bigger gap first
-      return b.proj - a.proj;                                 // break ties by projection
+      if (Math.abs(bGap - aGap) > 1) return bGap - aGap;
+      return b.proj - a.proj;
     })[0];
-    const gem = strictGem || fallbackGem;
+    const lowOwnFallback = salaryEligible
+      .sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
+    const widerPool = (!strictGem && !goodValUnderowned && !badValFallback && !lowOwnFallback && trap)
+      ? withSal.filter(p => p.name !== trap.name && p.name !== stud?.name && inBand(p, -1500, 500))
+      : [];
+    const widerFallback = widerPool.sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
+    const gem = strictGem || goodValUnderowned || badValFallback || lowOwnFallback || widerFallback;
     if (gem) {
       const fieldOwn = Math.round(ownership[gem.name] || 0);
       caps[gem.name] = {
@@ -886,7 +905,7 @@ function BuilderTab({ players: rp, ownership }) {
       const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
-    const r = optimize(pd, nL, 50000, 6);
+    const r = optimize(pd, nL, 50000, 6, 48000);
     setRes({ ...r, pData: pd });
   };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
@@ -1104,11 +1123,10 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
 
-    // TRAP — highest-owned non-star
-    const trapCandidates = withSal.filter(p => !topProjSet.has(p.name));
+    // TRAP — highest-owned player (matches DK tab). Stars can be trap too.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const trap = trapCandidates.length && hasOwn
-      ? [...trapCandidates].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
+    const trap = hasOwn
+      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
       : byProj[0];
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
@@ -1134,22 +1152,33 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       };
     }
 
-    // GEM — below-avg val + most underowned (with fallback)
-    const gemPool = [...withSal].filter(p => {
-      if (p.name === trap?.name || p.name === stud?.name) return false;
-      return (p[valKey] || 0) < avgVal;
-    });
-    const strictGem = gemPool.filter(p => {
-      const fieldOwn = ownership[p.name] || 0;
-      return fieldOwn < computeFairOwn(p[valKey] || 0, avgVal);
-    }).sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
-    const fallbackGem = gemPool.sort((a, b) => {
+    // GEM — salary substitute for trap (-$1000 to +$300 band)
+    const trapSal = trap?.salary ?? 0;
+    const inBand = (p, lo, hi) => (p.salary - trapSal) >= lo && (p.salary - trapSal) <= hi;
+    const salaryEligible = trap ? withSal.filter(p => {
+      if (p.name === trap.name || p.name === stud?.name) return false;
+      return inBand(p, -1000, 300);
+    }) : [];
+    const sameBandBadVal = salaryEligible.filter(p => (p[valKey] || 0) < avgVal);
+    const strictGem = sameBandBadVal
+      .filter(p => (ownership[p.name] || 0) < computeFairOwn(p[valKey] || 0, avgVal))
+      .sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
+    const goodValUnderowned = salaryEligible
+      .filter(p => (p[valKey] || 0) >= avgVal && (ownership[p.name] || 0) < computeFairOwn(p[valKey] || 0, avgVal) - 3)
+      .sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
+    const badValFallback = sameBandBadVal.sort((a, b) => {
       const aGap = computeFairOwn(a[valKey] || 0, avgVal) - (ownership[a.name] || 0);
       const bGap = computeFairOwn(b[valKey] || 0, avgVal) - (ownership[b.name] || 0);
       if (Math.abs(bGap - aGap) > 1) return bGap - aGap;
       return (b[projKey] || 0) - (a[projKey] || 0);
     })[0];
-    const gem = strictGem || fallbackGem;
+    const lowOwnFallback = salaryEligible
+      .sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
+    const widerPool = (!strictGem && !goodValUnderowned && !badValFallback && !lowOwnFallback && trap)
+      ? withSal.filter(p => p.name !== trap.name && p.name !== stud?.name && inBand(p, -1500, 500))
+      : [];
+    const widerFallback = widerPool.sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
+    const gem = strictGem || goodValUnderowned || badValFallback || lowOwnFallback || widerFallback;
     if (gem) {
       const fieldOwn = Math.round(ownership[gem.name] || 0);
       caps[gem.name] = {
@@ -1193,7 +1222,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
         maxExp: effMax, minExp: effMin
       };
     });
-    const r = optimizeMMA(pd, nL, 50000, 6, mode);
+    const r = optimizeMMA(pd, nL, 50000, 6, mode, 48000);
     setRes({ ...r, pData: pd, mode });
   };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
