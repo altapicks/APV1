@@ -807,6 +807,7 @@ function PPTab({ rows }) {
 function BuilderTab({ players: rp, ownership }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [nL, setNL] = useState(45);
+  const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
   // NEW: contrarian state — OFF by default (behavior preserved when off)
   const [contrarianOn, setContrarianOn] = useState(false);
@@ -947,6 +948,9 @@ function BuilderTab({ players: rp, ownership }) {
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const isShowdown = useMemo(() => sp.some(p => p.cpt_salary != null), [sp]);
   const run = () => {
+    // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
+    // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
+    const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
     if (isShowdown) {
       const pd = sp.map(p => {
         const cap = contrarianCaps[p.name] || {};
@@ -956,7 +960,7 @@ function BuilderTab({ players: rp, ownership }) {
         const effMin = Math.max(userMin, cap.min || 0);
         const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
         return {
-          name: p.name, projection: p.proj, opponent: p.opponent,
+          name: p.name, projection: p.proj * jitter(), opponent: p.opponent,
           // Salary field kept for exposure table value calc (uses FLEX baseline)
           salary: p.flex_salary ?? p.salary, id: p.flex_id ?? p.id,
           cpt_salary: p.cpt_salary, acpt_salary: p.acpt_salary, flex_salary: p.flex_salary,
@@ -977,7 +981,7 @@ function BuilderTab({ players: rp, ownership }) {
       const userMax = userSet.max !== undefined ? userSet.max : globalMax;
       const effMin = Math.max(userMin, cap.min || 0);
       const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
-      return { name: p.name, salary: p.salary, id: p.id, projection: p.proj, opponent: p.opponent, maxExp: effMax, minExp: effMin };
+      return { name: p.name, salary: p.salary, id: p.id, projection: p.proj * jitter(), opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     const r = optimize(pd, nL, 50000, 6, 48000);
     setRes({ ...r, pData: pd, isShowdown: false });
@@ -1036,6 +1040,11 @@ function BuilderTab({ players: rp, ownership }) {
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMax} onChange={e => setGlobalMax(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }} title="Random ± shift applied to each player's projection per build. Ensures you and other users don't submit identical lineups on the same slate.">
+        Variance
+        <input type="range" min="0" max="25" step="1" value={variance} onChange={e => setVariance(+e.target.value)} style={{ width: 80, accentColor: 'var(--primary)' }} />
+        <span style={{ fontWeight: 700, color: variance > 0 ? 'var(--primary)' : 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>{variance}%</span>
+      </label>
       <button onClick={applyGlobal} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>Apply Global</button>
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>📥 Projections CSV</button>
     </div>
