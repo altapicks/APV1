@@ -358,7 +358,13 @@ export function ppMMAEdge(projected, ppLine, mult) {
 // ============================================================
 // LINEUP OPTIMIZER — same logic as tennis (one side per match, no opp vs opp)
 // ============================================================
-export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterSize = 6, mode = 'ceiling', minSalary = 0) {
+export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterSize = 6, mode = 'ceiling', minSalary = 0, opts = {}) {
+  // opts: { locked: Set<string>, excluded: Set<string> }
+  // Same semantics as tennis: locked names MUST appear in every lineup;
+  // excluded names MUST NOT appear in any lineup.
+  const lockedSet = opts.locked instanceof Set ? opts.locked : new Set(opts.locked || []);
+  const excludedSet = opts.excluded instanceof Set ? opts.excluded : new Set(opts.excluded || []);
+
   const idx = {};
   fighters.forEach((f, i) => { idx[f.name] = i; });
 
@@ -389,12 +395,22 @@ export function optimizeMMA(fighters, nLineups = 150, salaryCap = 50000, rosterS
     for (let b = 0; b < bits; b++) {
       let ts = 0, tp = 0;
       const fidxs = [];
+      let hasExcluded = false;
       for (let i = 0; i < rosterSize; i++) {
         const side = (b >> i) & 1;
         const opt = fightOpts[fc[i]][side];
+        const name = fighters[opt.idx].name;
+        if (excludedSet.has(name)) { hasExcluded = true; break; }
         ts += opt.sal; tp += opt.proj; fidxs.push(opt.idx);
       }
+      if (hasExcluded) continue;
       if (ts <= salaryCap && ts >= minSalary) {
+        if (lockedSet.size > 0) {
+          const luNames = new Set(fidxs.map(fi => fighters[fi].name));
+          let allLocked = true;
+          for (const ln of lockedSet) { if (!luNames.has(ln)) { allLocked = false; break; } }
+          if (!allLocked) continue;
+        }
         allLineups.push({ proj: round2(tp), sal: ts, players: fidxs });
       }
     }
