@@ -1,17 +1,16 @@
 // UserMenu — rendered in the topbar. Shows the user's sign-in state:
-//   - Signed in + subscribed → green dot + email + Sign Out
-//   - Signed in + NOT subscribed → amber dot + "Subscribe" CTA
+//   - Signed in + subscribed → green dot + email + "Manage subscription" + Sign Out
+//   - Signed in + NOT subscribed → amber dot + "Subscribe to unlock" (Stripe Checkout)
 //   - Signed out → "Sign In" button
-//
-// Phase 1 scope: render signed-in state and provide sign-out.
-// Phase 3 will use the amber-state to direct users to the paywall.
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../lib/auth-context';
+import { startCheckout, openBillingPortal } from '../lib/checkout';
 
 export function UserMenu() {
   const { user, isSubscribed, subscription, signOut, status } = useAuth();
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const ref = useRef(null);
 
   // Close dropdown when clicking outside
@@ -23,8 +22,32 @@ export function UserMenu() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  async function handleSubscribe(tier) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await startCheckout({ tier, email: user?.email, userId: user?.id });
+      // Browser redirects away; no need to reset busy.
+    } catch (err) {
+      console.error(err);
+      alert('Checkout is temporarily unavailable. Please try again in a moment.');
+      setBusy(false);
+    }
+  }
+
+  async function handleManage() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await openBillingPortal(user.id);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to open billing portal. Please try again.');
+      setBusy(false);
+    }
+  }
+
   if (status === 'loading') {
-    // Show a quiet placeholder — avoids layout shift. Nothing worse than topbar flickering.
     return <div style={{ width: 32, height: 32 }} />;
   }
 
@@ -40,7 +63,7 @@ export function UserMenu() {
   }
 
   // Authenticated
-  const dotColor = isSubscribed ? '#4ADE80' : '#F59E0B';   // green = active sub, amber = no sub
+  const dotColor = isSubscribed ? '#4ADE80' : '#F59E0B';
   const statusLabel = isSubscribed
     ? (subscription?.tier ? subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1) : 'Active')
     : 'No subscription';
@@ -53,7 +76,7 @@ export function UserMenu() {
                        background: 'rgba(10,22,40,0.5)', color: '#E8ECF4', cursor: 'pointer',
                        fontSize: 12, fontFamily: 'inherit' }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor,
-                       boxShadow: `0 0 6px ${dotColor}` }} />
+                       boxShadow: isSubscribed ? `0 0 6px ${dotColor}` : 'none' }} />
         <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user.email}
         </span>
@@ -63,7 +86,7 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 220,
+        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 240,
                       background: '#0F1D33', border: '1px solid rgba(245,197,24,0.25)',
                       borderRadius: 8, padding: 6, boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
                       zIndex: 100 }}>
@@ -84,13 +107,25 @@ export function UserMenu() {
           </div>
 
           {!isSubscribed && (
-            <a href="https://overowned.io/#pricing"
-               style={{ display: 'block', padding: '10px 12px', margin: '4px 0', borderRadius: 6,
-                        background: 'linear-gradient(135deg, #D4A912, #F5C518)',
-                        color: '#0A1628', fontSize: 13, fontWeight: 700, textDecoration: 'none',
-                        textAlign: 'center' }}>
-              Subscribe to unlock →
-            </a>
+            <button onClick={() => handleSubscribe('monthly')} disabled={busy}
+                    style={{ display: 'block', width: '100%', padding: '10px 12px', margin: '4px 0',
+                             borderRadius: 6, border: 'none',
+                             background: busy ? '#8B9ABA' : 'linear-gradient(135deg, #D4A912, #F5C518)',
+                             color: '#0A1628', fontSize: 13, fontWeight: 700, textAlign: 'center',
+                             cursor: busy ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
+              {busy ? 'Opening checkout…' : 'Subscribe to unlock →'}
+            </button>
+          )}
+
+          {isSubscribed && (
+            <button onClick={handleManage} disabled={busy}
+                    style={{ display: 'block', width: '100%', padding: '10px 12px', margin: '4px 0',
+                             borderRadius: 6, border: '1px solid rgba(42,61,95,0.5)',
+                             background: 'transparent', color: '#E8ECF4', fontSize: 13,
+                             cursor: busy ? 'wait' : 'pointer', fontFamily: 'inherit',
+                             textAlign: 'left' }}>
+              {busy ? 'Opening…' : 'Manage subscription'}
+            </button>
           )}
 
           <button onClick={() => { signOut(); setOpen(false); }}
