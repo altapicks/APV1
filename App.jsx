@@ -64,7 +64,7 @@ const GLOSSARY_TENNIS = [
   { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
   { icon: 'target',        label: 'Top 3 Straight Sets', desc: 'Most likely straight-set win (+6 bonus)' },
   { icon: 'gem',           label: 'Hidden Gem', desc: 'Low ownership + high upside' },
-  { icon: 'bomb',          label: 'Trap', desc: 'High ownership + bust risk' },
+  { icon: 'bomb',          label: 'Trap', desc: 'Who the field needs most — prime fade' },
   { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
   { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
@@ -72,7 +72,7 @@ const GLOSSARY_MMA = [
   { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
   { icon: 'fist',          label: 'Top 3 Finish Path', desc: 'Highest R1/R2 finish upside (+90/+70 bonus)' },
   { icon: 'gem',           label: 'Hidden Gem', desc: 'Low ownership + high ceiling' },
-  { icon: 'bomb',          label: 'Trap', desc: 'High ownership + low ceiling' },
+  { icon: 'bomb',          label: 'Trap', desc: 'Who the field needs most — prime fade' },
   { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
   { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
@@ -80,7 +80,7 @@ const GLOSSARY_NBA = [
   { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
   { icon: 'rocket',        label: 'Top 3 Ceiling', desc: 'Highest 85th-percentile projection' },
   { icon: 'gem',           label: 'Hidden Gem', desc: 'Best value in salary band below biggest trap' },
-  { icon: 'bomb',          label: "Field's Biggest Need", desc: 'Over-owned relative to value — prime fade' },
+  { icon: 'bomb',          label: 'Biggest Trap', desc: 'Who the field needs most — prime fade' },
   { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
   { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
@@ -1588,7 +1588,7 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Field's Biggest Need</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
@@ -2082,7 +2082,7 @@ function TrackRecordTab({ sport }) {
         </div>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>No completed slates yet</div>
         <div style={{ fontSize: 13, maxWidth: 520, margin: '0 auto', lineHeight: 1.65, color: 'var(--text-muted)' }}>
-          Track Record populates as you upload DK contest CSVs from completed slates. Every <strong style={{color:'var(--primary)'}}>Top Value</strong>, <strong style={{color:'var(--primary)'}}>Hidden Gem</strong>, <strong style={{color:'var(--primary)'}}>Field's Biggest Need</strong>, and <strong style={{color:'var(--primary)'}}>PP Edge/Fade</strong> call gets graded — hit rates compound into actionable patterns over time.
+          Track Record populates as you upload DK contest CSVs from completed slates. Every <strong style={{color:'var(--primary)'}}>Top Value</strong>, <strong style={{color:'var(--primary)'}}>Hidden Gem</strong>, <strong style={{color:'var(--primary)'}}>Biggest Trap</strong>, and <strong style={{color:'var(--primary)'}}>PP Edge/Fade</strong> call gets graded — hit rates compound into actionable patterns over time.
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 18, fontFamily: 'monospace' }}>Expected path: <span style={{color:'var(--text-muted)'}}>public/results/{sport}/aggregated.json</span></div>
       </div>
@@ -2320,7 +2320,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Field's Biggest Need</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search fighters, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
@@ -2816,7 +2816,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
   // have "good value". Good-value chalk is exactly where the field converges,
   // which is precisely what we're trying to differentiate from.
   // ═══════════════════════════════════════════════════════════════════════
-  // NBA TRAP ALGORITHM v2 — "Field's Biggest Need" via ownership vs value
+  // NBA TRAP ALGORITHM v2 — "Biggest Trap" via ownership vs value
   //
   //     trapScore = simOwn − (val × K)
   //
@@ -2966,7 +2966,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Field's Biggest Need</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Over-owned vs value</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
     </div>
     {unprojectablePlayers.length > 0 && (
       <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -3161,7 +3161,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
 
-    // TRAP = "Field's Biggest Need" — ownership vs value with auto-calibrated K.
+    // TRAP = "Biggest Trap" — ownership vs value with auto-calibrated K.
     // Mirrors NBA DK tab v2: trapScore = simOwn − (val × K), gate ≥25%.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
     let trap = null;
