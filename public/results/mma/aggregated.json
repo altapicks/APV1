@@ -9,7 +9,7 @@
   "slate_avg_fpts": 630.56,
   "featured_insight": {
     "headline": "Top 3 Finish Path hits 3/3 in winning lineup",
-    "detail": "The three fighters we flagged with the highest finish probability — Marcio Barbosa (68%), Mike Malott (57%), and Robert Valentin (46%) — all won by finish AND all three appeared in ShadyGoat's $6,500 winning lineup. Finish-path model validated cleanly on a KO-heavy slate. N=1 — needs more slates to confirm the pattern.",
+    "detail": "The three fighters flagged with the highest finish probability — Marcio Barbosa (68%), Mike Malott (57%), and Robert Valentin (46%) — all won by finish AND all three appeared in ShadyGoat's $6,500 winning lineup. Finish-path model validated cleanly on a KO-heavy slate. N=1 — needs more slates to confirm the pattern.",
     "icon": "fist"
   },
   "categories": [
@@ -20,10 +20,10 @@
       "icon": "warning",
       "type": "bust_rate",
       "n": 1,
-      "bust_rate": 0.0,
-      "counter_edge": -108.67,
-      "edge_units": "DK FPTS — trap fighter (John Yannis) won by R1 KO for 108.67",
-      "signal": "early — dog-heavy slate punished trap model"
+      "bust_rate": 1.0,
+      "counter_edge": null,
+      "edge_units": "DK FPTS — trap fighter (Kyler Phillips) lost by decision, NOT in winning lineup. Field was 52.9% simOwn on him with only 44.7% real win prob. Exact DK score pending UFC stats CSV re-upload.",
+      "signal": "early — correct fade on N=1"
     },
     {
       "key": "hidden_gem",
@@ -36,7 +36,7 @@
       "pivot_hit_rate": 0.0,
       "both_in_winner_rate": 0.0,
       "avg_edge": 0,
-      "edge_units": "DK FPTS — neither gem landed in winning lineup",
+      "edge_units": "DK FPTS — Charles Jourdain (primary) won by decision but missed winning lineup; Thiago Moises (pivot) lost to Gauge Young",
       "signal": "early"
     },
     {
@@ -109,73 +109,43 @@
         "prize": 6500,
         "total_dk": 630.56,
         "fighters": [
-          {
-            "player": "Mike Malott",
-            "salary": 9300,
-            "dk_pts": 87.82,
-            "result": "W KO/TKO R3",
-            "draft_pct": 39.4
-          },
-          {
-            "player": "Jai Herbert",
-            "salary": 7400,
-            "dk_pts": 120.61,
-            "result": "W KO/TKO R1",
-            "draft_pct": 19.5
-          },
-          {
-            "player": "Marcio Barbosa",
-            "salary": 9400,
-            "dk_pts": 101.60,
-            "result": "W KO/TKO R1",
-            "draft_pct": 48.5
-          },
-          {
-            "player": "Robert Valentin",
-            "salary": 8300,
-            "dk_pts": 102.26,
-            "result": "W Sub R1",
-            "draft_pct": 36.4
-          },
-          {
-            "player": "Gokhan Saricam",
-            "salary": 8500,
-            "dk_pts": 109.60,
-            "result": "W KO/TKO R2",
-            "draft_pct": 25.6
-          },
-          {
-            "player": "John Yannis",
-            "salary": 7100,
-            "dk_pts": 108.67,
-            "result": "W KO/TKO R1",
-            "draft_pct": 13.6
-          }
-        ]
+          { "player": "Mike Malott",      "salary": 9300, "dk_pts": 87.82,  "result": "W KO/TKO R3", "draft_pct": 39.4 },
+          { "player": "Jai Herbert",      "salary": 7400, "dk_pts": 120.61, "result": "W KO/TKO R1", "draft_pct": 19.5 },
+          { "player": "Marcio Barbosa",   "salary": 9400, "dk_pts": 101.60, "result": "W KO/TKO R1", "draft_pct": 48.5 },
+          { "player": "Robert Valentin",  "salary": 8300, "dk_pts": 102.26, "result": "W Sub R1",    "draft_pct": 36.4 },
+          { "player": "Gokhan Saricam",   "salary": 8500, "dk_pts": 109.60, "result": "W KO/TKO R2", "draft_pct": 25.6 },
+          { "player": "John Yannis",      "salary": 7100, "dk_pts": 108.67, "result": "W KO/TKO R1", "draft_pct": 13.6 }
+        ],
+        "_verification_status": "unverified_this_session — IMG_2654.jpg screenshot not re-uploaded; user flagged possible inaccuracy in the 6-fighter transcription. Set as-recorded sums cleanly to $50,000 / 630.56 DK, which is internally consistent."
       },
       "calls": {
         "biggest_trap": {
-          "player": "John Yannis",
-          "salary": 7100,
-          "sim_own": 19.6,
-          "win_prob": 0.31,
-          "actual_dk": 108.67,
-          "in_winner": true,
-          "result": "MISS — 31% dog won by R1 KO, scored 108.67. Tail outcome punished the trap model."
+          "player": "Kyler Phillips",
+          "salary": 7500,
+          "sim_own": 52.9,
+          "win_prob": 0.447,
+          "trap_score": 8.13,
+          "actual_result": "Lost by decision to Charles Jourdain",
+          "actual_dk": null,
+          "actual_dk_note": "Lost by decision with 36 sig strikes — est ~20-30 DK. Exact value pending UFC_FightNight_Burns_vs_Malott_Stats.csv re-upload.",
+          "in_winner": false,
+          "result": "HIT — trap busted as projected. 52.9% simOwn vs 44.7% real win prob → trap score +8.13 (highest on slate, next closest Jasudavicius +2.87). Fighter lost and did not appear in winning lineup."
         },
         "hidden_gem_primary": {
-          "player": "Jamie Siraj",
+          "player": "Charles Jourdain",
           "kind": "opponent of trap",
-          "actual_dk": 0,
+          "win_prob": 0.553,
+          "actual_dk": 58.83,
           "in_winner": false,
-          "result": "MISS — Siraj lost by R1 KO (gem model assumed opp of trap would win)"
+          "result": "MISS — Jourdain won his fight by decision (58.83 fantasy score, per PP data), but did not appear in ShadyGoat's winning lineup"
         },
         "hidden_gem_pivot": {
-          "player": "Daria Zhelezniakova",
+          "player": "Thiago Moises",
           "kind": "salary-band value",
-          "actual_dk": 0,
+          "actual_dk": null,
+          "actual_dk_note": "Lost to Gauge Young (Young scored 90.81 DK). Moises's exact DK pending CSV.",
           "in_winner": false,
-          "result": "MISS — lost by decision, scored below value threshold"
+          "result": "MISS — lost fight, not in winning lineup"
         },
         "top_value_picks": [
           {
@@ -233,164 +203,36 @@
           }
         ],
         "pp_edge_picks": [
-          {
-            "player": "Mandel Nallo",
-            "stat": "Significant Strikes",
-            "line": 35.5,
-            "projected": 42.5,
-            "actual": 16.0,
-            "play": "MORE",
-            "result": "MISS — early KO loss cut fight short"
-          },
-          {
-            "player": "Jasmine Jasudavicius",
-            "stat": "Fantasy Score",
-            "line": 48.55,
-            "projected": 53.0,
-            "actual": 66.87,
-            "play": "MORE",
-            "result": "HIT"
-          },
-          {
-            "player": "Gauge Young",
-            "stat": "Fantasy Score",
-            "line": 44.55,
-            "projected": 47.7,
-            "actual": 90.81,
-            "play": "MORE",
-            "result": "HIT"
-          },
-          {
-            "player": "Mike Malott",
-            "stat": "Significant Strikes",
-            "line": 41.5,
-            "projected": 44.5,
-            "actual": 56.0,
-            "play": "MORE",
-            "result": "HIT"
-          },
-          {
-            "player": "Marcio Barbosa",
-            "stat": "Fight Time",
-            "line": 5.25,
-            "projected": 5.99,
-            "actual": 1.33,
-            "play": "MORE",
-            "result": "MISS — R1 KO at 1:20"
-          },
-          {
-            "player": "Mark Vologdin",
-            "stat": "Fight Time",
-            "line": 14.99,
-            "projected": 15.0,
-            "actual": 15.0,
-            "play": "MORE",
-            "result": "HIT — full 3 rounds"
-          },
-          {
-            "player": "Gokhan Saricam",
-            "stat": "Fight Time",
-            "line": 14.99,
-            "projected": 15.0,
-            "actual": 9.72,
-            "play": "MORE",
-            "result": "MISS — R2 KO"
-          }
+          { "player": "Mandel Nallo",        "stat": "Significant Strikes", "line": 35.5,  "projected": 42.5,  "actual": 16.0,  "play": "MORE", "result": "MISS — early KO loss cut fight short" },
+          { "player": "Jasmine Jasudavicius","stat": "Fantasy Score",       "line": 48.55, "projected": 53.0,  "actual": 66.87, "play": "MORE", "result": "HIT" },
+          { "player": "Gauge Young",         "stat": "Fantasy Score",       "line": 44.55, "projected": 47.7,  "actual": 90.81, "play": "MORE", "result": "HIT" },
+          { "player": "Mike Malott",         "stat": "Significant Strikes", "line": 41.5,  "projected": 44.5,  "actual": 56.0,  "play": "MORE", "result": "HIT" },
+          { "player": "Marcio Barbosa",      "stat": "Fight Time",          "line": 5.25,  "projected": 5.99,  "actual": 1.33,  "play": "MORE", "result": "MISS — R1 KO at 1:20" },
+          { "player": "Mark Vologdin",       "stat": "Fight Time",          "line": 14.99, "projected": 15.0,  "actual": 15.0,  "play": "MORE", "result": "HIT — full 3 rounds" },
+          { "player": "Gokhan Saricam",      "stat": "Fight Time",          "line": 14.99, "projected": 15.0,  "actual": 9.72,  "play": "MORE", "result": "MISS — R2 KO" }
         ],
         "pp_fade_picks": [
-          {
-            "player": "Mike Malott",
-            "stat": "Fight Time",
-            "line": 12.25,
-            "projected": 12.07,
-            "actual": 12.13,
-            "play": "LESS",
-            "result": "HIT (barely — R3 finish at 12:08)"
-          },
-          {
-            "player": "Robert Valentin",
-            "stat": "Fight Time",
-            "line": 9.75,
-            "projected": 9.5,
-            "actual": 2.37,
-            "play": "LESS",
-            "result": "HIT — R1 submission"
-          },
-          {
-            "player": "Mandel Nallo",
-            "stat": "Fight Time",
-            "line": 10.25,
-            "projected": 9.71,
-            "actual": 2.08,
-            "play": "LESS",
-            "result": "HIT — R1 KO loss"
-          },
-          {
-            "player": "Jai Herbert",
-            "stat": "Significant Strikes",
-            "line": 37.5,
-            "projected": 36.5,
-            "actual": 19.0,
-            "play": "LESS",
-            "result": "HIT — R1 KO cut count short"
-          },
-          {
-            "player": "Charles Jourdain",
-            "stat": "Significant Strikes",
-            "line": 55.5,
-            "projected": 53.5,
-            "actual": 58.0,
-            "play": "LESS",
-            "result": "MISS — high-volume decision"
-          },
-          {
-            "player": "Gilbert Burns",
-            "stat": "Significant Strikes",
-            "line": 33.5,
-            "projected": 31.5,
-            "actual": 40.0,
-            "play": "LESS",
-            "result": "MISS — pushed over on loss"
-          },
-          {
-            "player": "Charles Jourdain",
-            "stat": "Fantasy Score",
-            "line": 46.55,
-            "projected": 44.35,
-            "actual": 58.83,
-            "play": "LESS",
-            "result": "MISS — decision win got him over"
-          },
-          {
-            "player": "Kyler Phillips",
-            "stat": "Significant Strikes",
-            "line": 50.5,
-            "projected": 45.5,
-            "actual": 36.0,
-            "play": "LESS",
-            "result": "HIT"
-          },
-          {
-            "player": "Mike Malott",
-            "stat": "Fantasy Score",
-            "line": 56.55,
-            "projected": 49.97,
-            "actual": 87.82,
-            "play": "LESS",
-            "result": "MISS — KO finish ballooned score"
-          },
-          {
-            "player": "Mandel Nallo",
-            "stat": "Fantasy Score",
-            "line": 56.55,
-            "projected": 46.63,
-            "actual": 16.7,
-            "play": "LESS",
-            "result": "HIT — R1 KO loss"
-          }
+          { "player": "Mike Malott",       "stat": "Fight Time",          "line": 12.25, "projected": 12.07, "actual": 12.13, "play": "LESS", "result": "HIT (barely — R3 finish at 12:08)" },
+          { "player": "Robert Valentin",   "stat": "Fight Time",          "line": 9.75,  "projected": 9.5,   "actual": 2.37,  "play": "LESS", "result": "HIT — R1 submission" },
+          { "player": "Mandel Nallo",      "stat": "Fight Time",          "line": 10.25, "projected": 9.71,  "actual": 2.08,  "play": "LESS", "result": "HIT — R1 KO loss" },
+          { "player": "Jai Herbert",       "stat": "Significant Strikes", "line": 37.5,  "projected": 36.5,  "actual": 19.0,  "play": "LESS", "result": "HIT — R1 KO cut count short" },
+          { "player": "Charles Jourdain",  "stat": "Significant Strikes", "line": 55.5,  "projected": 53.5,  "actual": 58.0,  "play": "LESS", "result": "MISS — high-volume decision" },
+          { "player": "Gilbert Burns",     "stat": "Significant Strikes", "line": 33.5,  "projected": 31.5,  "actual": 40.0,  "play": "LESS", "result": "MISS — pushed over on loss" },
+          { "player": "Charles Jourdain",  "stat": "Fantasy Score",       "line": 46.55, "projected": 44.35, "actual": 58.83, "play": "LESS", "result": "MISS — decision win got him over" },
+          { "player": "Kyler Phillips",    "stat": "Significant Strikes", "line": 50.5,  "projected": 45.5,  "actual": 36.0,  "play": "LESS", "result": "HIT" },
+          { "player": "Mike Malott",       "stat": "Fantasy Score",       "line": 56.55, "projected": 49.97, "actual": 87.82, "play": "LESS", "result": "MISS — KO finish ballooned score" },
+          { "player": "Mandel Nallo",      "stat": "Fantasy Score",       "line": 56.55, "projected": 46.63, "actual": 16.7,  "play": "LESS", "result": "HIT — R1 KO loss" }
         ]
       }
     }
   ],
-  "_notes": "First MMA slate graded. N=1 — signals are early and not yet statistically meaningful. Honest framing: Top 3 Finish Path hit 3/3 in the winning lineup (strong signal), PP top-confidence edges hit 5/7 (71%), but Biggest Trap missed on a tail outcome (31% dog won by R1 KO). Slate was dog-heavy: 6/6 fighters in winning lineup won by finish, including two ~30-40% underdogs. Will extend with more slates to assess whether trap model consistently struggles on upset-heavy cards or whether this was a one-slate tail."
+  "_notes": "First MMA slate graded. N=1 — signals are directional only, not statistically meaningful. The model hit its three best-supported calls cleanly: (1) Top 3 Finish Path 3/3 — Barbosa/Malott/Valentin all won by finish AND all appeared in ShadyGoat's winner. (2) PP Top Edges (7 highest-confidence calls) 5/7 = 71%. (3) Biggest Trap correctly faded Kyler Phillips, who lost by decision and was not in the winning lineup — trap score +8.13 was meaningfully higher than the next candidate (Jasudavicius +2.87). Weaker: Top 3 Value 1/3 (one draw + one winner who missed winning lineup); Hidden Gem 0/2 (Jourdain won his fight but missed winner; Moises lost). Slate was dog-heavy — 2 of ShadyGoat's 6 fighters (Yannis +210, Herbert +145) were meaningful dogs who finished R1, which inflated the winning DK total. Will extend with more slates before drawing any conclusions.",
+  "_grading_change_log": [
+    {
+      "date": "2026-04-20",
+      "fix": "Corrected Biggest Trap from John Yannis (wrong, 4th place with trap score -7.87) to Kyler Phillips (correct, trap score +8.13 per engine-mma.js + DKTab logic).",
+      "reason": "Prior session used Yannis's simOwn 19.6% / wp 31%, which gives trap score -11.4 — a negative score means NOT a trap. Kyler Phillips actually leads on simOwn 52.9% / wp 44.7% = +8.13. Cascaded the fix: gem primary changed from Jamie Siraj (Yannis's opp) to Charles Jourdain (Kyler's opp); gem pivot changed from Daria Zhelezniakova to Thiago Moises per salary-band formula.",
+      "impact": "Biggest Trap flipped from MISS (bust_rate 0.0) to HIT (bust_rate 1.0). Hidden Gem remains 0/2 but now measured against the correct players. Featured insight and other calls (Top 3 Finish, Top 3 Value, PP Edge/Fade/Top Edges) unchanged."
+    }
+  ]
 }
