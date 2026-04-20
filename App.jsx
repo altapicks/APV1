@@ -1878,6 +1878,20 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
   const [poolQ, setPoolQ] = useState('');
+  // Favorites — classic-only (tennis showdown intentionally skipped).
+  // Stored as name-based tuples so they survive rebuilds.
+  const [favoriteLineups, setFavoriteLineups] = useState([]);
+  const favoriteKey = (fav) => [...(fav.players || [])].sort().join('|');
+  const toggleFavoriteLineup = useCallback((lu, pData) => {
+    // Ignore showdown lineups — favorites are classic-only for tennis
+    if (lu.cpt !== undefined) return;
+    const fav = { players: lu.players.map(i => pData[i].name), proj: lu.proj, sal: lu.sal };
+    const key = favoriteKey(fav);
+    setFavoriteLineups(prev => {
+      const exists = prev.some(f => favoriteKey(f) === key);
+      return exists ? prev.filter(f => favoriteKey(f) !== key) : [...prev, fav];
+    });
+  }, []);
   // NEW: contrarian state — OFF by default (behavior preserved when off)
   const [contrarianOn, setContrarianOn] = useState(false);
   const [contrarianStrength, setContrarianStrength] = useState(0.6);
@@ -2069,7 +2083,20 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     });
     enforceMinNudge(pd, sp);
     const r = optimize(pd, nL, 50000, 6, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
-    setRes({ ...r, pData: pd, isShowdown: false });
+    // Merge favorited classic lineups (remapped from name tuples to new indices).
+    const favCls = [];
+    const nameIdx = new Map(pd.map((p, i) => [p.name, i]));
+    for (const fav of favoriteLineups) {
+      const idxs = (fav.players || []).map(n => nameIdx.get(n));
+      if (idxs.some(i => i === undefined)) continue;
+      favCls.push({ players: idxs, proj: fav.proj, sal: fav.sal });
+    }
+    const favKeys = new Set(favCls.map(lu => [...lu.players].sort().join(',')));
+    const deduped = r.lineups.filter(lu => !favKeys.has([...lu.players].sort().join(',')));
+    const merged = [...favCls, ...deduped];
+    const mergedCounts = new Array(pd.length).fill(0);
+    for (const lu of merged) { lu.players.forEach(i => mergedCounts[i]++); }
+    setRes({ ...r, lineups: merged, counts: mergedCounts, pData: pd, isShowdown: false });
   };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
   const exportDK = () => {
@@ -2162,12 +2189,31 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
+    {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
 
-function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild = true, overrideCount = 2 }) {
+function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild = true, overrideCount = 2, favoriteLineups = [], onToggleFavorite }) {
   const [q, setQ] = useState('');
+  // Favorites + filter (classic-only; showdown branch below skips these controls)
+  const favoriteKeySet = useMemo(() => {
+    const s = new Set();
+    for (const fav of favoriteLineups) s.add((fav.players || []).slice().sort().join('|'));
+    return s;
+  }, [favoriteLineups]);
+  const lineupHash = (lu) => lu.players.map(i => res.pData[i].name).sort().join('|');
+  const [lineupFilters, setLineupFilters] = useState([]);
+  const toggleFilter = (name) => setLineupFilters(prev => {
+    const ex = prev.findIndex(f => f.name === name);
+    return ex >= 0 ? prev.filter((_, i) => i !== ex) : [...prev, { name }];
+  });
+  const clearFilters = () => setLineupFilters([]);
+  const matchesFilters = (lu) => {
+    if (lineupFilters.length === 0) return true;
+    if (res.isShowdown) return true; // filters are classic-only
+    const names = new Set(lu.players.map(i => res.pData[i].name));
+    return lineupFilters.every(f => names.has(f.name));
+  };
   const expData = useMemo(() => res.pData.map((p, i) => {
     const cnt = res.counts[i]; const pct = cnt / res.lineups.length * 100;
     const simOwn = ownership[p.name] || 0; const lev = Math.round((pct - simOwn) * 10) / 10;
@@ -2193,10 +2239,33 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Player" colKey="name" /><S label="Salary" colKey="salary" num /><S label="Proj" colKey="projection" num /><S label="Value" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num /><S label="Leverage" colKey="lev" num />
+      {!res.isShowdown && <th title="Filter displayed lineups by this player" style={{ textAlign: 'center' }}>Filter</th>}
     </tr></thead>
-    <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.projection, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
-    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
-    <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
+    <tbody>{sorted.map(p => {
+      const filtered = lineupFilters.some(f => f.name === p.name);
+      const btnStyle = (active) => ({ width: 24, height: 24, padding: 0, border: `1px solid ${active ? 'var(--primary)' : 'var(--border)'}`, background: active ? 'var(--primary)' : 'transparent', color: active ? '#0A1628' : 'var(--text-muted)', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700, lineHeight: '22px' });
+      return <tr key={p.name}>
+        <td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.projection, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td>
+        <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
+        <td className="num muted">{fmt(p.simOwn, 1)}%</td>
+        <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
+        {!res.isShowdown && <td style={{ textAlign: 'center' }}><button style={btnStyle(filtered)} onClick={() => toggleFilter(p.name)} title={filtered ? 'Remove filter' : `Show only lineups containing ${p.name}`}>⌕</button></td>}
+      </tr>;
+    })}</tbody></table></div>
+
+    {/* Filter chips — classic only. */}
+    {!res.isShowdown && lineupFilters.length > 0 && (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Filtering</span>
+        {lineupFilters.map((f, i) => (
+          <button key={i} onClick={() => toggleFilter(f.name)} style={{ padding: '3px 9px', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Click to remove this filter">{f.name}<span style={{ opacity: 0.6 }}>✕</span></button>
+        ))}
+        <button onClick={clearFilters} style={{ marginLeft: 'auto', padding: '3px 9px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>Clear all</button>
+      </div>
+    )}
+
+    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups{!res.isShowdown && lineupFilters.length > 0 && <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 8 }}>· {res.lineups.filter(matchesFilters).length} matching</span>}</div>
+    <div className="lineup-grid">{res.lineups.filter(matchesFilters).slice(0, 30).map((lu, idx) => {
       if (res.isShowdown) {
         // Showdown: render in CPT → A-CPT → FLEX order with role badge + tier salary + multiplied projection
         const slots = [
@@ -2216,11 +2285,27 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
           <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div>
         </div>;
       }
-      // Classic: unchanged
+      // Classic (with favorite star + gold border when favorited)
       const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
-      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
+      const isFav = favoriteKeySet.has(lineupHash(lu));
+      return <div className="lu-card" key={idx} style={isFav ? { borderColor: '#F5C518', boxShadow: '0 0 0 1px #F5C518 inset, 0 2px 8px rgba(245,197,24,0.15)' } : undefined}>
+        <div className="lu-header">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={() => onToggleFavorite && onToggleFavorite(lu, res.pData)}
+              title={isFav ? 'Unfavorite — will no longer persist through rebuilds' : 'Favorite this lineup — it survives rebuilds and is always exported'}
+              style={{ width: 20, height: 20, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: isFav ? '#F5C518' : 'var(--text-dim)', fontSize: 14, lineHeight: 1 }}>
+              {isFav ? '★' : '☆'}
+            </button>
+            <span>#{idx + 1}</span>
+          </span>
+          <span className="lu-proj">{lu.proj} pts</span>
+        </div>
+        {ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}
+        <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div>
+      </div>;
     })}</div>
-    {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
+    {(() => { const vis = res.lineups.filter(matchesFilters).length; return vis > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {vis - 30} more{!res.isShowdown && lineupFilters.length > 0 && ' matching filters'}</div>; })()}
   </>);
 }
 
@@ -2630,6 +2715,17 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
   const [contrarianOn, setContrarianOn] = useState(false);
   const [contrarianStrength, setContrarianStrength] = useState(0.6);
   const [poolQ, setPoolQ] = useState('');
+  // Favorites — classic-only (MMA is classic-only).
+  const [favoriteLineups, setFavoriteLineups] = useState([]);
+  const favoriteKey = (fav) => [...(fav.players || [])].sort().join('|');
+  const toggleFavoriteLineup = useCallback((lu, pData) => {
+    const fav = { players: lu.players.map(i => pData[i].name), proj: lu.proj, sal: lu.sal };
+    const key = favoriteKey(fav);
+    setFavoriteLineups(prev => {
+      const exists = prev.some(f => favoriteKey(f) === key);
+      return exists ? prev.filter(f => favoriteKey(f) !== key) : [...prev, fav];
+    });
+  }, []);
 
   const avgVal = useMemo(() => {
     const vals = rp.filter(p => p.salary > 0).map(p => (mode === 'ceiling' ? p.cval : p.val) || 0);
@@ -2768,7 +2864,20 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
     // Nudge whichever key the optimizer actually ranks on for this mode
     enforceMinNudge(pd, sp, mode === 'ceiling' ? 'ceiling' : 'projection');
     const r = optimizeMMA(pd, nL, 50000, 6, mode, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
-    setRes({ ...r, pData: pd, mode });
+    // Merge favorited lineups (remapped from name tuples to new indices).
+    const favCls = [];
+    const nameIdx = new Map(pd.map((p, i) => [p.name, i]));
+    for (const fav of favoriteLineups) {
+      const idxs = (fav.players || []).map(n => nameIdx.get(n));
+      if (idxs.some(i => i === undefined)) continue;
+      favCls.push({ players: idxs, proj: fav.proj, sal: fav.sal });
+    }
+    const favKeys = new Set(favCls.map(lu => [...lu.players].sort().join(',')));
+    const deduped = r.lineups.filter(lu => !favKeys.has([...lu.players].sort().join(',')));
+    const merged = [...favCls, ...deduped];
+    const mergedCounts = new Array(pd.length).fill(0);
+    for (const lu of merged) { lu.players.forEach(i => mergedCounts[i]++); }
+    setRes({ ...r, lineups: merged, counts: mergedCounts, pData: pd, mode });
   };
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
@@ -2852,12 +2961,30 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} />}
+    {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
 
-function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode, canBuild = true, overrideCount = 2 }) {
+function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode, canBuild = true, overrideCount = 2, favoriteLineups = [], onToggleFavorite }) {
   const [q, setQ] = useState('');
+  // Favorites + filter (MMA is classic-only)
+  const favoriteKeySet = useMemo(() => {
+    const s = new Set();
+    for (const fav of favoriteLineups) s.add((fav.players || []).slice().sort().join('|'));
+    return s;
+  }, [favoriteLineups]);
+  const lineupHash = (lu) => lu.players.map(i => res.pData[i].name).sort().join('|');
+  const [lineupFilters, setLineupFilters] = useState([]);
+  const toggleFilter = (name) => setLineupFilters(prev => {
+    const ex = prev.findIndex(f => f.name === name);
+    return ex >= 0 ? prev.filter((_, i) => i !== ex) : [...prev, { name }];
+  });
+  const clearFilters = () => setLineupFilters([]);
+  const matchesFilters = (lu) => {
+    if (lineupFilters.length === 0) return true;
+    const names = new Set(lu.players.map(i => res.pData[i].name));
+    return lineupFilters.every(f => names.has(f.name));
+  };
   const expData = useMemo(() => res.pData.map((p, i) => {
     const cnt = res.counts[i]; const pct = cnt / res.lineups.length * 100;
     const simOwn = ownership[p.name] || 0; const lev = Math.round((pct - simOwn) * 10) / 10;
@@ -2890,19 +3017,58 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" num /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num /><S label="Leverage" colKey="lev" num />
+      <th title="Filter displayed lineups by this fighter" style={{ textAlign: 'center' }}>Filter</th>
     </tr></thead>
-    <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.score, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
-    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
-    <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
+    <tbody>{sorted.map(p => {
+      const filtered = lineupFilters.some(f => f.name === p.name);
+      const btnStyle = (active) => ({ width: 24, height: 24, padding: 0, border: `1px solid ${active ? 'var(--primary)' : 'var(--border)'}`, background: active ? 'var(--primary)' : 'transparent', color: active ? '#0A1628' : 'var(--text-muted)', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700, lineHeight: '22px' });
+      return <tr key={p.name}>
+        <td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.score, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td>
+        <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
+        <td className="num muted">{fmt(p.simOwn, 1)}%</td>
+        <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
+        <td style={{ textAlign: 'center' }}><button style={btnStyle(filtered)} onClick={() => toggleFilter(p.name)} title={filtered ? 'Remove filter' : `Show only lineups containing ${p.name}`}>⌕</button></td>
+      </tr>;
+    })}</tbody></table></div>
+
+    {/* Filter chips */}
+    {lineupFilters.length > 0 && (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Filtering</span>
+        {lineupFilters.map((f, i) => (
+          <button key={i} onClick={() => toggleFilter(f.name)} style={{ padding: '3px 9px', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Click to remove this filter">{f.name}<span style={{ opacity: 0.6 }}>✕</span></button>
+        ))}
+        <button onClick={clearFilters} style={{ marginLeft: 'auto', padding: '3px 9px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>Clear all</button>
+      </div>
+    )}
+
+    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups{lineupFilters.length > 0 && <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 8 }}>· {res.lineups.filter(matchesFilters).length} matching</span>}</div>
+    <div className="lineup-grid">{res.lineups.filter(matchesFilters).slice(0, 30).map((lu, idx) => {
       const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
       const lineupAvgOwn = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0) / ps.length);
-      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => {
-        const ownPct = ownership[p.name] || 0;
-        const scoreShown = mode === 'ceiling' ? p.ceiling : p.projection;
-        return <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
-      })}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupAvgOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupAvgOwn}%</span></div></div>;
+      const isFav = favoriteKeySet.has(lineupHash(lu));
+      return <div className="lu-card" key={idx} style={isFav ? { borderColor: '#F5C518', boxShadow: '0 0 0 1px #F5C518 inset, 0 2px 8px rgba(245,197,24,0.15)' } : undefined}>
+        <div className="lu-header">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={() => onToggleFavorite && onToggleFavorite(lu, res.pData)}
+              title={isFav ? 'Unfavorite — will no longer persist through rebuilds' : 'Favorite this lineup — it survives rebuilds and is always exported'}
+              style={{ width: 20, height: 20, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: isFav ? '#F5C518' : 'var(--text-dim)', fontSize: 14, lineHeight: 1 }}>
+              {isFav ? '★' : '☆'}
+            </button>
+            <span>#{idx + 1}</span>
+          </span>
+          <span className="lu-proj">{lu.proj} pts</span>
+        </div>
+        {ps.map(p => {
+          const ownPct = ownership[p.name] || 0;
+          const scoreShown = mode === 'ceiling' ? p.ceiling : p.projection;
+          return <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
+        })}
+        <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupAvgOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupAvgOwn}%</span></div>
+      </div>;
     })}</div>
-    {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
+    {(() => { const vis = res.lineups.filter(matchesFilters).length; return vis > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {vis - 30} more{lineupFilters.length > 0 && ' matching filters'}</div>; })()}
   </>);
 }
 
@@ -4341,7 +4507,7 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
     <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups{lineupFilters.length > 0 && <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 8 }}>· {res.lineups.filter(matchesFilters).length} matching</span>}</div>
     <div className="lineup-grid">{res.lineups.filter(matchesFilters).slice(0, 30).map((lu, idx) => {
       const luHash = lineupHash(lu);
-      const isFav = favoriteKeySet.has(luHash) || lu._fav;
+      const isFav = favoriteKeySet.has(luHash);
       if (res.isShowdown) {
         const cpt = res.pData[lu.cpt];
         const utils = lu.utils.map(i => res.pData[i]);
