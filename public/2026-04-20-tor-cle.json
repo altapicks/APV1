@@ -1,21 +1,21 @@
 {
   "date": "2026-04-20",
   "slate_type": "showdown",
-  "notes": "TOR @ CLE showdown (regular season end). DK salaries + IDs integrated. PP lines (points/threes/rebounds/assists/stls_blks/FS/DD) as primary source. SaberSims used only for minutes, turnovers, and bench punts without PP coverage. Quickley marked OUT (no PP lines at $6.8k salary, SS shows 0 mins).",
+  "notes": "TOR @ CLE showdown. PP lines (points/threes/rebounds/assists/stls_blks/FS/DD) primary; SS only for minutes/turnovers/bench punts. Quickley OUT (no PP lines, SS shows 0 mins). Game lines from Vegas: CLE -9.5, total 222.5.",
   "game": {
     "away": "TOR",
     "home": "CLE",
     "tip": "04/20/2026 07:00PM ET",
-    "spread_cle": -5.5,
-    "total": 217.5,
-    "implied_cle": 111.5,
-    "implied_tor": 106.0,
-    "ml_cle": -240,
-    "ml_tor": 200,
+    "spread_cle": -9.5,
+    "total": 222.5,
+    "implied_cle": 116.0,
+    "implied_tor": 106.5,
+    "ml_cle": -455,
+    "ml_tor": 350,
     "pace_cle": 100.5,
     "pace_tor": 98.5,
-    "blowout_risk_cle": 0.15,
-    "blowout_risk_tor": 0.08
+    "blowout_risk_cle": 0.32,
+    "blowout_risk_tor": 0.04
   },
   "dk_players": [
     {
@@ -2571,5 +2571,5 @@
       "line": 15.5
     }
   ],
-  "last_updated": "2026-04-20T22:20:47.440864"
+  "last_updated": "2026-04-20T22:30:04.236799"
 }
