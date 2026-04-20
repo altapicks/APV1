@@ -1,6 +1,18 @@
 {
+  "sport": "nba",
   "slates": [
-    { "date": "2026-04-19-orl-det", "label": "4/19 ORL @ DET" },
-    { "date": "2026-04-19-phx-okc", "label": "4/19 PHX @ OKC" }
+    {
+      "date": "2026-04-19-orl-det",
+      "label": "4/19 ORL @ DET",
+      "event": "Magic @ Pistons (showdown)",
+      "graded": true
+    },
+    {
+      "date": "2026-04-19-por-sas",
+      "label": "4/19 POR @ SAS",
+      "event": "Trail Blazers @ Spurs (showdown)",
+      "graded": true,
+      "graded_note": "PP Fantasy Score calls graded; winning-lineup verification pending screenshot"
+    }
   ]
 }
