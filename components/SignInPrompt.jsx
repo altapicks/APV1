@@ -65,11 +65,8 @@ export function SignInPrompt() {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#E8ECF4', marginBottom: 6, textAlign: 'center' }}>
-              Sign in
-            </h2>
-            <p style={{ fontSize: 12, color: '#8B9ABA', marginBottom: 18, textAlign: 'center', lineHeight: 1.5 }}>
-              We'll email you a one-click link. No password needed.
+            <p style={{ fontSize: 13, color: '#8B9ABA', marginBottom: 18, textAlign: 'center', lineHeight: 1.5 }}>
+              We'll email you a one-click link.<br/>No password needed.
             </p>
 
             <label style={{ fontSize: 11, fontWeight: 600, color: '#8B9ABA', textTransform: 'uppercase',
