@@ -583,35 +583,50 @@ function SH({ label, colKey, sortKey, sortDir, onSort, num }) {
   return <th className={cls} onClick={() => onSort(colKey)}>{label}{a && <span className="sort-arrow">{sortDir === 'asc' ? '▲' : '▼'}</span>}</th>;
 }
 
-// Small inline 🔒 / 🚫 button pair rendered next to each player name on DK tabs.
+// Small inline 🔒 / 🚫 button pair rendered in its own column on DK tabs.
 // Click lock → player must appear in every generated lineup.
 // Click exclude → player is removed from the lineup pool entirely.
 // Locking and excluding are mutually exclusive (enforced at App-level state).
-// Both buttons share a subtle hover state; when active, they glow in gold (locked)
-// or red (excluded) so the row's status is visible at a glance.
+//
+// Design (Option A): buttons live in a dedicated action column, right-aligned.
+// At rest: gentle 8% tint (gold for lock, red for exclude) so they're visible
+// but don't shout. Hover brightens to 15%. Active (pressed) state fills to 30%
+// with bolder border. 26×24 hit target — comfortable on desktop and mobile.
 function LockExcludeButtons({ name, isLocked, isExcluded, onToggleLock, onToggleExclude }) {
-  const btn = (active, color, onClick, title, icon) => (
-    <button onClick={e => { e.stopPropagation(); onClick(name); }}
-      title={title}
-      style={{
-        background: active ? `${color}22` : 'transparent',
-        border: `1px solid ${active ? color : 'transparent'}`,
-        color: active ? color : 'var(--text-dim)',
-        width: 22, height: 22, borderRadius: 4, padding: 0,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', flexShrink: 0, transition: 'all 0.12s',
-      }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.color = color; e.currentTarget.style.background = `${color}15`; }}}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'transparent'; }}}>
-      {icon}
-    </button>
-  );
-  const lockIcon = <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
-  const excludeIcon = <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>;
+  const btn = (active, color, onClick, title, icon) => {
+    const restBg = active ? `${color}4D` : `${color}14`;
+    const restBorder = active ? color : `${color}38`;
+    const restColor = color;
+    return (
+      <button onClick={e => { e.stopPropagation(); onClick(name); }}
+        title={title}
+        style={{
+          background: restBg,
+          border: `1px solid ${restBorder}`,
+          color: restColor,
+          width: 26, height: 24, borderRadius: 5, padding: 0,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', flexShrink: 0,
+          transition: 'background 0.12s, border-color 0.12s',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = active ? `${color}66` : `${color}26`;
+          e.currentTarget.style.borderColor = active ? color : `${color}66`;
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = restBg;
+          e.currentTarget.style.borderColor = restBorder;
+        }}>
+        {icon}
+      </button>
+    );
+  };
+  const lockIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
+  const excludeIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>;
   return (
-    <span style={{ display: 'inline-flex', gap: 3, marginLeft: 6, verticalAlign: 'middle' }}>
-      {btn(isLocked, 'var(--primary)', onToggleLock, isLocked ? 'Locked — click to unlock' : 'Lock into every lineup', lockIcon)}
-      {btn(isExcluded, 'var(--red)', onToggleExclude, isExcluded ? 'Excluded — click to allow' : 'Exclude from all lineups', excludeIcon)}
+    <span style={{ display: 'inline-flex', gap: 6, verticalAlign: 'middle' }}>
+      {btn(isLocked, '#F5C518', onToggleLock, isLocked ? 'Locked — click to unlock' : 'Lock into every lineup', lockIcon)}
+      {btn(isExcluded, '#EF4444', onToggleExclude, isExcluded ? 'Excluded — click to allow' : 'Exclude from all lineups', excludeIcon)}
     </span>
   );
 }
@@ -1723,7 +1738,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
     <div className="table-wrap"><table><thead><tr>
-      <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num /><S label="Win%" colKey="wp" num /><S label="Proj" colKey="proj" num /><S label="Val" colKey="val" num /><S label="P(2-0)" colKey="pStraight" num /><S label="GW" colKey="gw" num /><S label="GL" colKey="gl" num /><S label="SW" colKey="sw" num /><S label="Aces" colKey="aces" num /><S label="DFs" colKey="dfs" num /><S label="Breaks" colKey="breaks" num /><th>Time</th>
+      <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num /><S label="Win%" colKey="wp" num /><S label="Proj" colKey="proj" num /><S label="Val" colKey="val" num /><S label="P(2-0)" colKey="pStraight" num /><S label="GW" colKey="gw" num /><S label="GL" colKey="gl" num /><S label="SW" colKey="sw" num /><S label="Aces" colKey="aces" num /><S label="DFs" colKey="dfs" num /><S label="Breaks" colKey="breaks" num /><th>Time</th><th></th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name);
@@ -1740,7 +1755,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
-        <td className="name">{p.name}<LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td><td className="muted">{p.opponent}</td>
+        <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
@@ -1758,6 +1773,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
         <td className="num">{fmt(p.gw)}</td><td className="num muted">{fmt(p.gl)}</td><td className="num">{fmt(p.sw)}</td>
         <td className="num">{fmt(p.aces)}</td><td className="num muted">{fmt(p.dfs)}</td><td className="num">{fmt(p.breaks)}</td>
         <td className="muted">{fmtTime(p.startTime)}</td>
+        <td style={{ textAlign: 'right', paddingRight: 10 }}><LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td>
       </tr>; })}</tbody></table></div>
   </>);
 }
@@ -2472,6 +2488,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = []
       <S label="Val" colKey="val" num /><S label="CVal" colKey="cval" num />
       <S label="SS" colKey="sigStr" /><S label="TD" colKey="takedowns" /><S label="CT" colKey="ctMin" />
       <th>Time</th>
+      <th></th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), isf = t3f.includes(p.name);
@@ -2488,7 +2505,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = []
       return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
-        <td className="name">{p.name}<LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td><td className="muted">{p.opponent}</td>
+        <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
@@ -2507,6 +2524,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = []
         <td className="num" style={{ color: p.cval > 16 ? 'var(--green)' : undefined, fontWeight: p.cval > 16 ? 700 : 400 }}>{fmt(p.cval, 2)}</td>
         <td className="num">{fmt(p.sigStr)}</td><td className="num muted">{fmt(p.takedowns)}</td><td className="num">{fmt(p.ctMin)}</td>
         <td className="muted">{fmtTime(p.startTime)}</td>
+        <td style={{ textAlign: 'right', paddingRight: 10 }}><LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td>
       </tr>; })}</tbody></table></div>
   </>);
 }
@@ -3155,6 +3173,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       <S label="Min" colKey="projMins" num />
       <th title="Source of projection">Src</th>
       <th>Status</th>
+      <th></th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), ic = t3c.includes(p.name);
@@ -3176,7 +3195,6 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         <td className="name">
           {p.name}
           {noLine && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 3, fontSize: 9, fontWeight: 700, background: 'rgba(251,191,36,0.15)', color: 'var(--amber-text)', border: '1px solid rgba(251,191,36,0.4)' }}>NO LINE</span>}
-          <LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} />
         </td>
         <td><TeamBadge team={p.team} /></td>
         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.positions_str}</td>
@@ -3200,6 +3218,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         <td className="num">{fmt(p.projMins, 1)}</td>
         <td className="num muted" title="Informational — minutes are not used in projections (DK lines already price them in)">{noLine ? '—' : 'DK'}</td>
         <td><StatusChip status={p.effStatus} onCycle={() => cycleStatus(p.name)} /></td>
+        <td style={{ textAlign: 'right', paddingRight: 10 }}><LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td>
       </tr>; })}</tbody></table></div>
   </>);
 }
