@@ -758,6 +758,141 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
     addLU(lu);
   }
 
+  // ─── Phase 3: ADDITIVE SWAP-UP PASS ───────────────────────────────────
+  // For each lineup in `selected`, compute its best single-swap upgrade as a
+  // NEW lineup rather than mutating in place. Rationale: the contrarian /
+  // min-fill lineup has strategic value even though its projection is lower
+  // — it hits a low-owned player (like Camara at ext-sleeper min) that the
+  // field rarely has, creating leverage in tail outcomes. The swap-up
+  // variant (like Fox replacing Camara) has higher expected projection and
+  // wins in standard outcomes. Both deserve a spot in the output.
+  //
+  // Strategy: generate upgrades as candidate new lineups. If selected is
+  // under nLineups, add directly. If at nLineups, displace the LOWEST-
+  // projection lineup whose removal doesn't violate any min-exposure cap.
+  // Sort the final set by projection descending so the max-EV variant
+  // appears at #1, with the contrarian original still present further down.
+  //
+  // Example — POR@SAS contrarian build:
+  //   Original lineup: Deni CPT + Wemby + Camara + Scoot + R.Williams +
+  //                    Kornet = 197 pts (hits Camara ext-sleeper min)
+  //   Variant generated: Camara → Fox (same lineup otherwise). Fox has
+  //                    higher proj + remaining exposure headroom (mid-chalk
+  //                    min only puts him at 42%, max is 72%).
+  //   Both end up in selected; sort places the 203-pt Fox lineup at #1,
+  //   197-pt Camara lineup further down for contrarian diversification.
+
+  function generateBestSwap(lu) {
+    let best = null;
+    for (let slotIdx = 0; slotIdx < lu.utils.length; slotIdx++) {
+      const curIdx = lu.utils[slotIdx];
+      const cur = valid[curIdx];
+      for (let altIdx = 0; altIdx < valid.length; altIdx++) {
+        if (altIdx === lu.cpt || lu.utils.includes(altIdx)) continue;
+        const alt = valid[altIdx];
+        if (alt.projection <= cur.projection) continue;
+        // Salary
+        const newSal = lu.sal - cur.util_salary + alt.util_salary;
+        if (newSal > salaryCap || newSal < minSalary) continue;
+        // Both-teams (if applicable to slate)
+        if (needBothTeams) {
+          const teams = new Set([valid[lu.cpt].team]);
+          for (let i = 0; i < lu.utils.length; i++) {
+            teams.add(i === slotIdx ? alt.team : valid[lu.utils[i]].team);
+          }
+          if (teams.size < 2) continue;
+        }
+        // Per-slot lock/exclude invariants
+        if (flexExcludedSet.has(alt.name)) continue;
+        // Alt's max exposure — we're ADDING a lineup, so alt's count goes up by 1
+        if (counts[altIdx] + 1 > caps[altIdx].max) continue;
+        if (flexCounts[altIdx] + 1 > caps[altIdx].flexMax) continue;
+        // Uniqueness against both existing selected and already-generated variants
+        const newUtils = [...lu.utils];
+        newUtils[slotIdx] = altIdx;
+        const newKey = [lu.cpt, ...newUtils].sort().join(',');
+        if (usedKeys.has(newKey)) continue;
+
+        const gain = alt.projection - cur.projection;
+        if (!best || gain > best.gain) {
+          best = { altIdx, slotIdx, gain, newSal, newUtils, newKey };
+        }
+      }
+    }
+    return best;
+  }
+
+  // Helper: can we safely remove this lineup without dropping anyone below min?
+  function safeToRemove(lu) {
+    if (counts[lu.cpt]    <= caps[lu.cpt].min)    return false;
+    if (cptCounts[lu.cpt] <= caps[lu.cpt].cptMin) return false;
+    for (const ui of lu.utils) {
+      if (counts[ui]     <= caps[ui].min)     return false;
+      if (flexCounts[ui] <= caps[ui].flexMin) return false;
+    }
+    return true;
+  }
+  function removeLU(idx) {
+    const lu = selected[idx];
+    usedKeys.delete(keyOf(lu));
+    counts[lu.cpt]--; cptCounts[lu.cpt]--;
+    lu.utils.forEach(ui => { counts[ui]--; flexCounts[ui]--; });
+    selected.splice(idx, 1);
+  }
+
+  // Iterate a snapshot of originals so we don't try to upgrade our own variants.
+  const originals = [...selected];
+  const candidateVariants = [];
+  for (const lu of originals) {
+    const swap = generateBestSwap(lu);
+    if (!swap) continue;
+    candidateVariants.push({
+      cpt: lu.cpt,
+      utils: swap.newUtils,
+      players: [lu.cpt, ...swap.newUtils],
+      sal: swap.newSal,
+      proj: round2(lu.proj + swap.gain),
+      _variantKey: swap.newKey,
+    });
+  }
+  // Process highest-gain variants first so the best upgrades claim displacement slots.
+  candidateVariants.sort((a, b) => b.proj - a.proj);
+
+  for (const v of candidateVariants) {
+    if (usedKeys.has(v._variantKey)) continue;   // another variant already claimed this combo
+    // Re-check alt caps against current counts (may have changed as variants were added)
+    if (!canAdd(v)) continue;
+    if (selected.length < nLineups) {
+      addLU(v);
+      continue;
+    }
+    // At capacity — try to displace the worst lineup we can safely remove.
+    let worstIdx = -1, worstProj = v.proj;
+    for (let i = 0; i < selected.length; i++) {
+      if (selected[i].proj >= worstProj) continue;
+      if (!safeToRemove(selected[i])) continue;
+      worstIdx = i;
+      worstProj = selected[i].proj;
+    }
+    if (worstIdx < 0) continue;   // nothing displaceable below this variant's proj
+    const saved = selected[worstIdx];
+    removeLU(worstIdx);
+    if (canAdd(v)) {
+      addLU(v);
+    } else {
+      // Restore the displaced lineup if variant can't be added after all
+      counts[saved.cpt]++; cptCounts[saved.cpt]++;
+      saved.utils.forEach(ui => { counts[ui]++; flexCounts[ui]++; });
+      usedKeys.add(keyOf(saved));
+      selected.splice(worstIdx, 0, saved);
+    }
+  }
+
+  // Final sort: highest-projection variant first. The contrarian original
+  // stays in the pool and still exports in CSV — it just ranks below the
+  // max-EV upgrade in the UI.
+  selected.sort((a, b) => b.proj - a.proj);
+
   return { lineups: selected, counts, cptCounts, flexCounts, total: allLineups.length };
 }
 
