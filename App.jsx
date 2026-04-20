@@ -776,6 +776,18 @@ function matchesSearch(item, query, fields = ['name', 'player', 'team', 'opponen
   return false;
 }
 const fmt = (n, d = 1) => typeof n === 'number' ? n.toFixed(d) : '-';
+
+// Abbreviate long player names for compact lineup display (e.g. "Victor Wembanyama"
+// → "V. Wembanyama", "Shai Gilgeous-Alexander" → "S. Gilgeous-Alexander").
+// Display-only — exports and data layers always use the full name. Keeps
+// lineup cards from squeezing the team badge off the row when the name runs long.
+function abbrevName(name) {
+  if (!name || typeof name !== 'string') return name || '';
+  if (name.length <= 14) return name;
+  const parts = name.split(/\s+/);
+  if (parts.length < 2) return name;
+  return parts[0].charAt(0).toUpperCase() + '. ' + parts.slice(1).join(' ');
+}
 const fmtPct = n => typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '-';
 const fmtSal = n => '$' + n.toLocaleString();
 const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(AM|PM)/i); if (m) { let h = parseInt(m[4]); const ap = m[6].toUpperCase(); if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return (h > 12 ? h - 12 : h || 12) + ':' + m[5] + ' ' + ap; } try { const d = new Date(s); if (!isNaN(d)) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch {} return s; };
@@ -2175,7 +2187,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
           <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
           {slots.map(s => <div className="lu-row" key={s.role}>
             <span style={{ fontSize: 10, fontWeight: 700, color: s.color, width: 44, flexShrink: 0, letterSpacing: 0.5 }}>{s.role}</span>
-            <span className="lu-name">{s.p.name}</span>
+            <span className="lu-name" title={s.p.name}>{abbrevName(s.p.name)}</span>
             <span className="lu-opp">vs {s.p.opponent}</span>
             <span className="lu-sal">${s.sal.toLocaleString()}</span>
             <span className="lu-pts">{fmt(s.p.projection * s.mult, 1)}</span>
@@ -2185,7 +2197,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
       }
       // Classic: unchanged
       const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
-      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
+      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name" title={p.name}>{abbrevName(p.name)}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
   </>);
@@ -2866,7 +2878,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
       return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => {
         const ownPct = ownership[p.name] || 0;
         const scoreShown = mode === 'ceiling' ? p.ceiling : p.projection;
-        return <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
+        return <div className="lu-row" key={p.name}><span className="lu-name" title={p.name}>{abbrevName(p.name)}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
       })}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupAvgOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupAvgOwn}%</span></div></div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
@@ -4112,49 +4124,64 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
       if (res.isShowdown) {
         const cpt = res.pData[lu.cpt];
         const utils = lu.utils.map(i => res.pData[i]);
-        const allOwns = [cpt, ...utils].map(p => ownership[p.name] || 0);
-        const avgO = Math.round(allOwns.reduce((a, b) => a + b, 0) / allOwns.length);
-        const cptOwn = ownership[cpt.name] || 0;
+        // Cumulative ownership using CPT-specific own% for captain slot + FLEX-only
+        // own% (total − cpt) for UTIL slots. This reflects what % of the field
+        // will actually have each player in the SAME slot. Captain ownership is
+        // structurally lower (only 1 captain per lineup), so using total own for
+        // a captain would overstate the chalk burden.
+        const cptOwnOnly = cptOwnership[cpt.name] || 0;
+        const utilCumOwn = utils.reduce((s, p) => s + Math.max(0, (ownership[p.name] || 0) - (cptOwnership[p.name] || 0)), 0);
+        const cumOwn = Math.round(cptOwnOnly + utilCumOwn);
+        const cumColor = cumOwn > 220 ? 'var(--amber)' : cumOwn > 180 ? 'var(--primary)' : 'var(--green)';
+        const cumLabel = `Cumulative ownership — sum of CPT% (${cptOwnOnly.toFixed(1)}%) and each UTIL player's FLEX-only% (total own − CPT own). Lower = more unique vs field. Typical range: 150 super-contrarian → 280+ mega-chalk.`;
         return <div className="lu-card" key={idx}>
           <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
           <div className="lu-row">
             <span style={{ fontSize: 10, fontWeight: 700, color: '#F5C518', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>CPT</span>
-            <span className="lu-name">{cpt.name}</span>
+            <span className="lu-name" title={cpt.name}>{abbrevName(cpt.name)}</span>
             <span className="lu-opp"><TeamBadge team={cpt.team} /></span>
             <span className="lu-sal">${(cpt.cpt_salary || 0).toLocaleString()}</span>
             <span className="lu-pts">{fmt(cpt.projection * 1.5, 1)}</span>
-            <span style={{ width: 36, textAlign: 'right', color: cptOwn > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(cptOwn, 0)}%</span>
+            <span style={{ width: 36, textAlign: 'right', color: cptOwnOnly > 20 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }} title={`${cpt.name} is captained in ${cptOwnOnly.toFixed(1)}% of field lineups`}>{fmt(cptOwnOnly, 0)}%</span>
           </div>
-          {utils.map((p, j) => {
-            const ownPct = ownership[p.name] || 0;
+          {utils.map((p) => {
+            const flexOwn = Math.max(0, (ownership[p.name] || 0) - (cptOwnership[p.name] || 0));
             return <div className="lu-row" key={p.name}>
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>UTIL</span>
-              <span className="lu-name">{p.name}</span>
+              <span className="lu-name" title={p.name}>{abbrevName(p.name)}</span>
               <span className="lu-opp"><TeamBadge team={p.team} /></span>
               <span className="lu-sal">${(p.util_salary || p.salary).toLocaleString()}</span>
               <span className="lu-pts">{fmt(p.projection, 1)}</span>
-              <span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span>
+              <span style={{ width: 36, textAlign: 'right', color: flexOwn > 50 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }} title={`${p.name} is in UTIL in ${flexOwn.toFixed(1)}% of field lineups`}>{fmt(flexOwn, 0)}%</span>
             </div>;
           })}
-          <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: avgO > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {avgO}%</span></div>
+          <div className="lu-footer">
+            <span>${lu.sal.toLocaleString()}</span>
+            <span title={cumLabel} style={{ color: cumColor, cursor: 'help' }}>Own: {cumOwn}%</span>
+          </div>
         </div>;
       }
       // Classic
       const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
-      const lineupOwn = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0) / ps.length);
+      const cumClassic = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0));
+      const classicColor = cumClassic > 120 ? 'var(--amber)' : cumClassic > 90 ? 'var(--primary)' : 'var(--green)';
+      const classicLabel = `Cumulative field ownership — sum of each player's total own%. Lower = more unique vs field.`;
       return <div className="lu-card" key={idx}>
         <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
         {ps.map(p => {
           const ownPct = ownership[p.name] || 0;
           return <div className="lu-row" key={p.name}>
-            <span className="lu-name">{p.name}</span>
+            <span className="lu-name" title={p.name}>{abbrevName(p.name)}</span>
             <span className="lu-opp"><TeamBadge team={p.team} /></span>
             <span className="lu-sal">${p.salary.toLocaleString()}</span>
             <span className="lu-pts">{fmt(p.projection, 1)}</span>
             <span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span>
           </div>;
         })}
-        <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupOwn}%</span></div>
+        <div className="lu-footer">
+          <span>${lu.sal.toLocaleString()}</span>
+          <span title={classicLabel} style={{ color: classicColor, cursor: 'help' }}>Own: {cumClassic}%</span>
+        </div>
       </div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
