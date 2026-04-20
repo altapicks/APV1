@@ -1,0 +1,2669 @@
+{
+  "date": "2026-04-20",
+  "slate_type": "showdown",
+  "notes": "ATL @ NYK showdown. PP lines primary, SS for minutes/turnovers/bench. No STL+BLK PP image \u2014 all stl+blk lines from SS. Vegas: NYK -6.5, total 218.5.",
+  "game": {
+    "away": "ATL",
+    "home": "NYK",
+    "tip": "04/20/2026 08:00PM ET",
+    "spread_nyk": -6.5,
+    "total": 218.5,
+    "implied_nyk": 112.5,
+    "implied_atl": 106.0,
+    "ml_nyk": -258,
+    "ml_atl": 210,
+    "pace_nyk": 99.0,
+    "pace_atl": 100.5,
+    "blowout_risk_nyk": 0.18,
+    "blowout_risk_atl": 0.07
+  },
+  "dk_players": [
+    {
+      "name": "Jalen Johnson",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42692179,
+      "util_salary": 11400,
+      "cpt_id": 42692215,
+      "cpt_salary": 17100,
+      "salary": 11400,
+      "id": 42692179,
+      "avg_ppg": 49.89,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 37.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 21.5,
+          "over": -113,
+          "under": -113
+        },
+        "rebounds": {
+          "line": 9.5,
+          "over": -137,
+          "under": 104
+        },
+        "assists": {
+          "line": 6.5,
+          "over": -115,
+          "under": -115
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -129,
+          "under": -102
+        },
+        "stls_blks": {
+          "line": 1.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 2.59,
+      "dd_odds": -175,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 21.5,
+        "rebounds": 9.5,
+        "assists": 6.5,
+        "threes": 1.5,
+        "stls_blks": 1.9
+      },
+      "season_avg": {
+        "ppg": 19.4,
+        "rpg": 9.8,
+        "apg": 6.5,
+        "3pmpg": 1.8,
+        "stlpg": 1.3,
+        "blkpg": 0.6
+      }
+    },
+    {
+      "name": "Karl-Anthony Towns",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42692180,
+      "util_salary": 10600,
+      "cpt_id": 42692216,
+      "cpt_salary": 15900,
+      "salary": 10600,
+      "id": 42692180,
+      "avg_ppg": 42.04,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.9
+      },
+      "dk_props": {
+        "points": {
+          "line": 20.5,
+          "over": -102,
+          "under": -125
+        },
+        "rebounds": {
+          "line": 11.5,
+          "over": -132,
+          "under": 101
+        },
+        "assists": {
+          "line": 3.5,
+          "over": 130,
+          "under": -172
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -102,
+          "under": -129
+        },
+        "stls_blks": {
+          "line": 1.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 2.04,
+      "dd_odds": -287,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 20.5,
+        "rebounds": 11.5,
+        "assists": 3.5,
+        "threes": 1.5,
+        "stls_blks": 1.7
+      },
+      "season_avg": {
+        "ppg": 20.1,
+        "rpg": 12.3,
+        "apg": 3.0,
+        "3pmpg": 1.8,
+        "stlpg": 0.8,
+        "blkpg": 0.8
+      }
+    },
+    {
+      "name": "Jalen Brunson",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692181,
+      "util_salary": 10200,
+      "cpt_id": 42692217,
+      "cpt_salary": 15300,
+      "salary": 10200,
+      "id": 42692181,
+      "avg_ppg": 41.75,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 36.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 26.5,
+          "over": -122,
+          "under": -105
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 112,
+          "under": -148
+        },
+        "assists": {
+          "line": 7.5,
+          "over": 113,
+          "under": -149
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -125,
+          "under": -106
+        },
+        "stls_blks": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 2.53,
+      "dd_odds": 320,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 26.5,
+        "rebounds": 3.5,
+        "assists": 7.5,
+        "threes": 2.5,
+        "stls_blks": 1.1
+      },
+      "season_avg": {
+        "ppg": 27.2,
+        "rpg": 3.3,
+        "apg": 6.4,
+        "3pmpg": 2.7,
+        "stlpg": 0.9,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Nickeil Alexander-Walker",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42692182,
+      "util_salary": 8600,
+      "cpt_id": 42692218,
+      "cpt_salary": 12900,
+      "salary": 8600,
+      "id": 42692182,
+      "avg_ppg": 34.82,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 37.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 20.5,
+          "over": -103,
+          "under": -123
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 112,
+          "under": -148
+        },
+        "assists": {
+          "line": 3.5,
+          "over": -102,
+          "under": -129
+        },
+        "threes": {
+          "line": 3.5,
+          "over": 113,
+          "under": -148
+        },
+        "stls_blks": {
+          "line": 1.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 2.42,
+      "dd_odds": 3700,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 20.5,
+        "rebounds": 3.5,
+        "assists": 3.5,
+        "threes": 3.5,
+        "stls_blks": 1.6
+      },
+      "season_avg": {
+        "ppg": 21.2,
+        "rpg": 2.1,
+        "apg": 3.1,
+        "3pmpg": 4.0,
+        "stlpg": 1.0,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Dyson Daniels",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692183,
+      "util_salary": 8200,
+      "cpt_id": 42692219,
+      "cpt_salary": 12300,
+      "salary": 8200,
+      "id": 42692183,
+      "avg_ppg": 33.68,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 35.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 11.5,
+          "over": -110,
+          "under": -116
+        },
+        "rebounds": {
+          "line": 6.5,
+          "over": -144,
+          "under": 110
+        },
+        "assists": {
+          "line": 4.5,
+          "over": -146,
+          "under": 111
+        },
+        "threes": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 2.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.68,
+      "dd_odds": 377,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 11.5,
+        "rebounds": 6.5,
+        "assists": 4.5,
+        "threes": 1.4,
+        "stls_blks": 2.2
+      },
+      "season_avg": {
+        "ppg": 10.7,
+        "rpg": 7.6,
+        "apg": 5.7,
+        "3pmpg": 1.4,
+        "stlpg": 1.7,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Onyeka Okongwu",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692184,
+      "util_salary": 7800,
+      "cpt_id": 42692220,
+      "cpt_salary": 11700,
+      "salary": 7800,
+      "id": 42692184,
+      "avg_ppg": 34.15,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 13.5,
+          "over": -109,
+          "under": -117
+        },
+        "rebounds": {
+          "line": 7.5,
+          "over": -112,
+          "under": -118
+        },
+        "assists": {
+          "line": 2.5,
+          "over": 113,
+          "under": -149
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -183,
+          "under": 138
+        },
+        "stls_blks": {
+          "line": 2.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.58,
+      "dd_odds": 302,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 13.5,
+        "rebounds": 7.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 2.4
+      },
+      "season_avg": {
+        "ppg": 17.4,
+        "rpg": 7.9,
+        "apg": 1.7,
+        "3pmpg": 1.2,
+        "stlpg": 0.9,
+        "blkpg": 1.4
+      }
+    },
+    {
+      "name": "CJ McCollum",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42692185,
+      "util_salary": 7400,
+      "cpt_id": 42692221,
+      "cpt_salary": 11100,
+      "salary": 7400,
+      "id": 42692185,
+      "avg_ppg": 31.65,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.2
+      },
+      "dk_props": {
+        "points": {
+          "line": 18.5,
+          "over": -102,
+          "under": -125
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -160,
+          "under": 122
+        },
+        "assists": {
+          "line": 3.5,
+          "over": -136,
+          "under": 103
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -131,
+          "under": -101
+        },
+        "stls_blks": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 2.03,
+      "dd_odds": 3700,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 18.5,
+        "rebounds": 2.5,
+        "assists": 3.5,
+        "threes": 2.5,
+        "stls_blks": 1.4
+      },
+      "season_avg": {
+        "ppg": 19.0,
+        "rpg": 3.0,
+        "apg": 4.0,
+        "3pmpg": 3.0,
+        "stlpg": 0.8,
+        "blkpg": 0.6
+      }
+    },
+    {
+      "name": "OG Anunoby",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42692186,
+      "util_salary": 7000,
+      "cpt_id": 42692222,
+      "cpt_salary": 10500,
+      "salary": 7000,
+      "id": 42692186,
+      "avg_ppg": 31.62,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 36.3
+      },
+      "dk_props": {
+        "points": {
+          "line": 15.5,
+          "over": -118,
+          "under": -108
+        },
+        "rebounds": {
+          "line": 5.5,
+          "over": 115,
+          "under": -152
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -157,
+          "under": 119
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 129,
+          "under": -171
+        },
+        "stls_blks": {
+          "line": 2.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.44,
+      "dd_odds": 1340,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 15.5,
+        "rebounds": 5.5,
+        "assists": 1.5,
+        "threes": 2.5,
+        "stls_blks": 2.4
+      },
+      "season_avg": {
+        "ppg": 16.7,
+        "rpg": 5.4,
+        "apg": 1.7,
+        "3pmpg": 2.4,
+        "stlpg": 1.5,
+        "blkpg": 0.9
+      }
+    },
+    {
+      "name": "Josh Hart",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692187,
+      "util_salary": 6600,
+      "cpt_id": 42692223,
+      "cpt_salary": 9900,
+      "salary": 6600,
+      "id": 42692187,
+      "avg_ppg": 31.52,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 35.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 11.5,
+          "over": -121,
+          "under": -105
+        },
+        "rebounds": {
+          "line": 7.5,
+          "over": -128,
+          "under": -103
+        },
+        "assists": {
+          "line": 4.5,
+          "over": 100,
+          "under": -131
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 157,
+          "under": -209
+        },
+        "stls_blks": {
+          "line": 1.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.8,
+      "dd_odds": 248,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 11.5,
+        "rebounds": 7.5,
+        "assists": 4.5,
+        "threes": 1.5,
+        "stls_blks": 1.6
+      },
+      "season_avg": {
+        "ppg": 12.0,
+        "rpg": 7.4,
+        "apg": 4.2,
+        "3pmpg": 1.3,
+        "stlpg": 1.2,
+        "blkpg": 0.4
+      }
+    },
+    {
+      "name": "Mikal Bridges",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692188,
+      "util_salary": 6200,
+      "cpt_id": 42692224,
+      "cpt_salary": 9300,
+      "salary": 6200,
+      "id": 42692188,
+      "avg_ppg": 29.1,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.8
+      },
+      "dk_props": {
+        "points": {
+          "line": 12.5,
+          "over": -121,
+          "under": -105
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 126,
+          "under": -166
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -161,
+          "under": 122
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -140,
+          "under": 106
+        },
+        "stls_blks": {
+          "line": 1.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.41,
+      "dd_odds": 3000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 12.5,
+        "rebounds": 3.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.9
+      },
+      "season_avg": {
+        "ppg": 13.1,
+        "rpg": 2.9,
+        "apg": 3.2,
+        "3pmpg": 1.7,
+        "stlpg": 1.2,
+        "blkpg": 0.7
+      }
+    },
+    {
+      "name": "Jonathan Kuminga",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42692189,
+      "util_salary": 5400,
+      "cpt_id": 42692225,
+      "cpt_salary": 8100,
+      "salary": 5400,
+      "id": 42692189,
+      "avg_ppg": 23.81,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 26.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -129,
+          "under": 101
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -149,
+          "under": 113
+        },
+        "assists": {
+          "line": 2.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -221,
+          "under": 165
+        },
+        "stls_blks": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.68,
+      "dd_odds": 1520,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 10.5,
+        "rebounds": 4.5,
+        "assists": 2.2,
+        "threes": 0.5,
+        "stls_blks": 1.3
+      },
+      "season_avg": {
+        "ppg": 11.0,
+        "rpg": 4.9,
+        "apg": 2.2,
+        "3pmpg": 0.8,
+        "stlpg": 0.8,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Mitchell Robinson",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692190,
+      "util_salary": 5000,
+      "cpt_id": 42692226,
+      "cpt_salary": 7500,
+      "salary": 5000,
+      "id": 42692190,
+      "avg_ppg": 21.93,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 16.8
+      },
+      "dk_props": {
+        "points": {
+          "line": 4.5,
+          "over": -106,
+          "under": -120
+        },
+        "rebounds": {
+          "line": 7.5,
+          "over": 109,
+          "under": -143
+        },
+        "assists": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 1.8,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.58,
+      "dd_odds": 1200,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 4.5,
+        "rebounds": 7.5,
+        "assists": 0.5,
+        "threes": 0.0,
+        "stls_blks": 1.8
+      },
+      "season_avg": {
+        "ppg": 4.3,
+        "rpg": 7.1,
+        "apg": 0.5,
+        "3pmpg": 0.0,
+        "stlpg": 0.8,
+        "blkpg": 1.0
+      }
+    },
+    {
+      "name": "Miles McBride",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42692191,
+      "util_salary": 4200,
+      "cpt_id": 42692227,
+      "cpt_salary": 6300,
+      "salary": 4200,
+      "id": 42692191,
+      "avg_ppg": 21.77,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 20.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 7.5,
+          "over": -128,
+          "under": 101
+        },
+        "rebounds": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 2.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -124,
+          "under": -106
+        },
+        "stls_blks": {
+          "line": 1.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.72,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 7.5,
+        "rebounds": 1.3,
+        "assists": 2.0,
+        "threes": 1.5,
+        "stls_blks": 1.0
+      },
+      "season_avg": {
+        "ppg": 7.8,
+        "rpg": 1.3,
+        "apg": 2.0,
+        "3pmpg": 1.5,
+        "stlpg": 0.8,
+        "blkpg": 0.2
+      }
+    },
+    {
+      "name": "Mouhamed Gueye",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42692192,
+      "util_salary": 3800,
+      "cpt_id": 42692228,
+      "cpt_salary": 5700,
+      "salary": 3800,
+      "id": 42692192,
+      "avg_ppg": 12.92,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 12.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 2.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 2.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 1.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.31,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 2.4,
+        "rebounds": 2.4,
+        "assists": 1.2,
+        "threes": 0.3,
+        "stls_blks": 0.7
+      },
+      "season_avg": {
+        "ppg": 2.4,
+        "rpg": 2.4,
+        "apg": 1.2,
+        "3pmpg": 0.3,
+        "stlpg": 0.4,
+        "blkpg": 0.4
+      }
+    },
+    {
+      "name": "Landry Shamet",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42692193,
+      "util_salary": 3400,
+      "cpt_id": 42692229,
+      "cpt_salary": 5100,
+      "salary": 3400,
+      "id": 42692193,
+      "avg_ppg": 15.78,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 18.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 5.5,
+          "over": -128,
+          "under": 100
+        },
+        "rebounds": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 141,
+          "under": -187
+        },
+        "stls_blks": {
+          "line": 0.8,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.62,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 5.5,
+        "rebounds": 1.4,
+        "assists": 1.5,
+        "threes": 1.5,
+        "stls_blks": 0.8
+      },
+      "season_avg": {
+        "ppg": 6.5,
+        "rpg": 1.4,
+        "apg": 1.5,
+        "3pmpg": 1.3,
+        "stlpg": 0.7,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Jordan Clarkson",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692194,
+      "util_salary": 3000,
+      "cpt_id": 42692230,
+      "cpt_salary": 4500,
+      "salary": 3000,
+      "id": 42692194,
+      "avg_ppg": 14.07,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 11.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 5.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.73,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 5.4,
+        "rebounds": 1.3,
+        "assists": 1.4,
+        "threes": 0.7,
+        "stls_blks": 0.3
+      },
+      "season_avg": {
+        "ppg": 5.4,
+        "rpg": 1.3,
+        "apg": 1.4,
+        "3pmpg": 0.7,
+        "stlpg": 0.2,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Gabe Vincent",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692195,
+      "util_salary": 2800,
+      "cpt_id": 42692231,
+      "cpt_salary": 4200,
+      "salary": 2800,
+      "id": 42692195,
+      "avg_ppg": 9.19,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 15.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 4.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 2.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.8,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.55,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 4.1,
+        "rebounds": 1.4,
+        "assists": 2.0,
+        "threes": 0.8,
+        "stls_blks": 0.5
+      },
+      "season_avg": {
+        "ppg": 4.1,
+        "rpg": 1.4,
+        "apg": 2.0,
+        "3pmpg": 0.8,
+        "stlpg": 0.4,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Zaccharie Risacher",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692196,
+      "util_salary": 1400,
+      "cpt_id": 42692232,
+      "cpt_salary": 2100,
+      "salary": 1400,
+      "id": 42692196,
+      "avg_ppg": 18.97,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 6.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 1.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 1.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.16,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 1.6,
+        "rebounds": 1.0,
+        "assists": 0.6,
+        "threes": 0.2,
+        "stls_blks": 0.2
+      },
+      "season_avg": {
+        "ppg": 1.6,
+        "rpg": 1.0,
+        "apg": 0.6,
+        "3pmpg": 0.2,
+        "stlpg": 0.1,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Buddy Hield",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692197,
+      "util_salary": 1000,
+      "cpt_id": 42692233,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692197,
+      "avg_ppg": 14.72,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Jose Alvarado",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692198,
+      "util_salary": 1000,
+      "cpt_id": 42692234,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692198,
+      "avg_ppg": 17.92,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Asa Newell",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42692199,
+      "util_salary": 1000,
+      "cpt_id": 42692235,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692199,
+      "avg_ppg": 10.32,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Corey Kispert",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692200,
+      "util_salary": 1000,
+      "cpt_id": 42692236,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692200,
+      "avg_ppg": 15.62,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 2.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 0.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.07,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0.7,
+        "rebounds": 0.3,
+        "assists": 0.1,
+        "threes": 0.1,
+        "stls_blks": 0.1
+      },
+      "season_avg": {
+        "ppg": 0.7,
+        "rpg": 0.3,
+        "apg": 0.1,
+        "3pmpg": 0.1,
+        "stlpg": 0.0,
+        "blkpg": 0.0
+      }
+    },
+    {
+      "name": "Jeremy Sochan",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42692201,
+      "util_salary": 1000,
+      "cpt_id": 42692237,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692201,
+      "avg_ppg": 8.97,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Keshon Gilbert",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692202,
+      "util_salary": 1000,
+      "cpt_id": 42692238,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692202,
+      "avg_ppg": 12.81,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Christian Koloko",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692203,
+      "util_salary": 1000,
+      "cpt_id": 42692239,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692203,
+      "avg_ppg": 9.92,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Ariel Hukporti",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692204,
+      "util_salary": 1000,
+      "cpt_id": 42692240,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692204,
+      "avg_ppg": 7.56,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Mohamed Diawara",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42692205,
+      "util_salary": 1000,
+      "cpt_id": 42692241,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692205,
+      "avg_ppg": 7.22,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Tony Bradley",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692206,
+      "util_salary": 1000,
+      "cpt_id": 42692242,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692206,
+      "avg_ppg": 8.95,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Kevin McCullar Jr.",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692207,
+      "util_salary": 1000,
+      "cpt_id": 42692243,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692207,
+      "avg_ppg": 6.24,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Pacome Dadiet",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692208,
+      "util_salary": 1000,
+      "cpt_id": 42692244,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692208,
+      "avg_ppg": 3.78,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Tyler Kolek",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692209,
+      "util_salary": 1000,
+      "cpt_id": 42692245,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692209,
+      "avg_ppg": 11.58,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Keaton Wallace",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692210,
+      "util_salary": 1000,
+      "cpt_id": 42692246,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692210,
+      "avg_ppg": 8.68,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "RayJ Dennis",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692211,
+      "util_salary": 1000,
+      "cpt_id": 42692247,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692211,
+      "avg_ppg": 10.03,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Trey Jemison",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692212,
+      "util_salary": 1000,
+      "cpt_id": 42692248,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692212,
+      "avg_ppg": 3.38,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Dillon Jones",
+      "team": "NYK",
+      "opponent": "ATL",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692213,
+      "util_salary": 1000,
+      "cpt_id": 42692249,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692213,
+      "avg_ppg": 4.32,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Jock Landale",
+      "team": "ATL",
+      "opponent": "NYK",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692214,
+      "util_salary": 1000,
+      "cpt_id": 42692250,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692214,
+      "avg_ppg": 22.6,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    }
+  ],
+  "pp_lines": [
+    {
+      "player": "Jalen Johnson",
+      "stat": "Fantasy Score",
+      "line": 44.5
+    },
+    {
+      "player": "Karl-Anthony Towns",
+      "stat": "Fantasy Score",
+      "line": 42.5
+    },
+    {
+      "player": "Jalen Brunson",
+      "stat": "Fantasy Score",
+      "line": 42
+    },
+    {
+      "player": "Dyson Daniels",
+      "stat": "Fantasy Score",
+      "line": 33.5
+    },
+    {
+      "player": "Nickeil Alexander-Walker",
+      "stat": "Fantasy Score",
+      "line": 33
+    },
+    {
+      "player": "Onyeka Okongwu",
+      "stat": "Fantasy Score",
+      "line": 31.5
+    },
+    {
+      "player": "OG Anunoby",
+      "stat": "Fantasy Score",
+      "line": 31.5
+    },
+    {
+      "player": "CJ McCollum",
+      "stat": "Fantasy Score",
+      "line": 31
+    },
+    {
+      "player": "Josh Hart",
+      "stat": "Fantasy Score",
+      "line": 30.5
+    },
+    {
+      "player": "Mikal Bridges",
+      "stat": "Fantasy Score",
+      "line": 25.5
+    }
+  ],
+  "last_updated": "2026-04-20T22:30:04.245628"
+}
