@@ -80,7 +80,7 @@ const GLOSSARY_NBA = [
   { icon: 'trophy',        label: 'Top 3 Value', desc: 'Highest pts/$1K salary' },
   { icon: 'rocket',        label: 'Top 3 Ceiling', desc: 'Highest 85th-percentile projection' },
   { icon: 'gem',           label: 'Hidden Gem', desc: 'Best value in salary band below biggest trap' },
-  { icon: 'bomb',          label: 'Biggest Trap', desc: 'Highest sim-owned — field-converged chalk' },
+  { icon: 'bomb',          label: "Field's Biggest Need", desc: 'Over-owned relative to value — prime fade' },
   { icon: 'flame',         label: 'Top PP EV', desc: 'Best expected value vs PP line' },
   { icon: 'trending-down', label: 'Worst PP EV', desc: 'Strong LESS play' },
 ];
@@ -1588,7 +1588,7 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Field's Biggest Need</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
@@ -2082,7 +2082,7 @@ function TrackRecordTab({ sport }) {
         </div>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>No completed slates yet</div>
         <div style={{ fontSize: 13, maxWidth: 520, margin: '0 auto', lineHeight: 1.65, color: 'var(--text-muted)' }}>
-          Track Record populates as you upload DK contest CSVs from completed slates. Every <strong style={{color:'var(--primary)'}}>Top Value</strong>, <strong style={{color:'var(--primary)'}}>Hidden Gem</strong>, <strong style={{color:'var(--primary)'}}>Biggest Trap</strong>, and <strong style={{color:'var(--primary)'}}>PP Edge/Fade</strong> call gets graded — hit rates compound into actionable patterns over time.
+          Track Record populates as you upload DK contest CSVs from completed slates. Every <strong style={{color:'var(--primary)'}}>Top Value</strong>, <strong style={{color:'var(--primary)'}}>Hidden Gem</strong>, <strong style={{color:'var(--primary)'}}>Field's Biggest Need</strong>, and <strong style={{color:'var(--primary)'}}>PP Edge/Fade</strong> call gets graded — hit rates compound into actionable patterns over time.
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 18, fontFamily: 'monospace' }}>Expected path: <span style={{color:'var(--text-muted)'}}>public/results/{sport}/aggregated.json</span></div>
       </div>
@@ -2320,7 +2320,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Field's Biggest Need</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Most over-owned vs win %</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search fighters, opponents" total={pw.length} filtered={pwFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
@@ -2815,13 +2815,43 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
   // Per GPP leverage theory, the chalky play is what we fade — even if they
   // have "good value". Good-value chalk is exactly where the field converges,
   // which is precisely what we're trying to differentiate from.
+  // ═══════════════════════════════════════════════════════════════════════
+  // NBA TRAP ALGORITHM v2 — "Field's Biggest Need" via ownership vs value
+  //
+  //     trapScore = simOwn − (val × K)
+  //
+  // Gate: simOwn ≥ 25% (ensures trap is actual chalk the field is on,
+  //       not an obscure low-owned player with terrible value).
+  //
+  // K auto-calibrates to the slate's median val so the break-even point
+  // (trapScore ≈ 0) tracks what "fair ownership per value" looks like on
+  // THIS slate. Formula: K = 25 / medianVal so that a median-val player
+  // needs 25%+ ownership to begin trapping. Showdown slates (val~3.8-4.2)
+  // yield K≈6; classic slates (val~4.5-5.5) yield K≈5 — self-tuning.
+  //
+  // Fallback: if nobody clears the 25% gate (slate with no clear chalk),
+  // revert to pure simOwn highest.
+  // ═══════════════════════════════════════════════════════════════════════
   const trap = useMemo(() => {
     const active = pw.filter(p => !p.isOut && p.projectable);
     if (active.length === 0) return '';
     const hasOwn = active.some(p => p.simOwn > 0);
-    const sorted = hasOwn
-      ? [...active].sort((a, b) => b.simOwn - a.simOwn)
-      : [...active].sort((a, b) => b.proj - a.proj);
+    if (!hasOwn) {
+      // No ownership data yet — fall back to highest projection
+      return [...active].sort((a, b) => b.proj - a.proj)[0]?.name || '';
+    }
+    // Auto-calibrate K from slate's median val
+    const vals = active.map(p => p.val || 0).filter(v => v > 0).sort((a, b) => a - b);
+    const medianVal = vals.length ? vals[Math.floor(vals.length / 2)] : 4.0;
+    const K = 25 / Math.max(medianVal, 1.0); // guard against tiny medians
+    // Primary pool: chalk (≥25% ownership) ranked by ownership−value penalty
+    const gated = active.filter(p => p.simOwn >= 25);
+    const pool = gated.length > 0 ? gated : active;
+    const sorted = [...pool].sort((a, b) => {
+      const aScore = a.simOwn - (a.val || 0) * K;
+      const bScore = b.simOwn - (b.val || 0) * K;
+      return bScore - aScore;
+    });
     return sorted[0]?.name || '';
   }, [pw]);
   // ═══════════════════════════════════════════════════════════════════════
@@ -2936,7 +2966,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Field-converged chalk</div></div>
+      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Field's Biggest Need</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Over-owned vs value</div></div>
     </div>
     {unprojectablePlayers.length > 0 && (
       <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -3131,11 +3161,24 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
 
-    // TRAP = highest field ownership (pure chalk fade for GPP leverage).
+    // TRAP = "Field's Biggest Need" — ownership vs value with auto-calibrated K.
+    // Mirrors NBA DK tab v2: trapScore = simOwn − (val × K), gate ≥25%.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const trap = hasOwn
-      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
-      : byProj[0];
+    let trap = null;
+    if (!hasOwn) {
+      trap = byProj[0];
+    } else {
+      const vals = withSal.map(p => p.val || 0).filter(v => v > 0).sort((a, b) => a - b);
+      const medianVal = vals.length ? vals[Math.floor(vals.length / 2)] : 4.0;
+      const K = 25 / Math.max(medianVal, 1.0);
+      const gated = withSal.filter(p => (ownership[p.name] || 0) >= 25);
+      const pool = gated.length > 0 ? gated : withSal;
+      trap = [...pool].sort((a, b) => {
+        const aScore = (ownership[a.name] || 0) - (a.val || 0) * K;
+        const bScore = (ownership[b.name] || 0) - (b.val || 0) * K;
+        return bScore - aScore;
+      })[0];
+    }
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
       const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
