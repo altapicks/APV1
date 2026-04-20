@@ -577,7 +577,103 @@ function useSort(data, dk = 'val', dd = 'desc') {
   const toggle = useCallback(k => { if (k === sk) setSd(d => d === 'asc' ? 'desc' : 'asc'); else { setSk(k); setSd('desc'); } }, [sk]);
   return { sorted, sortKey: sk, sortDir: sd, toggleSort: toggle };
 }
-function SH({ label, colKey, sortKey, sortDir, onSort }) { const a = colKey === sortKey; return <th className={a ? 'sorted' : ''} onClick={() => onSort(colKey)}>{label}{a && <span className="sort-arrow">{sortDir === 'asc' ? '▲' : '▼'}</span>}</th>; }
+function SH({ label, colKey, sortKey, sortDir, onSort, num }) {
+  const a = colKey === sortKey;
+  const cls = [a ? 'sorted' : '', num ? 'num' : ''].filter(Boolean).join(' ');
+  return <th className={cls} onClick={() => onSort(colKey)}>{label}{a && <span className="sort-arrow">{sortDir === 'asc' ? '▲' : '▼'}</span>}</th>;
+}
+
+// Small inline 🔒 / 🚫 button pair rendered next to each player name on DK tabs.
+// Click lock → player must appear in every generated lineup.
+// Click exclude → player is removed from the lineup pool entirely.
+// Locking and excluding are mutually exclusive (enforced at App-level state).
+// Both buttons share a subtle hover state; when active, they glow in gold (locked)
+// or red (excluded) so the row's status is visible at a glance.
+function LockExcludeButtons({ name, isLocked, isExcluded, onToggleLock, onToggleExclude }) {
+  const btn = (active, color, onClick, title, icon) => (
+    <button onClick={e => { e.stopPropagation(); onClick(name); }}
+      title={title}
+      style={{
+        background: active ? `${color}22` : 'transparent',
+        border: `1px solid ${active ? color : 'transparent'}`,
+        color: active ? color : 'var(--text-dim)',
+        width: 22, height: 22, borderRadius: 4, padding: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', flexShrink: 0, transition: 'all 0.12s',
+      }}
+      onMouseEnter={e => { if (!active) { e.currentTarget.style.color = color; e.currentTarget.style.background = `${color}15`; }}}
+      onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'transparent'; }}}>
+      {icon}
+    </button>
+  );
+  const lockIcon = <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
+  const excludeIcon = <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>;
+  return (
+    <span style={{ display: 'inline-flex', gap: 3, marginLeft: 6, verticalAlign: 'middle' }}>
+      {btn(isLocked, 'var(--primary)', onToggleLock, isLocked ? 'Locked — click to unlock' : 'Lock into every lineup', lockIcon)}
+      {btn(isExcluded, 'var(--red)', onToggleExclude, isExcluded ? 'Excluded — click to allow' : 'Exclude from all lineups', excludeIcon)}
+    </span>
+  );
+}
+
+// LockBar — strip rendered above a DK tab's table showing active locks and excludes.
+// Each name is a pill (gold for locked, red for excluded) with an × to remove it.
+// Also provides "Clear all" links for each group. Renders nothing when both lists are empty.
+function LockBar({ lockedPlayers = [], excludedPlayers = [], onToggleLock, onToggleExclude, onClearLocks, onClearExcludes }) {
+  if (lockedPlayers.length === 0 && excludedPlayers.length === 0) return null;
+  const pill = (name, color, onRemove) => (
+    <span key={name} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '3px 4px 3px 9px', borderRadius: 12,
+      background: `${color}1F`, border: `1px solid ${color}55`,
+      fontSize: 11, fontWeight: 500, color,
+    }}>
+      {name}
+      <button onClick={() => onRemove(name)} title="Remove"
+        style={{ background: 'transparent', border: 'none', color,
+                 width: 16, height: 16, borderRadius: '50%', cursor: 'pointer',
+                 padding: 0, display: 'inline-flex', alignItems: 'center',
+                 justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>×</button>
+    </span>
+  );
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
+      padding: '10px 14px', marginBottom: 10,
+      background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8,
+    }}>
+      {lockedPlayers.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600,
+                          textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 2 }}>Locked</span>
+          {lockedPlayers.map(n => pill(n, 'var(--primary)', onToggleLock))}
+          {lockedPlayers.length > 1 && (
+            <button onClick={onClearLocks}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)',
+                       fontSize: 11, cursor: 'pointer', textDecoration: 'underline',
+                       padding: '0 4px' }}>clear</button>
+          )}
+        </div>
+      )}
+      {lockedPlayers.length > 0 && excludedPlayers.length > 0 && (
+        <span style={{ width: 1, height: 16, background: 'var(--border-light)' }} />
+      )}
+      {excludedPlayers.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600,
+                          textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 2 }}>Excluded</span>
+          {excludedPlayers.map(n => pill(n, 'var(--red)', onToggleExclude))}
+          {excludedPlayers.length > 1 && (
+            <button onClick={onClearExcludes}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)',
+                       fontSize: 11, cursor: 'pointer', textDecoration: 'underline',
+                       padding: '0 4px' }}>clear</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Shared player-table search bar. Dark card surface + magnifying glass, focus
 // ring in primary gold. Right side shows total count when empty, "N of M"
@@ -902,6 +998,26 @@ export default function App() {
       return { ...prev, [name]: +value };
     });
   }, []);
+
+  // Lock / Exclude player sets. Lock = MUST be in every lineup. Exclude = NEVER in any lineup.
+  // Stored as arrays in state (React needs fresh references to re-render); converted to Set when
+  // passed to optimizers. Reset on slate/sport change — new slate means different active players.
+  const [lockedPlayers, setLockedPlayers] = useState([]);
+  const [excludedPlayers, setExcludedPlayers] = useState([]);
+  useEffect(() => { setLockedPlayers([]); setExcludedPlayers([]); }, [sport, data]);
+
+  // Toggle handlers: lock and exclude are mutually exclusive — toggling one clears the other
+  // for that player (preventing an impossible "must-be-in AND must-be-out" contradiction).
+  const onToggleLock = useCallback((name) => {
+    setLockedPlayers(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    setExcludedPlayers(prev => prev.filter(n => n !== name));
+  }, []);
+  const onToggleExclude = useCallback((name) => {
+    setExcludedPlayers(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    setLockedPlayers(prev => prev.filter(n => n !== name));
+  }, []);
+  const onClearLocks = useCallback(() => setLockedPlayers([]), []);
+  const onClearExcludes = useCallback(() => setExcludedPlayers([]), []);
   // Cursor-tracking gold glow: follows mouse, rendered via CSS custom properties on <body>.
   // Throttled via rAF so mousemove doesn't thrash layout.
   useEffect(() => {
@@ -1350,23 +1466,23 @@ export default function App() {
       </div>}
       {!buildError && <ErrorBoundary>
       {sport === 'tennis' && (<>
-        {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
+        {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
         {tab === 'pp' && <PPTab rows={ppRows} />}
-        {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} />}
+        {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'mma' && (<>
-        {tab === 'dk' && <MMADKTab fighters={dkPlayers} fc={data.fights?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} />}
+        {tab === 'dk' && <MMADKTab fighters={dkPlayers} fc={data.fights?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
         {tab === 'pp' && <MMAPPTab rows={ppRows} />}
-        {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} />}
+        {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'nba' && (<>
-        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} cptOwn={cptOwnership} onOverride={onOverrideProj} overrides={projOverrides} />}
+        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} cptOwn={cptOwnership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
         {tab === 'pp' && <NBAPPTab rows={ppRows} />}
-        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} />}
+        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
@@ -1492,7 +1608,7 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
 // ═══════════════════════════════════════════════════════════════════════
 // TENNIS COMPONENTS — UNCHANGED from v5 except BuilderTab gets contrarian
 // ═══════════════════════════════════════════════════════════════════════
-function DKTab({ players, mc, own, onOverride, overrides }) {
+function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], excludedPlayers = [], onToggleLock, onToggleExclude, onClearLocks, onClearExcludes }) {
   const [q, setQ] = useState('');
   const pw = useMemo(() => players.filter(p => p.salary > 0).map(p => ({ ...p, simOwn: own[p.name] || 0 })), [players, own]);
   const pwFiltered = useMemo(() => pw.filter(p => matchesSearch(p, q)), [pw, q]);
@@ -1605,8 +1721,9 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
+    <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
     <div className="table-wrap"><table><thead><tr>
-      <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" /><S label="Proj" colKey="proj" /><S label="Val" colKey="val" /><S label="P(2-0)" colKey="pStraight" /><S label="GW" colKey="gw" /><S label="GL" colKey="gl" /><S label="SW" colKey="sw" /><S label="Aces" colKey="aces" /><S label="DFs" colKey="dfs" /><S label="Breaks" colKey="breaks" /><th>Time</th>
+      <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num /><S label="Win%" colKey="wp" num /><S label="Proj" colKey="proj" num /><S label="Val" colKey="val" num /><S label="P(2-0)" colKey="pStraight" num /><S label="GW" colKey="gw" num /><S label="GL" colKey="gl" num /><S label="SW" colKey="sw" num /><S label="Aces" colKey="aces" num /><S label="DFs" colKey="dfs" num /><S label="Breaks" colKey="breaks" num /><th>Time</th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name);
@@ -1623,14 +1740,14 @@ function DKTab({ players, mc, own, onOverride, overrides }) {
       return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
-        <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
+        <td className="name">{p.name}<LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td><td className="muted">{p.opponent}</td>
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
         <td className="num">
           <span className={iv ? 'cell-top3' : 'cell-proj'}>
             <input type="number" step="0.01" className={`proj-edit ${isOver ? 'overridden' : ''}`}
-              value={fmt(p.proj, 2)}
+              value={isOver ? overrides[p.name] : (p.proj != null ? p.proj : '')}
               onChange={e => onOverride && onOverride(p.name, e.target.value)}
               onDoubleClick={() => onOverride && onOverride(p.name, null)}
               title={isOver ? 'Overridden — double-click to reset' : 'Click to edit projection'} />
@@ -1677,9 +1794,9 @@ function PPTab({ rows }) {
     <SearchBar value={q} onChange={setQ} placeholder="Search plays, players, stats" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><S label="Stat" colKey="stat" />
-      <S label="PP Line" colKey="line" /><S label="Projected" colKey="projected" />
+      <S label="PP Line" colKey="line" num /><S label="Projected" colKey="projected" />
       <S label="Edge" colKey="ev" /><S label="Play" colKey="direction" />
-      <th>Mult</th><S label="Win%" colKey="wp" /><S label="Opp" colKey="opponent" />
+      <th>Mult</th><S label="Win%" colKey="wp" num /><S label="Opp" colKey="opponent" />
     </tr></thead>
     <tbody>{sorted.map((r, i) => {
       const isBest = best.some(t => t.player === r.player && t.stat === r.stat);
@@ -1705,7 +1822,7 @@ function PPTab({ rows }) {
 // ═══════════════════════════════════════════════════════════════════════
 // TENNIS BUILDER — surgical additive change for contrarian mode
 // ═══════════════════════════════════════════════════════════════════════
-function BuilderTab({ players: rp, ownership }) {
+function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
@@ -1885,7 +2002,7 @@ function BuilderTab({ players: rp, ownership }) {
         };
       });
       enforceMinNudge(pd, sp);
-      const r = optimizeShowdown(pd, nL, 50000, 48000);
+      const r = optimizeShowdown(pd, nL, 50000, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
       setRes({ ...r, pData: pd, isShowdown: true });
       return;
     }
@@ -1901,7 +2018,7 @@ function BuilderTab({ players: rp, ownership }) {
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj * jitter(), opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     enforceMinNudge(pd, sp);
-    const r = optimize(pd, nL, 50000, 6, 48000);
+    const r = optimize(pd, nL, 50000, 6, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
     setRes({ ...r, pData: pd, isShowdown: false });
   };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
@@ -1977,9 +2094,9 @@ function BuilderTab({ players: rp, ownership }) {
       );
     })()}
     <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMax} onChange={e => setGlobalMax(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="1" step="1" value={nL} onChange={e => { const v = e.target.value; if (v === "") setNL(""); else setNL(Math.max(1, parseInt(v, 10) || 1)); }} onBlur={e => { if (e.target.value === "" || +e.target.value < 1) setNL(20); }} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="0" max="100" step="1" value={globalMin} onChange={e => { const v = e.target.value; if (v === "") setGlobalMin(""); else setGlobalMin(Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === "") setGlobalMin(0); }} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Global Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="0" max="100" step="1" value={globalMax} onChange={e => { const v = e.target.value; if (v === "") setGlobalMax(""); else setGlobalMax(Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === "") setGlobalMax(100); }} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }} title="Random ± shift applied to each player's projection per build. Ensures you and other users don't submit identical lineups on the same slate.">
         Variance
         <input type="range" min="0" max="25" step="1" value={variance} onChange={e => setVariance(+e.target.value)} style={{ width: 80, accentColor: 'var(--primary)' }} />
@@ -1989,7 +2106,7 @@ function BuilderTab({ players: rp, ownership }) {
       <button onClick={exportProjections} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', padding: '4px 12px', fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}><Icon name="download" size={12}/> Projections CSV</button>
     </div>
     <SearchBar value={poolQ} onChange={setPoolQ} placeholder="Search pool by player or opponent" total={sp.length} filtered={sp.filter(p => matchesSearch(p, poolQ)).length} />
-    <div className="builder-controls">{sp.filter(p => matchesSearch(p, poolQ)).map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
+    <div className="builder-controls">{sp.filter(p => matchesSearch(p, poolQ)).map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" min="0" max="100" step="1" value={exp[p.name]?.min ?? globalMin} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'min', ''); else sE(p.name, 'min', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'min', globalMin); }} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" min="0" max="100" step="1" value={exp[p.name]?.max ?? globalMax} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'max', ''); else sE(p.name, 'max', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'max', globalMax); }} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
     <button className="btn btn-primary" onClick={run} disabled={!canBuild}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
@@ -2025,7 +2142,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
     <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
-      <S label="Player" colKey="name" /><S label="Salary" colKey="salary" /><S label="Proj" colKey="projection" /><S label="Value" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
+      <S label="Player" colKey="name" /><S label="Salary" colKey="salary" num /><S label="Proj" colKey="projection" num /><S label="Value" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num /><S label="Leverage" colKey="lev" num />
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.projection, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
     <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
@@ -2139,9 +2256,9 @@ function TrackRecordTab({ sport }) {
           <tr>
             <th style={{ width: 28 }}></th>
             <th>Tag</th>
-            <th>N</th>
-            <th>Rate</th>
-            <th>Edge</th>
+            <th className="num">N</th>
+            <th className="num">Rate</th>
+            <th className="num">Edge</th>
             <th>Signal</th>
           </tr>
         </thead>
@@ -2224,7 +2341,7 @@ function LeverageTab({ players: rp }) {
         <div className="metric"><div className="metric-label"><Icon name="gem" size={13}/> Top Leverage</div><div className="metric-value" style={{ color: 'var(--green-text)' }}>{ld[0]?.name}</div><div className="metric-sub">You: {ld[0]?.userExp}% · Field: {ld[0]?.fieldOwn}% · +{ld[0]?.leverage}%</div></div>
         <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Most Underweight</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{ld[ld.length - 1]?.name}</div><div className="metric-sub">You: {ld[ld.length - 1]?.userExp}% · Field: {ld[ld.length - 1]?.fieldOwn}% · {ld[ld.length - 1]?.leverage}%</div></div>
       </div>
-      <div className="table-wrap"><table><thead><tr><th>#</th><th></th><th>Player</th><th>Opp</th><th>Proj</th><th>Your Exp</th><th>Field Own</th><th>Leverage</th></tr></thead>
+      <div className="table-wrap"><table><thead><tr><th>#</th><th></th><th>Player</th><th>Opp</th><th className="num">Proj</th><th className="num">Your Exp</th><th className="num">Field Own</th><th className="num">Leverage</th></tr></thead>
       <tbody>{ld.map((p, i) => <tr key={p.name} className={p.leverage > 10 ? 'row-hl-green' : p.leverage < -10 ? 'row-hl-red' : ''}><td className="muted">{i + 1}</td><td>{p.leverage > 10 ? <Tip icon="gem" label="Strong overweight" /> : p.leverage < -10 ? <Tip icon="bomb" label="Underweight" /> : ''}</td><td className="name">{p.name}</td><td className="muted">{p.opponent}</td><td className="num">{fmt(p.proj, 1)}</td><td className="num" style={{ color: 'var(--primary-glow)' }}>{fmt(p.userExp, 1)}%</td><td className="num muted">{fmt(p.fieldOwn, 1)}%</td><td className="num"><span style={{ color: p.leverage > 0 ? 'var(--green)' : p.leverage < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.leverage) > 10 ? 700 : 500, background: Math.abs(p.leverage) > 15 ? (p.leverage > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)') : 'transparent', padding: '2px 8px', borderRadius: 4 }}>{p.leverage > 0 ? '+' : ''}{fmt(p.leverage, 1)}%</span></td></tr>)}</tbody></table></div>
     </>}
     {!cd && !ul && <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' }}><div style={{ marginBottom: 8, color: 'var(--text-muted)' }}><Icon name="refresh" size={32}/></div><div style={{ fontSize: 14 }}>Upload both CSVs to see leverage vs field</div></div>}
@@ -2234,7 +2351,7 @@ function LeverageTab({ players: rp }) {
 // ═══════════════════════════════════════════════════════════════════════
 // MMA COMPONENTS — NEW
 // ═══════════════════════════════════════════════════════════════════════
-function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
+function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = [], excludedPlayers = [], onToggleLock, onToggleExclude, onClearLocks, onClearExcludes }) {
   const [q, setQ] = useState('');
   const pw = useMemo(() => fighters.filter(p => p.salary > 0).map(p => ({ ...p, simOwn: own[p.name] || 0 })), [fighters, own]);
   const pwFiltered = useMemo(() => pw.filter(p => matchesSearch(p, q)), [pw, q]);
@@ -2347,11 +2464,12 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
       <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search fighters, opponents" total={pw.length} filtered={pwFiltered.length} />
+    <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="name" /><th>Opp</th>
-      <S label="Sal" colKey="salary" /><S label="Sim Own" colKey="simOwn" /><S label="Win%" colKey="wp" />
-      <S label="Proj" colKey="proj" /><S label="Ceiling" colKey="ceil" /><S label="Finish%" colKey="finishProb" />
-      <S label="Val" colKey="val" /><S label="CVal" colKey="cval" />
+      <S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num /><S label="Win%" colKey="wp" num />
+      <S label="Proj" colKey="proj" num /><S label="Ceiling" colKey="ceil" num /><S label="Finish%" colKey="finishProb" />
+      <S label="Val" colKey="val" num /><S label="CVal" colKey="cval" num />
       <S label="SS" colKey="sigStr" /><S label="TD" colKey="takedowns" /><S label="CT" colKey="ctMin" />
       <th>Time</th>
     </tr></thead>
@@ -2370,14 +2488,14 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides }) {
       return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
-        <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
+        <td className="name">{p.name}<LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td><td className="muted">{p.opponent}</td>
         <td className="num">{fmtSal(p.salary)}</td>
         <td className="num" style={{ color: p.simOwn > 30 ? 'var(--amber)' : 'var(--text-muted)' }}>{fmt(p.simOwn, 1)}%</td>
         <td className="num">{fmtPct(p.wp)}</td>
         <td className="num">
           <span className={iv ? 'cell-top3' : 'cell-proj'}>
             <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
-              value={fmt(p.proj, 1)}
+              value={isOver ? overrides[p.name] : (p.proj != null ? p.proj : '')}
               onChange={e => onOverride && onOverride(p.name, e.target.value)}
               onDoubleClick={() => onOverride && onOverride(p.name, null)}
               title={isOver ? 'Overridden — double-click to reset. Ceiling scales proportionally.' : 'Click to edit projection'} />
@@ -2425,9 +2543,9 @@ function MMAPPTab({ rows }) {
     <SearchBar value={q} onChange={setQ} placeholder="Search plays, fighters, stats" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="player" /><S label="Stat" colKey="stat" />
-      <S label="PP Line" colKey="line" /><S label="Projected" colKey="projected" />
+      <S label="PP Line" colKey="line" num /><S label="Projected" colKey="projected" />
       <S label="Edge" colKey="ev" /><S label="Play" colKey="direction" />
-      <th>Mult</th><S label="Win%" colKey="wp" /><S label="Opp" colKey="opponent" />
+      <th>Mult</th><S label="Win%" colKey="wp" num /><S label="Opp" colKey="opponent" />
     </tr></thead>
     <tbody>{sorted.map((r, i) => {
       const isBest = best.some(t => t.player === r.player && t.stat === r.stat);
@@ -2451,7 +2569,7 @@ function MMAPPTab({ rows }) {
   </>);
 }
 
-function MMABuilderTab({ fighters: rp, ownership }) {
+function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [nL, setNL] = useState(150);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build
@@ -2597,7 +2715,7 @@ function MMABuilderTab({ fighters: rp, ownership }) {
     });
     // Nudge whichever key the optimizer actually ranks on for this mode
     enforceMinNudge(pd, sp, mode === 'ceiling' ? 'ceiling' : 'projection');
-    const r = optimizeMMA(pd, nL, 50000, 6, mode, 48000);
+    const r = optimizeMMA(pd, nL, 50000, 6, mode, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
     setRes({ ...r, pData: pd, mode });
   };
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
@@ -2651,9 +2769,9 @@ function MMABuilderTab({ fighters: rp, ownership }) {
         <button onClick={() => setMode('proj')} style={{ background: mode === 'proj' ? 'var(--primary)' : 'transparent', color: mode === 'proj' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="dollar" size={13}/> Cash (median)</button>
         <button onClick={() => setMode('ceiling')} style={{ background: mode === 'ceiling' ? 'var(--primary)' : 'transparent', color: mode === 'ceiling' ? '#0A1628' : 'var(--text-muted)', border: 'none', padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="rocket" size={13}/> GPP (ceiling)</button>
       </div>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMax} onChange={e => setGlobalMax(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="1" step="1" value={nL} onChange={e => { const v = e.target.value; if (v === "") setNL(""); else setNL(Math.max(1, parseInt(v, 10) || 1)); }} onBlur={e => { if (e.target.value === "" || +e.target.value < 1) setNL(20); }} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="0" max="100" step="1" value={globalMin} onChange={e => { const v = e.target.value; if (v === "") setGlobalMin(""); else setGlobalMin(Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === "") setGlobalMin(0); }} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="0" max="100" step="1" value={globalMax} onChange={e => { const v = e.target.value; if (v === "") setGlobalMax(""); else setGlobalMax(Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === "") setGlobalMax(100); }} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }} title="Random ± shift applied to each fighter's projection & ceiling per build. Guarantees two users on the same slate don't submit identical lineups.">
         Variance
         <input type="range" min="0" max="25" step="1" value={variance} onChange={e => setVariance(+e.target.value)} style={{ width: 80, accentColor: 'var(--primary)' }} />
@@ -2674,8 +2792,8 @@ function MMABuilderTab({ fighters: rp, ownership }) {
       <span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span>
       <span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{mode === 'ceiling' ? fmt(p.ceil, 1) : fmt(p.proj, 1)}</span>
       <span style={{ color: (ownership[p.name] || 0) > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11, width: 30, textAlign: 'right', flexShrink: 0 }}>{fmt(ownership[p.name] || 0, 0)}%</span>
-      <input type="number" value={exp[p.name]?.min ?? globalMin} onChange={e => sE(p.name, 'min', +e.target.value)} title="Min %" style={{ width: 32, flexShrink: 0 }} />
-      <input type="number" value={exp[p.name]?.max ?? globalMax} onChange={e => sE(p.name, 'max', +e.target.value)} title="Max %" style={{ width: 32, flexShrink: 0 }} />
+      <input type="number" min="0" max="100" step="1" value={exp[p.name]?.min ?? globalMin} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'min', ''); else sE(p.name, 'min', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'min', globalMin); }} title="Min %" style={{ width: 32, flexShrink: 0 }} />
+      <input type="number" min="0" max="100" step="1" value={exp[p.name]?.max ?? globalMax} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'max', ''); else sE(p.name, 'max', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'max', globalMax); }} title="Max %" style={{ width: 32, flexShrink: 0 }} />
     </div>)}</div>
     <button className="btn btn-primary" onClick={run} disabled={!canBuild}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
@@ -2719,7 +2837,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
     <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
-      <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" /><S label="Count" colKey="cnt" /><S label="Exposure" colKey="pct" /><S label="Sim Own" colKey="simOwn" /><S label="Leverage" colKey="lev" />
+      <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" num /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num /><S label="Leverage" colKey="lev" num />
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}><td className="name">{p.name}</td><td className="num">${p.salary.toLocaleString()}</td><td className="num">{fmt(p.score, 1)}</td><td className="num">{fmt(p.val, 2)}</td><td className="num">{p.cnt}</td><td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td><td className="num muted">{fmt(p.simOwn, 1)}%</td><td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td></tr>)}</tbody></table></div>
     <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
@@ -2806,7 +2924,7 @@ function StatusChip({ status, onCycle }) {
 }
 
 // NBA DK Tab — projections, value, ownership, status, mins/usg, cascade
-function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }) {
+function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, lockedPlayers = [], excludedPlayers = [], onToggleLock, onToggleExclude, onClearLocks, onClearExcludes }) {
   const [statusMap, setStatusMap] = useState({});
   const [q, setQ] = useState('');
   const cycleStatus = (name) => {
@@ -3026,14 +3144,15 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
       );
     })()}
     <SearchBar value={q} onChange={setQ} placeholder="Search players, teams, positions" total={pw.length} filtered={pwFiltered.length} />
+    <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
-      <S label="Sal" colKey="salary" />
-      <S label="Sim Own" colKey="simOwn" />
-      <S label="CPT %" colKey="cptOwnPct" />
-      <S label="Proj" colKey="proj" /><S label="Ceil" colKey="ceil" />
-      <S label="Val" colKey="val" /><S label="CVal" colKey="cval" />
-      <S label="Min" colKey="projMins" />
+      <S label="Sal" colKey="salary" num />
+      <S label="Sim Own" colKey="simOwn" num />
+      <S label="CPT %" colKey="cptOwnPct" num />
+      <S label="Proj" colKey="proj" num /><S label="Ceil" colKey="ceil" num />
+      <S label="Val" colKey="val" num /><S label="CVal" colKey="cval" num />
+      <S label="Min" colKey="projMins" num />
       <th title="Source of projection">Src</th>
       <th>Status</th>
     </tr></thead>
@@ -3057,6 +3176,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
         <td className="name">
           {p.name}
           {noLine && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 3, fontSize: 9, fontWeight: 700, background: 'rgba(251,191,36,0.15)', color: 'var(--amber-text)', border: '1px solid rgba(251,191,36,0.4)' }}>NO LINE</span>}
+          <LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} />
         </td>
         <td><TeamBadge team={p.team} /></td>
         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.positions_str}</td>
@@ -3067,7 +3187,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides }
           {noLine ? <span style={{ color: 'var(--text-dim)' }}>—</span> : (
             <span className={iv ? 'cell-top3' : 'cell-proj'}>
               <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
-                value={fmt(p.proj, 1)}
+                value={isOver ? overrides[p.name] : (p.proj != null ? p.proj : '')}
                 onChange={e => onOverride && onOverride(p.name, e.target.value)}
                 onDoubleClick={() => onOverride && onOverride(p.name, null)}
                 title={isOver ? 'Overridden — double-click to reset' : 'Click to edit'} />
@@ -3113,7 +3233,7 @@ function NBAPPTab({ rows }) {
     <SearchBar value={q} onChange={setQ} placeholder="Search players, teams" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><th>Team</th>
-      <S label="PP Line" colKey="line" />
+      <S label="PP Line" colKey="line" num />
       <S label="Our Proj" colKey="projected" /><S label="Edge" colKey="ev" />
       <S label="Play" colKey="direction" />
     </tr></thead>
@@ -3138,7 +3258,7 @@ function NBAPPTab({ rows }) {
 }
 
 // NBA Builder Tab — contrarian lineup building for showdown or classic
-function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo }) {
+function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [] }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
   const [nL, setNL] = useState(20);
@@ -3332,7 +3452,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         };
       });
       enforceMinNudge(pd, baseProjs);
-      const r = nbaOptimizeShowdown(pd, nL, 50000, 48000);
+      const r = nbaOptimizeShowdown(pd, nL, 50000, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
       setRes({ ...r, pData: pd, isShowdown: true });
       return;
     }
@@ -3352,7 +3472,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     });
     enforceMinNudge(pd, baseProjs);
-    const r = nbaOptimizeClassic(pd, nL, 50000, 48000);
+    const r = nbaOptimizeClassic(pd, nL, 50000, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
     setRes({ ...r, pData: pd, isShowdown: false });
   };
 
@@ -3444,9 +3564,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       );
     })()}
     <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={nL} onChange={e => setNL(+e.target.value)} /></label>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMin} onChange={e => setGlobalMin(+e.target.value)} /></label>
-      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" value={globalMax} onChange={e => setGlobalMax(+e.target.value)} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Lineups: <input style={{ width: 60, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="1" step="1" value={nL} onChange={e => { const v = e.target.value; if (v === "") setNL(""); else setNL(Math.max(1, parseInt(v, 10) || 1)); }} onBlur={e => { if (e.target.value === "" || +e.target.value < 1) setNL(20); }} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Min %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="0" max="100" step="1" value={globalMin} onChange={e => { const v = e.target.value; if (v === "") setGlobalMin(""); else setGlobalMin(Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === "") setGlobalMin(0); }} /></label>
+      <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Max %: <input style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', marginLeft: 4 }} type="number" min="0" max="100" step="1" value={globalMax} onChange={e => { const v = e.target.value; if (v === "") setGlobalMax(""); else setGlobalMax(Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === "") setGlobalMax(100); }} /></label>
       <label style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }} title="Random ± shift applied to each player's projection per build.">
         Variance
         <input type="range" min="0" max="25" step="1" value={variance} onChange={e => setVariance(+e.target.value)} style={{ width: 80, accentColor: 'var(--primary)' }} />
@@ -3772,13 +3892,13 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={displayRows.length} filtered={filteredRows.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
       <S label="Player" colKey="name" /><th>Team</th>
-      <S label="Salary" colKey="salary" />
-      <S label="Proj" colKey="projection" />
-      <S label="Val" colKey="val" />
-      <S label="Count" colKey="cnt" />
+      <S label="Salary" colKey="salary" num />
+      <S label="Proj" colKey="projection" num />
+      <S label="Val" colKey="val" num />
+      <S label="Count" colKey="cnt" num />
       <S label={pctColLabel} colKey="pct" />
       <S label={simColLabel} colKey="simOwn" />
-      <S label="Leverage" colKey="lev" />
+      <S label="Leverage" colKey="lev" num />
     </tr></thead>
     <tbody>{sorted.map(p => <tr key={p.name}>
       <td className="name">{p.name}</td>
