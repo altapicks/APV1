@@ -16,8 +16,8 @@
   "categories": [
     {
       "key": "biggest_trap",
-      "label": "Field's Biggest Need",
-      "description": "Chalk we flagged to fade",
+      "label": "Biggest Trap",
+      "description": "Who the field needs most",
       "icon": "warning",
       "type": "bust_rate",
       "n": 3,
