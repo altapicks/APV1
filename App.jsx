@@ -2090,7 +2090,12 @@ function TrackRecordTab({ sport }) {
   }
 
   // LOADED — render categories table + insight
-  const rateFor = c => c.type === 'bust_rate' ? c.bust_rate : (c.type === 'reversal' ? Math.max(c.hit_rate || 0, c.reverse_rate || 0) : c.hit_rate);
+  const rateFor = c => {
+    if (c.type === 'bust_rate') return c.bust_rate;
+    if (c.type === 'reversal') return Math.max(c.hit_rate || 0, c.reverse_rate || 0);
+    if (c.type === 'hit_rate_dual') return c.primary_hit_rate ?? c.hit_rate ?? 0;
+    return c.hit_rate ?? 0;
+  };
   const sorted = [...(data.categories || [])].sort((a, b) => rateFor(b) - rateFor(a));
   const sigColor = s => s === 'follow' ? 'var(--green-text)' : s === 'fade' ? 'var(--red-text)' : s === 'counter' ? 'var(--amber-text)' : 'var(--text-muted)';
   const sigBg = s => s === 'follow' ? 'rgba(74,222,128,0.12)' : s === 'fade' ? 'rgba(248,113,113,0.12)' : s === 'counter' ? 'rgba(251,191,36,0.12)' : 'rgba(156,163,175,0.1)';
@@ -2147,6 +2152,11 @@ function TrackRecordTab({ sport }) {
                   {cat.type === 'reversal' && (
                     <div style={{ fontSize: 10, color: 'var(--amber-text)', marginTop: 2, fontWeight: 600 }}>
                       reverses {(cat.reverse_rate * 100).toFixed(0)}%
+                    </div>
+                  )}
+                  {cat.type === 'hit_rate_dual' && (
+                    <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2, fontWeight: 500 }}>
+                      pivot {((cat.pivot_hit_rate || 0) * 100).toFixed(0)}% · both {((cat.both_in_winner_rate || 0) * 100).toFixed(0)}%
                     </div>
                   )}
                 </td>
