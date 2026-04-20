@@ -149,7 +149,11 @@ export function ppEV(projectedScore, ppLine) {
 // Builds 3-player lineups: CPT (1.5x proj, CPT salary), A-CPT (1.25x proj, A-CPT salary), FLEX (1x proj, FLEX salary)
 // Requires each player to have: flex_salary, acpt_salary, cpt_salary, flex_id, acpt_id, cpt_id, projection
 // Mirrors optimize()'s urgency-weighted min satisfaction + greedy fill pattern.
-export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minSalary = 0) {
+export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minSalary = 0, opts = {}) {
+  // opts: { locked: Set<string>, excluded: Set<string> }
+  const lockedSet = opts.locked instanceof Set ? opts.locked : new Set(opts.locked || []);
+  const excludedSet = opts.excluded instanceof Set ? opts.excluded : new Set(opts.excluded || []);
+
   const N = players.length;
   const idx = {};
   players.forEach((p, i) => { idx[p.name] = i; });
@@ -159,27 +163,37 @@ export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minS
   const allLineups = [];
   for (let c = 0; c < N; c++) {
     const cp = players[c];
+    if (excludedSet.has(cp.name)) continue;
     const cSal = cp.cpt_salary, cProj = 1.5 * cp.projection;
     for (let a = 0; a < N; a++) {
       if (a === c) continue;
       const ap = players[a];
-      if (ap.opponent === cp.name) continue;                 // A-CPT would be CPT's opponent
+      if (excludedSet.has(ap.name)) continue;
+      if (ap.opponent === cp.name) continue;
       const partial = cSal + ap.acpt_salary;
       if (partial > salaryCap) continue;
       const aProj = 1.25 * ap.projection;
       for (let f = 0; f < N; f++) {
         if (f === c || f === a) continue;
         const fp = players[f];
-        if (fp.opponent === cp.name || fp.opponent === ap.name) continue;  // FLEX faces CPT or A-CPT
+        if (excludedSet.has(fp.name)) continue;
+        if (fp.opponent === cp.name || fp.opponent === ap.name) continue;
         const ts = partial + fp.flex_salary;
         if (ts > salaryCap || ts < minSalary) continue;
+        // Lock check — all locked names must be in this lineup (at any slot)
+        if (lockedSet.size > 0) {
+          const luNames = new Set([cp.name, ap.name, fp.name]);
+          let allLocked = true;
+          for (const ln of lockedSet) { if (!luNames.has(ln)) { allLocked = false; break; } }
+          if (!allLocked) continue;
+        }
         const tp = cProj + aProj + fp.projection;
         allLineups.push({
           proj: round2(tp),
           sal: ts,
-          players: [c, a, f],                    // classic-compat: array of player indices
-          roles: ['CPT', 'A-CPT', 'FLEX'],       // parallel array of role labels
-          cpt: c, acpt: a, flex: f,              // explicit role-indexed fields for export
+          players: [c, a, f],
+          roles: ['CPT', 'A-CPT', 'FLEX'],
+          cpt: c, acpt: a, flex: f,
         });
       }
     }
@@ -257,7 +271,15 @@ export function optimizeShowdown(players, nLineups = 20, salaryCap = 50000, minS
 // ============================================================
 // LINEUP OPTIMIZER
 // ============================================================
-export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6, minSalary = 0) {
+export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize = 6, minSalary = 0, opts = {}) {
+  // opts: { locked: Set<string>, excluded: Set<string> }
+  //  - locked: player names that MUST appear in every generated lineup
+  //  - excluded: player names that MUST NOT appear in any lineup
+  // Tennis note: because rosters are pair-picks (player vs opponent from each match),
+  // locking/excluding one side of a match forces the other side out/in.
+  const lockedSet = opts.locked instanceof Set ? opts.locked : new Set(opts.locked || []);
+  const excludedSet = opts.excluded instanceof Set ? opts.excluded : new Set(opts.excluded || []);
+
   // Build match pairs
   const idx = {};
   players.forEach((p, i) => { idx[p.name] = i; });
@@ -284,12 +306,23 @@ export function optimize(players, nLineups = 45, salaryCap = 50000, rosterSize =
     for (let b = 0; b < bits; b++) {
       let ts = 0, tp = 0;
       const pidxs = [];
+      let hasExcluded = false;
       for (let i = 0; i < rosterSize; i++) {
         const side = (b >> i) & 1;
         const opt = matchOpts[mc[i]][side];
+        const name = players[opt.idx].name;
+        if (excludedSet.has(name)) { hasExcluded = true; break; }
         ts += opt.sal; tp += opt.proj; pidxs.push(opt.idx);
       }
+      if (hasExcluded) continue;
       if (ts <= salaryCap && ts >= minSalary) {
+        // Lock check — all locked names must appear in this lineup
+        if (lockedSet.size > 0) {
+          const luNames = new Set(pidxs.map(pi => players[pi].name));
+          let allLocked = true;
+          for (const ln of lockedSet) { if (!luNames.has(ln)) { allLocked = false; break; } }
+          if (!allLocked) continue;
+        }
         allLineups.push({ proj: round2(tp), sal: ts, players: pidxs });
       }
     }
