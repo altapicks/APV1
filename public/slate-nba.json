@@ -1,464 +1,106 @@
 {
-  "date": "2026-04-19",
+  "date": "2026-04-20",
   "slate_type": "showdown",
-  "notes": "POR @ SAS showdown (playoffs). DK salaries + IDs integrated. Props from PP + DK screenshots. Missing stats + minutes + turnovers filled from projection table (turnovers have \u00b12% variation). Playoff minute bumps applied. PENDING: game-line metadata (spread/total/MLs).",
+  "notes": "TOR @ CLE showdown (regular season end). DK salaries + IDs integrated. PP lines (points/threes/rebounds/assists/stls_blks/FS/DD) as primary source. SaberSims used only for minutes, turnovers, and bench punts without PP coverage. Quickley marked OUT (no PP lines at $6.8k salary, SS shows 0 mins).",
   "game": {
-    "away": "POR",
-    "home": "SAS",
-    "tip": "04/19/2026 09:00PM ET",
-    "spread_sas": -12.5,
-    "total": 223.5,
-    "implied_sas": 118.0,
-    "implied_por": 105.5,
-    "ml_sas": -800,
-    "ml_por": 560,
-    "pace_sas": 99.0,
-    "pace_por": 101.5,
-    "blowout_risk_sas": 0.42,
-    "blowout_risk_por": 0.05
+    "away": "TOR",
+    "home": "CLE",
+    "tip": "04/20/2026 07:00PM ET",
+    "spread_cle": -5.5,
+    "total": 217.5,
+    "implied_cle": 111.5,
+    "implied_tor": 106.0,
+    "ml_cle": -240,
+    "ml_tor": 200,
+    "pace_cle": 100.5,
+    "pace_tor": 98.5,
+    "blowout_risk_cle": 0.15,
+    "blowout_risk_tor": 0.08
   },
   "dk_players": [
     {
-      "name": "Victor Wembanyama",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "C",
+      "name": "Donovan Mitchell",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "SG",
       "positions": [
-        "C"
+        "SG"
       ],
-      "util_id": 42685929,
-      "util_salary": 12200,
-      "cpt_id": 42685965,
-      "cpt_salary": 18300,
-      "salary": 12200,
-      "id": 42685929,
-      "avg_ppg": 51.9,
+      "util_id": 42692109,
+      "util_salary": 11000,
+      "cpt_id": 42692144,
+      "cpt_salary": 16500,
+      "salary": 11000,
+      "id": 42692109,
+      "avg_ppg": 44.8,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 35.7
+        "All": 33.9
       },
       "dk_props": {
         "points": {
           "line": 27.5,
-          "over": -121,
-          "under": -105
-        },
-        "rebounds": {
-          "line": 12.5,
-          "over": -121,
-          "under": -109
-        },
-        "assists": {
-          "line": 3.5,
-          "over": -105,
-          "under": -125
-        },
-        "threes": {
-          "line": 2.5,
-          "over": 114,
-          "under": -150
-        },
-        "stls_blks": {
-          "line": 4.91,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 1.5,
-          "_blk_line": 3.5
-        }
-      },
-      "turnovers": 3.83,
-      "dd_odds": -498,
-      "td_odds": 3300,
-      "pp_stats": {
-        "points": 27.5,
-        "rebounds": 12.5,
-        "assists": 3.5,
-        "threes": 2.5,
-        "stls_blks": 4.91
-      },
-      "season_avg": {
-        "ppg": 24.9,
-        "rpg": 11.4,
-        "apg": 3.1,
-        "3pmpg": 1.9,
-        "stlpg": 1.0,
-        "blkpg": 3.1
-      }
-    },
-    {
-      "name": "Deni Avdija",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "PG/SF",
-      "positions": [
-        "PG",
-        "SF"
-      ],
-      "util_id": 42685930,
-      "util_salary": 10800,
-      "cpt_id": 42685966,
-      "cpt_salary": 16200,
-      "salary": 10800,
-      "id": 42685930,
-      "avg_ppg": 44.49,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 37.9
-      },
-      "dk_props": {
-        "points": {
-          "line": 23.5,
-          "over": -108,
-          "under": -118
-        },
-        "rebounds": {
-          "line": 6.5,
-          "over": -130,
-          "under": -102
-        },
-        "assists": {
-          "line": 6.5,
-          "over": -101,
-          "under": -130
-        },
-        "threes": {
-          "line": 1.5,
-          "over": -160,
-          "under": 121
-        },
-        "stls_blks": {
-          "line": 0.53,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 0.5,
-          "_blk_line": null
-        }
-      },
-      "turnovers": 3.07,
-      "dd_odds": 210,
-      "td_odds": 1520,
-      "pp_stats": {
-        "points": 23.5,
-        "rebounds": 6.5,
-        "assists": 6.5,
-        "threes": 1.5,
-        "stls_blks": 0.53
-      },
-      "season_avg": {
-        "ppg": 24.5,
-        "rpg": 6.9,
-        "apg": 6.8,
-        "3pmpg": 1.9,
-        "stlpg": 0.8,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Stephon Castle",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "SG",
-      "positions": [
-        "SG"
-      ],
-      "util_id": 42685931,
-      "util_salary": 9800,
-      "cpt_id": 42685967,
-      "cpt_salary": 14700,
-      "salary": 9800,
-      "id": 42685931,
-      "avg_ppg": 36.98,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 35.7
-      },
-      "dk_props": {
-        "points": {
-          "line": 17.5,
-          "over": -104,
-          "under": -123
-        },
-        "rebounds": {
-          "line": 5.5,
-          "over": 105,
-          "under": -139
-        },
-        "assists": {
-          "line": 7.5,
-          "over": -120,
-          "under": -109
-        },
-        "threes": {
-          "line": 1.5,
-          "over": 140,
-          "under": -185
-        },
-        "stls_blks": {
-          "line": 1.42,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 1.5,
-          "_blk_line": null
-        }
-      },
-      "turnovers": 2.68,
-      "dd_odds": 200,
-      "td_odds": 2000,
-      "pp_stats": {
-        "points": 17.5,
-        "rebounds": 5.5,
-        "assists": 7.5,
-        "threes": 1.5,
-        "stls_blks": 1.42
-      },
-      "season_avg": {
-        "ppg": 16.6,
-        "rpg": 5.3,
-        "apg": 7.5,
-        "3pmpg": 1.2,
-        "stlpg": 1.1,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Donovan Clingan",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "C",
-      "positions": [
-        "C"
-      ],
-      "util_id": 42685932,
-      "util_salary": 9000,
-      "cpt_id": 42685968,
-      "cpt_salary": 13500,
-      "salary": 9000,
-      "id": 42685932,
-      "avg_ppg": 34.87,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 27.8
-      },
-      "dk_props": {
-        "points": {
-          "line": 10.5,
-          "over": -104,
-          "under": -122
-        },
-        "rebounds": {
-          "line": 10.5,
-          "over": 105,
-          "under": -138
-        },
-        "assists": {
-          "line": 1.5,
-          "over": -161,
-          "under": 122
-        },
-        "threes": {
-          "line": 1.5,
-          "over": 139,
-          "under": -184
-        },
-        "stls_blks": {
-          "line": 1.99,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 0.5,
-          "_blk_line": 1.5
-        }
-      },
-      "turnovers": 1.69,
-      "dd_odds": 159,
-      "pp_stats": {
-        "points": 10.5,
-        "rebounds": 10.5,
-        "assists": 1.5,
-        "threes": 1.5,
-        "stls_blks": 1.99
-      },
-      "season_avg": {
-        "ppg": 12.0,
-        "rpg": 11.6,
-        "apg": 2.1,
-        "3pmpg": 1.1,
-        "stlpg": 0.6,
-        "blkpg": 1.7
-      }
-    },
-    {
-      "name": "De'Aaron Fox",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "PG",
-      "positions": [
-        "PG"
-      ],
-      "util_id": 42685933,
-      "util_salary": 8600,
-      "cpt_id": 42685969,
-      "cpt_salary": 12900,
-      "salary": 8600,
-      "id": 42685933,
-      "avg_ppg": 34.57,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 35.0
-      },
-      "dk_props": {
-        "points": {
-          "line": 17.5,
-          "over": -117,
-          "under": -109
-        },
-        "rebounds": {
-          "line": 3.5,
-          "over": -130,
-          "under": -101
-        },
-        "assists": {
-          "line": 5.5,
-          "over": -134,
-          "under": 102
-        },
-        "threes": {
-          "line": 1.5,
-          "over": -127,
-          "under": -103
-        },
-        "stls_blks": {
-          "line": 1.46,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 1.5,
-          "_blk_line": null
-        }
-      },
-      "turnovers": 2.3,
-      "dd_odds": 840,
-      "td_odds": 7800,
-      "pp_stats": {
-        "points": 17.5,
-        "rebounds": 3.5,
-        "assists": 5.5,
-        "threes": 1.5,
-        "stls_blks": 1.46
-      },
-      "season_avg": {
-        "ppg": 18.5,
-        "rpg": 3.7,
-        "apg": 6.2,
-        "3pmpg": 1.8,
-        "stlpg": 1.2,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Jrue Holiday",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "PG",
-      "positions": [
-        "PG"
-      ],
-      "util_id": 42685934,
-      "util_salary": 8000,
-      "cpt_id": 42685970,
-      "cpt_salary": 12000,
-      "salary": 8000,
-      "id": 42685934,
-      "avg_ppg": 33.62,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 35.9
-      },
-      "dk_props": {
-        "points": {
-          "line": 15.5,
-          "over": -113,
-          "under": -112
+          "over": -107,
+          "under": -119
         },
         "rebounds": {
           "line": 4.5,
-          "over": 103,
-          "under": -136
+          "over": 109,
+          "under": -144
         },
         "assists": {
-          "line": 5.5,
-          "over": 103,
-          "under": -136
+          "line": 4.5,
+          "over": -131,
+          "under": -101
         },
         "threes": {
           "line": 2.5,
-          "over": 114,
-          "under": -151
+          "over": -172,
+          "under": 130
         },
         "stls_blks": {
-          "line": 0.55,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 0.5,
-          "_blk_line": null
+          "line": 1.5,
+          "over": -131,
+          "under": -101
         }
       },
-      "turnovers": 1.93,
-      "dd_odds": 820,
-      "td_odds": 6200,
+      "turnovers": 2.47,
+      "dd_odds": 1440,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 15.5,
+        "points": 27.5,
         "rebounds": 4.5,
-        "assists": 5.5,
+        "assists": 4.5,
         "threes": 2.5,
-        "stls_blks": 0.55
+        "stls_blks": 1.5
       },
       "season_avg": {
-        "ppg": 16.4,
-        "rpg": 4.6,
-        "apg": 6.0,
-        "3pmpg": 2.6,
-        "stlpg": 1.0,
-        "blkpg": null
+        "ppg": 26.9,
+        "rpg": 3.6,
+        "apg": 5.0,
+        "3pmpg": 3.6,
+        "stlpg": 1.7,
+        "blkpg": 0.4
       }
     },
     {
-      "name": "Toumani Camara",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "SG",
+      "name": "James Harden",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "PG",
       "positions": [
-        "SG"
+        "PG"
       ],
-      "util_id": 42685935,
-      "util_salary": 6800,
-      "cpt_id": 42685971,
-      "cpt_salary": 10200,
-      "salary": 6800,
-      "id": 42685935,
-      "avg_ppg": 27.1,
+      "util_id": 42692110,
+      "util_salary": 10600,
+      "cpt_id": 42692145,
+      "cpt_salary": 15900,
+      "salary": 10600,
+      "id": 42692110,
+      "avg_ppg": 44.89,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -468,206 +110,481 @@
       },
       "dk_props": {
         "points": {
-          "line": 12.5,
-          "over": -101,
-          "under": -126
+          "line": 19.5,
+          "over": -120,
+          "under": -106
         },
         "rebounds": {
           "line": 4.5,
-          "over": -139,
-          "under": 105
+          "over": 106,
+          "under": -140
         },
         "assists": {
-          "line": 1.5,
-          "over": -175,
-          "under": 132
+          "line": 7.5,
+          "over": 114,
+          "under": -150
         },
         "threes": {
           "line": 2.5,
-          "over": 100,
-          "under": -131
+          "over": -123,
+          "under": -107
         },
         "stls_blks": {
-          "line": 1.43,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 1.5,
-          "_blk_line": null
+          "line": 1.5,
+          "over": 107,
+          "under": -142
         }
       },
-      "turnovers": 1.59,
-      "dd_odds": 1800,
+      "turnovers": 4.22,
+      "dd_odds": 312,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 12.5,
+        "points": 19.5,
         "rebounds": 4.5,
-        "assists": 1.5,
+        "assists": 7.5,
         "threes": 2.5,
-        "stls_blks": 1.43
+        "stls_blks": 1.5
       },
       "season_avg": {
-        "ppg": 13.3,
-        "rpg": 5.1,
-        "apg": 2.4,
-        "3pmpg": 2.7,
+        "ppg": 23.0,
+        "rpg": 4.3,
+        "apg": 7.7,
+        "3pmpg": 3.3,
         "stlpg": 1.2,
-        "blkpg": null
+        "blkpg": 0.6
       }
     },
     {
-      "name": "Devin Vassell",
-      "team": "SAS",
-      "opponent": "POR",
+      "name": "Scottie Barnes",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42692111,
+      "util_salary": 10200,
+      "cpt_id": 42692146,
+      "cpt_salary": 15300,
+      "salary": 10200,
+      "id": 42692111,
+      "avg_ppg": 41.03,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 35.3
+      },
+      "dk_props": {
+        "points": {
+          "line": 18.5,
+          "over": -102,
+          "under": -125
+        },
+        "rebounds": {
+          "line": 6.5,
+          "over": -141,
+          "under": 107
+        },
+        "assists": {
+          "line": 5.5,
+          "over": -142,
+          "under": 108
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -225,
+          "under": 169
+        },
+        "stls_blks": {
+          "line": 2.5,
+          "over": -113,
+          "under": -117
+        }
+      },
+      "turnovers": 2.63,
+      "dd_odds": 240,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 18.5,
+        "rebounds": 6.5,
+        "assists": 5.5,
+        "threes": 0.5,
+        "stls_blks": 2.5
+      },
+      "season_avg": {
+        "ppg": 18.9,
+        "rpg": 8.3,
+        "apg": 5.7,
+        "3pmpg": 1.5,
+        "stlpg": 1.8,
+        "blkpg": 1.0
+      }
+    },
+    {
+      "name": "Evan Mobley",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42692112,
+      "util_salary": 9600,
+      "cpt_id": 42692147,
+      "cpt_salary": 14400,
+      "salary": 9600,
+      "id": 42692112,
+      "avg_ppg": 39.81,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 33.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 16.5,
+          "over": -122,
+          "under": -104
+        },
+        "rebounds": {
+          "line": 8.5,
+          "over": -144,
+          "under": 109
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -165,
+          "under": 125
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -132,
+          "under": 100
+        },
+        "stls_blks": {
+          "line": 2.5,
+          "over": 106,
+          "under": -141
+        }
+      },
+      "turnovers": 1.95,
+      "dd_odds": 130,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 16.5,
+        "rebounds": 8.5,
+        "assists": 2.5,
+        "threes": 0.5,
+        "stls_blks": 2.5
+      },
+      "season_avg": {
+        "ppg": 18.4,
+        "rpg": 9.7,
+        "apg": 3.2,
+        "3pmpg": 0.7,
+        "stlpg": 0.9,
+        "blkpg": 1.7
+      }
+    },
+    {
+      "name": "Brandon Ingram",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42692113,
+      "util_salary": 8600,
+      "cpt_id": 42692148,
+      "cpt_salary": 12900,
+      "salary": 8600,
+      "id": 42692113,
+      "avg_ppg": 35.67,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 35.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 22.5,
+          "over": -110,
+          "under": -116
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -151,
+          "under": 114
+        },
+        "assists": {
+          "line": 3.5,
+          "over": 102,
+          "under": -134
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -143,
+          "under": 109
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 103,
+          "under": -137
+        }
+      },
+      "turnovers": 2.72,
+      "dd_odds": 1280,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 22.5,
+        "rebounds": 4.5,
+        "assists": 3.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 20.5,
+        "rpg": 5.8,
+        "apg": 4.1,
+        "3pmpg": 1.8,
+        "stlpg": 0.9,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "RJ Barrett",
+      "team": "TOR",
+      "opponent": "CLE",
       "positions_str": "SF",
       "positions": [
         "SF"
       ],
-      "util_id": 42685936,
-      "util_salary": 6000,
-      "cpt_id": 42685972,
-      "cpt_salary": 9000,
-      "salary": 6000,
-      "id": 42685936,
-      "avg_ppg": 25.9,
+      "util_id": 42692114,
+      "util_salary": 8200,
+      "cpt_id": 42692149,
+      "cpt_salary": 12300,
+      "salary": 8200,
+      "id": 42692114,
+      "avg_ppg": 32.92,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 33.8
+        "All": 33.6
       },
       "dk_props": {
         "points": {
-          "line": 12.5,
-          "over": -108,
-          "under": -118
+          "line": 19.5,
+          "over": -107,
+          "under": -119
         },
         "rebounds": {
-          "line": 3.5,
-          "over": -114,
-          "under": -115
+          "line": 5.5,
+          "over": 121,
+          "under": -160
         },
         "assists": {
-          "line": 2.5,
-          "over": 120,
-          "under": -158
+          "line": 3.5,
+          "over": 124,
+          "under": -164
         },
         "threes": {
-          "line": 2.5,
-          "over": 124,
-          "under": -163
+          "line": 1.5,
+          "over": -139,
+          "under": 106
         },
         "stls_blks": {
-          "line": 0.55,
+          "line": 1.2,
           "over": -110,
           "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 0.5,
-          "_blk_line": null
+          "_source": "ss_fill"
         }
       },
-      "turnovers": 1.45,
+      "turnovers": 2.14,
+      "dd_odds": 1280,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 12.5,
-        "rebounds": 3.5,
-        "assists": 2.5,
-        "threes": 2.5,
-        "stls_blks": 0.55
+        "points": 19.5,
+        "rebounds": 5.5,
+        "assists": 3.5,
+        "threes": 1.5,
+        "stls_blks": 1.2
       },
       "season_avg": {
-        "ppg": 13.9,
-        "rpg": 4.0,
-        "apg": 2.5,
-        "3pmpg": 2.5,
-        "stlpg": 0.8,
-        "blkpg": null
+        "ppg": 17.8,
+        "rpg": 5.5,
+        "apg": 4.2,
+        "3pmpg": 1.8,
+        "stlpg": 0.9,
+        "blkpg": 0.3
       }
     },
     {
-      "name": "Scoot Henderson",
-      "team": "POR",
-      "opponent": "SAS",
+      "name": "Jarrett Allen",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692115,
+      "util_salary": 7400,
+      "cpt_id": 42692150,
+      "cpt_salary": 11100,
+      "salary": 7400,
+      "id": 42692115,
+      "avg_ppg": 31.98,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 28.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 14.5,
+          "over": 104,
+          "under": -133
+        },
+        "rebounds": {
+          "line": 8.5,
+          "over": -125,
+          "under": -105
+        },
+        "assists": {
+          "line": 1.5,
+          "over": 158,
+          "under": -211
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -125,
+          "under": -106
+        }
+      },
+      "turnovers": 1.23,
+      "dd_odds": 167,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 14.5,
+        "rebounds": 8.5,
+        "assists": 1.5,
+        "threes": 0.1,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 14.6,
+        "rpg": 9.2,
+        "apg": 1.4,
+        "3pmpg": 0.1,
+        "stlpg": 1.0,
+        "blkpg": 1.0
+      }
+    },
+    {
+      "name": "Immanuel Quickley",
+      "team": "TOR",
+      "opponent": "CLE",
       "positions_str": "PG",
       "positions": [
         "PG"
       ],
-      "util_id": 42685937,
-      "util_salary": 5600,
-      "cpt_id": 42685973,
-      "cpt_salary": 8400,
-      "salary": 5600,
-      "id": 42685937,
-      "avg_ppg": 25.17,
-      "status": "ACTIVE",
+      "util_id": 42692116,
+      "util_salary": 6800,
+      "cpt_id": 42692151,
+      "cpt_salary": 10200,
+      "salary": 6800,
+      "id": 42692116,
+      "avg_ppg": 33.84,
+      "status": "OUT",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 26.2
+        "All": null
       },
       "dk_props": {
         "points": {
-          "line": 9.5,
-          "over": -106,
-          "under": -120
-        },
-        "rebounds": {
-          "line": 1.5,
-          "over": -184,
-          "under": 139
-        },
-        "assists": {
-          "line": 2.5,
-          "over": -114,
-          "under": -116
-        },
-        "threes": {
-          "line": 1.5,
-          "over": 127,
-          "under": -168
-        },
-        "stls_blks": {
-          "line": 1.34,
+          "line": 0,
           "over": -110,
           "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 1.05203,
-          "_blk_line": 0.283567
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
         }
       },
-      "turnovers": 2.53,
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 9.5,
-        "rebounds": 1.5,
-        "assists": 2.5,
-        "threes": 1.5,
-        "stls_blks": 1.34
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
       },
       "season_avg": {
-        "ppg": 14.1,
-        "rpg": 2.7,
-        "apg": 3.7,
-        "3pmpg": 1.9,
-        "stlpg": null,
-        "blkpg": null
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Julian Champagnie",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "SF/PF",
+      "name": "Jakob Poeltl",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "C",
       "positions": [
-        "SF",
-        "PF"
+        "C"
       ],
-      "util_id": 42685938,
-      "util_salary": 5400,
-      "cpt_id": 42685974,
-      "cpt_salary": 8100,
-      "salary": 5400,
-      "id": 42685938,
-      "avg_ppg": 23.83,
+      "util_id": 42692117,
+      "util_salary": 6200,
+      "cpt_id": 42692152,
+      "cpt_salary": 9300,
+      "salary": 6200,
+      "id": 42692117,
+      "avg_ppg": 25.14,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -677,753 +594,852 @@
       },
       "dk_props": {
         "points": {
-          "line": 9.5,
-          "over": -105,
-          "under": -122
+          "line": 8.5,
+          "over": -115,
+          "under": -111
         },
         "rebounds": {
-          "line": 5.5,
-          "over": 118,
-          "under": -155
-        },
-        "assists": {
-          "line": 1.5,
-          "over": 103,
-          "under": -136
-        },
-        "threes": {
-          "line": 2.5,
-          "over": 127,
-          "under": -168
-        },
-        "stls_blks": {
-          "line": 0.52,
-          "over": -110,
-          "under": -110,
-          "_source": "synthetic_sum",
-          "_stl_line": 0.5,
-          "_blk_line": null
-        }
-      },
-      "turnovers": 0.96,
-      "dd_odds": 1840,
-      "pp_stats": {
-        "points": 9.5,
-        "rebounds": 5.5,
-        "assists": 1.5,
-        "threes": 2.5,
-        "stls_blks": 0.52
-      },
-      "season_avg": {
-        "ppg": 11.0,
-        "rpg": 5.7,
-        "apg": 1.5,
-        "3pmpg": 2.4,
-        "stlpg": 0.8,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Dylan Harper",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "PG/SG",
-      "positions": [
-        "PG",
-        "SG"
-      ],
-      "util_id": 42685939,
-      "util_salary": 5200,
-      "cpt_id": 42685975,
-      "cpt_salary": 7800,
-      "salary": 5200,
-      "id": 42685939,
-      "avg_ppg": 23.91,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 20.6
-      },
-      "dk_props": {
-        "points": {
-          "line": 9.5,
-          "over": -103,
-          "under": -124
-        },
-        "rebounds": {
-          "line": 2.5,
-          "over": -117,
-          "under": -112
-        },
-        "assists": {
-          "line": 3.5,
-          "over": 122,
-          "under": -161
-        },
-        "threes": {
-          "line": 0.5,
-          "over": -120,
-          "under": -110
-        },
-        "stls_blks": {
-          "line": 1.18,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 1.0159,
-          "_blk_line": 0.166567
-        }
-      },
-      "turnovers": 1.66,
-      "dd_odds": 5100,
-      "pp_stats": {
-        "points": 9.5,
-        "rebounds": 2.5,
-        "assists": 3.5,
-        "threes": 0.5,
-        "stls_blks": 1.18
-      },
-      "season_avg": {
-        "ppg": 11.9,
-        "rpg": 3.4,
-        "apg": 3.8,
-        "3pmpg": 0.9,
-        "stlpg": null,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Jerami Grant",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "PF",
-      "positions": [
-        "PF"
-      ],
-      "util_id": 42685940,
-      "util_salary": 4800,
-      "cpt_id": 42685976,
-      "cpt_salary": 7200,
-      "salary": 4800,
-      "id": 42685940,
-      "avg_ppg": 28.95,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 20.2
-      },
-      "dk_props": {
-        "points": {
-          "line": 11.5,
-          "over": -128,
-          "under": 100
-        },
-        "rebounds": {
-          "line": 2.5,
-          "over": 117,
-          "under": -154
-        },
-        "assists": {
-          "line": 1.5,
-          "over": 126,
-          "under": -166
-        },
-        "threes": {
-          "line": 1.5,
+          "line": 6.5,
           "over": -112,
           "under": -117
         },
-        "stls_blks": {
-          "line": 1.15,
+        "assists": {
+          "line": 1.0,
           "over": -110,
           "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.648867,
-          "_blk_line": 0.505433
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -110,
+          "under": -120
         }
       },
-      "turnovers": 1.08,
+      "turnovers": 1.29,
+      "dd_odds": 780,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 11.5,
-        "rebounds": 2.5,
-        "assists": 1.5,
-        "threes": 1.5,
-        "stls_blks": 1.15
+        "points": 8.5,
+        "rebounds": 6.5,
+        "assists": 1.0,
+        "threes": 0.1,
+        "stls_blks": 1.5
       },
       "season_avg": {
-        "ppg": 18.6,
-        "rpg": 3.4,
-        "apg": 2.1,
-        "3pmpg": 2.4,
-        "stlpg": null,
-        "blkpg": null
+        "ppg": 9.0,
+        "rpg": 6.7,
+        "apg": 1.0,
+        "3pmpg": 0.1,
+        "stlpg": 0.9,
+        "blkpg": 1.1
       }
     },
     {
-      "name": "Shaedon Sharpe",
-      "team": "POR",
-      "opponent": "SAS",
+      "name": "Jamal Shead",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692118,
+      "util_salary": 5600,
+      "cpt_id": 42692153,
+      "cpt_salary": 8400,
+      "salary": 5600,
+      "id": 42692118,
+      "avg_ppg": 19.08,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 28.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 7.5,
+          "over": -128,
+          "under": 101
+        },
+        "rebounds": {
+          "line": 1.5,
+          "over": -185,
+          "under": 140
+        },
+        "assists": {
+          "line": 5.5,
+          "over": -141,
+          "under": 107
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 111,
+          "under": -146
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.86,
+      "dd_odds": 1420,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 7.5,
+        "rebounds": 1.5,
+        "assists": 5.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 8.9,
+        "rpg": 1.3,
+        "apg": 5.0,
+        "3pmpg": 1.1,
+        "stlpg": 1.3,
+        "blkpg": 0.2
+      }
+    },
+    {
+      "name": "Sam Merrill",
+      "team": "CLE",
+      "opponent": "TOR",
       "positions_str": "SG",
       "positions": [
         "SG"
       ],
-      "util_id": 42685941,
-      "util_salary": 4600,
-      "cpt_id": 42685977,
-      "cpt_salary": 6900,
-      "salary": 4600,
-      "id": 42685941,
-      "avg_ppg": 32.47,
+      "util_id": 42692119,
+      "util_salary": 5200,
+      "cpt_id": 42692154,
+      "cpt_salary": 7800,
+      "salary": 5200,
+      "id": 42692119,
+      "avg_ppg": 22.11,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 19.4
+        "All": 22.3
       },
       "dk_props": {
         "points": {
-          "line": 10.5,
-          "over": -124,
-          "under": -103
+          "line": 8.5,
+          "over": -109,
+          "under": -117
         },
         "rebounds": {
           "line": 2.5,
-          "over": 101,
-          "under": -133
+          "over": 128,
+          "under": -169
         },
         "assists": {
-          "line": 1.5,
-          "over": 119,
-          "under": -157
+          "line": 2.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
         },
         "threes": {
           "line": 1.5,
-          "over": 135,
-          "under": -179
+          "over": -191,
+          "under": 144
         },
         "stls_blks": {
-          "line": 0.85,
+          "line": 1.0,
           "over": -110,
           "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.6693,
-          "_blk_line": 0.178933
+          "_source": "ss_fill"
         }
       },
-      "turnovers": 1.41,
+      "turnovers": 0.53,
+      "dd_odds": 3000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 10.5,
+        "points": 8.5,
         "rebounds": 2.5,
-        "assists": 1.5,
+        "assists": 2.1,
         "threes": 1.5,
-        "stls_blks": 0.85
+        "stls_blks": 1.0
       },
       "season_avg": {
-        "ppg": 20.7,
-        "rpg": 4.3,
-        "apg": 2.6,
-        "3pmpg": 2.1,
-        "stlpg": null,
-        "blkpg": null
+        "ppg": 7.3,
+        "rpg": 2.0,
+        "apg": 2.1,
+        "3pmpg": 2.0,
+        "stlpg": 0.8,
+        "blkpg": 0.2
       }
     },
     {
-      "name": "Keldon Johnson",
-      "team": "SAS",
-      "opponent": "POR",
+      "name": "Max Strus",
+      "team": "CLE",
+      "opponent": "TOR",
       "positions_str": "SG/SF",
       "positions": [
         "SG",
         "SF"
       ],
-      "util_id": 42685942,
-      "util_salary": 4200,
-      "cpt_id": 42685978,
-      "cpt_salary": 6300,
-      "salary": 4200,
-      "id": 42685942,
-      "avg_ppg": 23.4,
+      "util_id": 42692120,
+      "util_salary": 4800,
+      "cpt_id": 42692155,
+      "cpt_salary": 7200,
+      "salary": 4800,
+      "id": 42692120,
+      "avg_ppg": 22.92,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 20.6
+        "All": 19.6
       },
       "dk_props": {
         "points": {
-          "line": 10.5,
-          "over": -117,
-          "under": -109
+          "line": 9.5,
+          "over": -102,
+          "under": -125
         },
         "rebounds": {
           "line": 3.5,
-          "over": -163,
-          "under": 123
+          "over": -107,
+          "under": -123
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 127,
+          "under": -167
+        },
+        "stls_blks": {
+          "line": 0.8,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.85,
+      "dd_odds": 3000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 9.5,
+        "rebounds": 3.5,
+        "assists": 1.5,
+        "threes": 2.5,
+        "stls_blks": 0.8
+      },
+      "season_avg": {
+        "ppg": 8.2,
+        "rpg": 2.8,
+        "apg": 1.5,
+        "3pmpg": 1.9,
+        "stlpg": 0.6,
+        "blkpg": 0.2
+      }
+    },
+    {
+      "name": "Ja'Kobe Walter",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692121,
+      "util_salary": 4600,
+      "cpt_id": 42692156,
+      "cpt_salary": 6900,
+      "salary": 4600,
+      "id": 42692121,
+      "avg_ppg": 15.41,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 25.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": -109,
+          "under": -116
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -168,
+          "under": 127
+        },
+        "assists": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -118,
+          "under": -112
+        },
+        "stls_blks": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.18,
+      "dd_odds": 3000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 8.5,
+        "rebounds": 2.5,
+        "assists": 1.3,
+        "threes": 1.5,
+        "stls_blks": 1.4
+      },
+      "season_avg": {
+        "ppg": 10.0,
+        "rpg": 3.7,
+        "apg": 1.3,
+        "3pmpg": 1.3,
+        "stlpg": 1.1,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Collin Murray-Boyles",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42692122,
+      "util_salary": 4200,
+      "cpt_id": 42692157,
+      "cpt_salary": 6300,
+      "salary": 4200,
+      "id": 42692122,
+      "avg_ppg": 21.01,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 22.8
+      },
+      "dk_props": {
+        "points": {
+          "line": 7.5,
+          "over": -114,
+          "under": -111
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -103,
+          "under": -128
+        },
+        "assists": {
+          "line": 1.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 1.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.99,
+      "dd_odds": 1800,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 7.5,
+        "rebounds": 4.5,
+        "assists": 1.3,
+        "threes": 1.1,
+        "stls_blks": 1.2
+      },
+      "season_avg": {
+        "ppg": 9.7,
+        "rpg": 4.3,
+        "apg": 1.3,
+        "3pmpg": 1.1,
+        "stlpg": 0.8,
+        "blkpg": 0.4
+      }
+    },
+    {
+      "name": "Sandro Mamukelashvili",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692123,
+      "util_salary": 4000,
+      "cpt_id": 42692158,
+      "cpt_salary": 6000,
+      "salary": 4000,
+      "id": 42692123,
+      "avg_ppg": 23.09,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 21.2
+      },
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": 103,
+          "under": -132
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 115,
+          "under": -151
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 170,
+          "under": -228
+        },
+        "stls_blks": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.96,
+      "dd_odds": 2700,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 8.5,
+        "rebounds": 4.5,
+        "assists": 1.5,
+        "threes": 1.5,
+        "stls_blks": 1.1
+      },
+      "season_avg": {
+        "ppg": 8.8,
+        "rpg": 5.1,
+        "apg": 1.5,
+        "3pmpg": 1.2,
+        "stlpg": 0.7,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Dean Wade",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692124,
+      "util_salary": 3000,
+      "cpt_id": 42692159,
+      "cpt_salary": 4500,
+      "salary": 3000,
+      "id": 42692124,
+      "avg_ppg": 16.01,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 26.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 4.5,
+          "over": -116,
+          "under": -110
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -137,
+          "under": 104
+        },
+        "assists": {
+          "line": 1.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
         },
         "threes": {
           "line": 0.5,
-          "over": -237,
-          "under": 177
-        },
-        "assists": {
-          "line": 1.85,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
+          "over": -228,
+          "under": 170
         },
         "stls_blks": {
-          "line": 0.93,
+          "line": 1.4,
           "over": -110,
           "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.642,
-          "_blk_line": 0.2836
-        }
-      },
-      "turnovers": 0.84,
-      "dd_odds": 3300,
-      "pp_stats": {
-        "points": 10.5,
-        "rebounds": 3.5,
-        "assists": 1.85,
-        "threes": 0.5,
-        "stls_blks": 0.93
-      },
-      "season_avg": {
-        "ppg": 13.1,
-        "rpg": 5.4,
-        "apg": null,
-        "3pmpg": 1.2,
-        "stlpg": null,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Robert Williams",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "C",
-      "positions": [
-        "C"
-      ],
-      "util_id": 42685943,
-      "util_salary": 4000,
-      "cpt_id": 42685979,
-      "cpt_salary": 6000,
-      "salary": 4000,
-      "id": 42685943,
-      "avg_ppg": 20.89,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 17.8
-      },
-      "dk_props": {
-        "points": {
-          "line": 5.26,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "rebounds": {
-          "line": 6.47,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "assists": {
-          "line": 1.21,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "threes": {
-          "line": 0.03,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "stls_blks": {
-          "line": 1.38,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.560967,
-          "_blk_line": 0.817633
-        }
-      },
-      "turnovers": 0.73,
-      "pp_stats": {
-        "points": 5.26,
-        "rebounds": 6.47,
-        "assists": 1.21,
-        "threes": 0.03,
-        "stls_blks": 1.38
-      }
-    },
-    {
-      "name": "Luke Kornet",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "C",
-      "positions": [
-        "C"
-      ],
-      "util_id": 42685944,
-      "util_salary": 3400,
-      "cpt_id": 42685980,
-      "cpt_salary": 5100,
-      "salary": 3400,
-      "id": 42685944,
-      "avg_ppg": 19.68,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 14.1
-      },
-      "dk_props": {
-        "points": {
-          "line": 4.5,
-          "over": 108,
-          "under": -138
-        },
-        "rebounds": {
-          "line": 3.5,
-          "over": -129,
-          "under": -102
-        },
-        "assists": {
-          "line": 1.26,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "threes": {
-          "line": 0.07,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "stls_blks": {
-          "line": 1.32,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.403133,
-          "_blk_line": 0.9152
+          "_source": "ss_fill"
         }
       },
       "turnovers": 0.29,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
         "points": 4.5,
         "rebounds": 3.5,
-        "assists": 1.26,
-        "threes": 0.07,
-        "stls_blks": 1.32
+        "assists": 1.0,
+        "threes": 0.5,
+        "stls_blks": 1.4
       },
       "season_avg": {
-        "ppg": 6.6,
-        "rpg": 6.1,
-        "apg": null,
-        "3pmpg": null,
-        "stlpg": null,
-        "blkpg": null
+        "ppg": 4.6,
+        "rpg": 4.1,
+        "apg": 1.0,
+        "3pmpg": 1.1,
+        "stlpg": 0.8,
+        "blkpg": 0.6
       }
     },
     {
-      "name": "Harrison Barnes",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "PF",
-      "positions": [
-        "PF"
-      ],
-      "util_id": 42685945,
-      "util_salary": 2600,
-      "cpt_id": 42685981,
-      "cpt_salary": 3900,
-      "salary": 2600,
-      "id": 42685945,
-      "avg_ppg": 18.44,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 16.7
-      },
-      "dk_props": {
-        "points": {
-          "line": 4.5,
-          "over": -125,
-          "under": -102
-        },
-        "rebounds": {
-          "line": 1.99,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "assists": {
-          "line": 0.99,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "threes": {
-          "line": 0.95,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "stls_blks": {
-          "line": 0.57,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.407,
-          "_blk_line": 0.1583
-        }
-      },
-      "turnovers": 0.56,
-      "pp_stats": {
-        "points": 4.5,
-        "rebounds": 1.99,
-        "assists": 0.99,
-        "threes": 0.95,
-        "stls_blks": 0.57
-      },
-      "season_avg": {
-        "ppg": 9.9,
-        "rpg": null,
-        "apg": null,
-        "3pmpg": null,
-        "stlpg": null,
-        "blkpg": null
-      }
-    },
-    {
-      "name": "Matisse Thybulle",
-      "team": "POR",
-      "opponent": "SAS",
+      "name": "Keon Ellis",
+      "team": "CLE",
+      "opponent": "TOR",
       "positions_str": "SF/PF",
       "positions": [
         "SF",
         "PF"
       ],
-      "util_id": 42685946,
-      "util_salary": 2200,
-      "cpt_id": 42685982,
-      "cpt_salary": 3300,
-      "salary": 2200,
-      "id": 42685946,
-      "avg_ppg": 14.52,
+      "util_id": 42692125,
+      "util_salary": 2600,
+      "cpt_id": 42692160,
+      "cpt_salary": 3900,
+      "salary": 2600,
+      "id": 42692125,
+      "avg_ppg": 14.37,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 11.1
+        "All": 16.0
       },
       "dk_props": {
         "points": {
-          "line": 3.29,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
+          "line": 3.5,
+          "over": -112,
+          "under": -114
         },
         "rebounds": {
-          "line": 1.55,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "assists": {
-          "line": 0.76,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "threes": {
-          "line": 0.62,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "stls_blks": {
-          "line": 1.28,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.976033,
-          "_blk_line": 0.299567
-        }
-      },
-      "turnovers": 0.4,
-      "pp_stats": {
-        "points": 3.29,
-        "rebounds": 1.55,
-        "assists": 0.76,
-        "threes": 0.62,
-        "stls_blks": 1.28
-      }
-    },
-    {
-      "name": "Carter Bryant",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "SF",
-      "positions": [
-        "SF"
-      ],
-      "util_id": 42685947,
-      "util_salary": 2000,
-      "cpt_id": 42685983,
-      "cpt_salary": 3000,
-      "salary": 2000,
-      "id": 42685947,
-      "avg_ppg": 9.56,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 4.8
-      },
-      "dk_props": {
-        "points": {
           "line": 2.1,
           "over": -110,
           "under": -110,
-          "_source": "proj_table"
-        },
-        "rebounds": {
-          "line": 0.79,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
+          "_source": "ss_fill"
         },
         "assists": {
-          "line": 0.67,
+          "line": 1.4,
           "over": -110,
           "under": -110,
-          "_source": "proj_table"
+          "_source": "ss_fill"
         },
         "threes": {
-          "line": 0.24,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
+          "line": 0.5,
+          "over": -108,
+          "under": -122
         },
         "stls_blks": {
-          "line": 0.43,
+          "line": 1.9,
           "over": -110,
           "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.244567,
-          "_blk_line": 0.1807
+          "_source": "ss_fill"
         }
       },
-      "turnovers": 0.23,
+      "turnovers": 0.53,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 2.1,
-        "rebounds": 0.79,
-        "assists": 0.67,
-        "threes": 0.24,
-        "stls_blks": 0.43
+        "points": 3.5,
+        "rebounds": 2.1,
+        "assists": 1.4,
+        "threes": 0.5,
+        "stls_blks": 1.9
+      },
+      "season_avg": {
+        "ppg": 3.0,
+        "rpg": 2.1,
+        "apg": 1.4,
+        "3pmpg": 0.6,
+        "stlpg": 1.3,
+        "blkpg": 0.6
       }
     },
     {
-      "name": "Kris Murray",
-      "team": "POR",
-      "opponent": "SAS",
+      "name": "Dennis Schroder",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42692126,
+      "util_salary": 2200,
+      "cpt_id": 42692161,
+      "cpt_salary": 3300,
+      "salary": 2200,
+      "id": 42692126,
+      "avg_ppg": 22.86,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 13.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 4.5,
+          "over": 109,
+          "under": -139
+        },
+        "rebounds": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 2.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.76,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 4.5,
+        "rebounds": 1.4,
+        "assists": 2.3,
+        "threes": 0.6,
+        "stls_blks": 0.6
+      },
+      "season_avg": {
+        "ppg": 4.6,
+        "rpg": 1.4,
+        "apg": 2.3,
+        "3pmpg": 0.6,
+        "stlpg": 0.5,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Jaylon Tyson",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42692127,
+      "util_salary": 1800,
+      "cpt_id": 42692162,
+      "cpt_salary": 2700,
+      "salary": 1800,
+      "id": 42692127,
+      "avg_ppg": 25.55,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 13.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 4.5,
+          "over": -129,
+          "under": 102
+        },
+        "rebounds": {
+          "line": 2.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.8,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.84,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 4.5,
+        "rebounds": 2.0,
+        "assists": 1.1,
+        "threes": 0.6,
+        "stls_blks": 0.8
+      },
+      "season_avg": {
+        "ppg": 5.3,
+        "rpg": 2.0,
+        "apg": 1.1,
+        "3pmpg": 0.6,
+        "stlpg": 0.6,
+        "blkpg": 0.2
+      }
+    },
+    {
+      "name": "AJ Lawson",
+      "team": "TOR",
+      "opponent": "CLE",
       "positions_str": "SG/SF",
       "positions": [
         "SG",
         "SF"
       ],
-      "util_id": 42685948,
-      "util_salary": 1600,
-      "cpt_id": 42685984,
-      "cpt_salary": 2400,
-      "salary": 1600,
-      "id": 42685948,
-      "avg_ppg": 14.82,
+      "util_id": 42692128,
+      "util_salary": 1400,
+      "cpt_id": 42692163,
+      "cpt_salary": 2100,
+      "salary": 1400,
+      "id": 42692128,
+      "avg_ppg": 8.47,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": 10.7
+        "All": 9.3
       },
       "dk_props": {
         "points": {
-          "line": 2.73,
+          "line": 3.5,
           "over": -110,
           "under": -110,
-          "_source": "proj_table"
+          "_source": "ss_fill"
         },
         "rebounds": {
-          "line": 2.28,
+          "line": 1.5,
           "over": -110,
           "under": -110,
-          "_source": "proj_table"
+          "_source": "ss_fill"
         },
         "assists": {
-          "line": 0.91,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "threes": {
-          "line": 0.38,
-          "over": -110,
-          "under": -110,
-          "_source": "proj_table"
-        },
-        "stls_blks": {
           "line": 0.5,
           "over": -110,
           "under": -110,
-          "_source": "proj_table",
-          "_stl_line": 0.359767,
-          "_blk_line": 0.1437
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
         }
       },
-      "turnovers": 0.37,
+      "turnovers": 0.33,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": 2.73,
-        "rebounds": 2.28,
-        "assists": 0.91,
-        "threes": 0.38,
-        "stls_blks": 0.5
+        "points": 3.5,
+        "rebounds": 1.5,
+        "assists": 0.5,
+        "threes": 0.5,
+        "stls_blks": 0.3
+      },
+      "season_avg": {
+        "ppg": 3.5,
+        "rpg": 1.5,
+        "apg": 0.5,
+        "3pmpg": 0.5,
+        "stlpg": 0.2,
+        "blkpg": 0.1
       }
     },
     {
-      "name": "Mason Plumlee",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "C",
+      "name": "Tyrese Proctor",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "PG/SG",
       "positions": [
-        "C"
+        "PG",
+        "SG"
       ],
-      "util_id": 42685949,
+      "util_id": 42692129,
       "util_salary": 1000,
-      "cpt_id": 42685985,
+      "cpt_id": 42692164,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685949,
-      "avg_ppg": 7.06,
+      "id": 42692129,
+      "avg_ppg": 10.35,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1431,30 +1447,438 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Lindy Waters III",
-      "team": "SAS",
-      "opponent": "POR",
+      "name": "Thomas Bryant",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692130,
+      "util_salary": 1000,
+      "cpt_id": 42692165,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692130,
+      "avg_ppg": 12.91,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Tristan Enaruna",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692131,
+      "util_salary": 1000,
+      "cpt_id": 42692166,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692131,
+      "avg_ppg": 8.33,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Olivier Sarr",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692132,
+      "util_salary": 1000,
+      "cpt_id": 42692167,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692132,
+      "avg_ppg": 11.31,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Riley Minix",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42692133,
+      "util_salary": 1000,
+      "cpt_id": 42692168,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692133,
+      "avg_ppg": 6.28,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Garrett Temple",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42692134,
+      "util_salary": 1000,
+      "cpt_id": 42692169,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692134,
+      "avg_ppg": 2.35,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Alijah Martin",
+      "team": "TOR",
+      "opponent": "CLE",
       "positions_str": "SG",
       "positions": [
         "SG"
       ],
-      "util_id": 42685950,
+      "util_id": 42692135,
       "util_salary": 1000,
-      "cpt_id": 42685986,
+      "cpt_id": 42692170,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685950,
-      "avg_ppg": 4.59,
+      "id": 42692135,
+      "avg_ppg": 5.1,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1462,93 +1886,73 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Jordan McLaughlin",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "PG",
-      "positions": [
-        "PG"
-      ],
-      "util_id": 42685951,
-      "util_salary": 1000,
-      "cpt_id": 42685987,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685951,
-      "avg_ppg": 5.25,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
       },
-      "dk_props": {},
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Bismack Biyombo",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "C",
-      "positions": [
-        "C"
-      ],
-      "util_id": 42685952,
-      "util_salary": 1000,
-      "cpt_id": 42685988,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685952,
-      "avg_ppg": 2.84,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
       },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Kelly Olynyk",
-      "team": "SAS",
-      "opponent": "POR",
+      "name": "Jonathan Mogbo",
+      "team": "TOR",
+      "opponent": "CLE",
       "positions_str": "PF/C",
       "positions": [
         "PF",
         "C"
       ],
-      "util_id": 42685953,
+      "util_id": 42692136,
       "util_salary": 1000,
-      "cpt_id": 42685989,
+      "cpt_id": 42692171,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685953,
-      "avg_ppg": 8.08,
+      "id": 42692136,
+      "avg_ppg": 5.28,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1556,155 +1960,72 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Vit Krejci",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "SG/SF",
-      "positions": [
-        "SG",
-        "SF"
-      ],
-      "util_id": 42685954,
-      "util_salary": 1000,
-      "cpt_id": 42685990,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685954,
-      "avg_ppg": 16.28,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
       },
-      "dk_props": {},
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Emanuel Miller",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "SF",
-      "positions": [
-        "SF"
-      ],
-      "util_id": 42685955,
-      "util_salary": 1000,
-      "cpt_id": 42685991,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685955,
-      "avg_ppg": 5.95,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
       },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Hansen Yang",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "C",
-      "positions": [
-        "C"
-      ],
-      "util_id": 42685956,
-      "util_salary": 1000,
-      "cpt_id": 42685992,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685956,
-      "avg_ppg": 5.19,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
-      },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Chris Youngblood",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "SG",
-      "positions": [
-        "SG"
-      ],
-      "util_id": 42685957,
-      "util_salary": 1000,
-      "cpt_id": 42685993,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685957,
-      "avg_ppg": 4.29,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
-      },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Jayson Kent",
-      "team": "POR",
-      "opponent": "SAS",
+      "name": "Nae'Qwan Tomlin",
+      "team": "CLE",
+      "opponent": "TOR",
       "positions_str": "PF",
       "positions": [
         "PF"
       ],
-      "util_id": 42685958,
+      "util_id": 42692137,
       "util_salary": 1000,
-      "cpt_id": 42685994,
+      "cpt_id": 42692172,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685958,
-      "avg_ppg": 4.15,
+      "id": 42692137,
+      "avg_ppg": 12.87,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1712,93 +2033,72 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Caleb Love",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "SG",
-      "positions": [
-        "SG"
-      ],
-      "util_id": 42685959,
-      "util_salary": 1000,
-      "cpt_id": 42685995,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685959,
-      "avg_ppg": 18.64,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
       },
-      "dk_props": {},
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
-      }
-    },
-    {
-      "name": "Blake Wesley",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "PG",
-      "positions": [
-        "PG"
-      ],
-      "util_id": 42685960,
-      "util_salary": 1000,
-      "cpt_id": 42685996,
-      "cpt_salary": 1500,
-      "salary": 1000,
-      "id": 42685960,
-      "avg_ppg": 10.36,
-      "status": "ACTIVE",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
       },
-      "dk_props": {},
-      "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Sidy Cissoko",
-      "team": "POR",
-      "opponent": "SAS",
-      "positions_str": "PF/C",
+      "name": "Trayce Jackson-Davis",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "C",
       "positions": [
-        "PF",
         "C"
       ],
-      "util_id": 42685961,
+      "util_id": 42692138,
       "util_salary": 1000,
-      "cpt_id": 42685997,
+      "cpt_id": 42692173,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685961,
-      "avg_ppg": 12.05,
+      "id": 42692138,
+      "avg_ppg": 9.17,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1806,61 +2106,146 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Harrison Ingram",
-      "team": "SAS",
-      "opponent": "POR",
-      "positions_str": "SF",
+      "name": "Gradey Dick",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "SG/SF",
       "positions": [
+        "SG",
         "SF"
       ],
-      "util_id": 42685962,
+      "util_id": 42692139,
       "util_salary": 1000,
-      "cpt_id": 42685998,
+      "cpt_id": 42692174,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685962,
-      "avg_ppg": 2.32,
+      "id": 42692139,
+      "avg_ppg": 10.76,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
         "L5": null,
         "L10": null,
-        "All": null
+        "All": 1.1
       },
-      "dk_props": {},
+      "dk_props": {
+        "points": {
+          "line": 0.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.04,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "points": 0.4,
+        "rebounds": 0.1,
+        "assists": 0.1,
+        "threes": 0.1,
+        "stls_blks": 0.0
+      },
+      "season_avg": {
+        "ppg": 0.4,
+        "rpg": 0.1,
+        "apg": 0.1,
+        "3pmpg": 0.1,
+        "stlpg": 0.0,
+        "blkpg": 0.0
       }
     },
     {
-      "name": "David Jones-Garcia",
-      "team": "SAS",
-      "opponent": "POR",
+      "name": "Craig Porter Jr.",
+      "team": "CLE",
+      "opponent": "TOR",
       "positions_str": "PG",
       "positions": [
         "PG"
       ],
-      "util_id": 42685963,
+      "util_id": 42692140,
       "util_salary": 1000,
-      "cpt_id": 42685999,
+      "cpt_id": 42692175,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685963,
-      "avg_ppg": 8.02,
+      "id": 42692140,
+      "avg_ppg": 16.13,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1868,30 +2253,218 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     },
     {
-      "name": "Damian Lillard",
-      "team": "POR",
-      "opponent": "SAS",
+      "name": "Jamison Battle",
+      "team": "TOR",
+      "opponent": "CLE",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42692141,
+      "util_salary": 1000,
+      "cpt_id": 42692176,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692141,
+      "avg_ppg": 5.92,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 1.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 0.3,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.03,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0.3,
+        "rebounds": 0.2,
+        "assists": 0.1,
+        "threes": 0.1,
+        "stls_blks": 0.0
+      },
+      "season_avg": {
+        "ppg": 0.3,
+        "rpg": 0.2,
+        "apg": 0.1,
+        "3pmpg": 0.1,
+        "stlpg": 0.0,
+        "blkpg": 0.0
+      }
+    },
+    {
+      "name": "Larry Nance Jr.",
+      "team": "CLE",
+      "opponent": "TOR",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42692142,
+      "util_salary": 1000,
+      "cpt_id": 42692177,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42692142,
+      "avg_ppg": 9.78,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Chucky Hepburn",
+      "team": "TOR",
+      "opponent": "CLE",
       "positions_str": "PG",
       "positions": [
         "PG"
       ],
-      "util_id": 42685964,
+      "util_id": 42692143,
       "util_salary": 1000,
-      "cpt_id": 42686000,
+      "cpt_id": 42692178,
       "cpt_salary": 1500,
       "salary": 1000,
-      "id": 42685964,
-      "avg_ppg": 0.0,
+      "id": 42692143,
+      "avg_ppg": 2.88,
       "status": "ACTIVE",
       "mins": {
         "L3": null,
@@ -1899,87 +2472,104 @@
         "L10": null,
         "All": null
       },
-      "dk_props": {},
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
       "pp_stats": {
-        "points": null,
-        "rebounds": null,
-        "assists": null,
-        "threes": null,
-        "stls_blks": null
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
       }
     }
   ],
   "pp_lines": [
     {
-      "player": "Victor Wembanyama",
+      "player": "Donovan Mitchell",
       "stat": "Fantasy Score",
-      "line": 62.5
+      "line": 42
     },
     {
-      "player": "Deni Avdija",
+      "player": "Scottie Barnes",
       "stat": "Fantasy Score",
-      "line": 42.0
+      "line": 40
     },
     {
-      "player": "Stephon Castle",
+      "player": "James Harden",
       "stat": "Fantasy Score",
-      "line": 37.5
+      "line": 39
     },
     {
-      "player": "De'Aaron Fox",
+      "player": "Brandon Ingram",
       "stat": "Fantasy Score",
-      "line": 32.5
+      "line": 36
     },
     {
-      "player": "Donovan Clingan",
+      "player": "Evan Mobley",
       "stat": "Fantasy Score",
-      "line": 31.5
+      "line": 36.5
     },
     {
-      "player": "Jrue Holiday",
+      "player": "RJ Barrett",
       "stat": "Fantasy Score",
-      "line": 30.0
+      "line": 32
     },
     {
-      "player": "Toumani Camara",
+      "player": "Jarrett Allen",
       "stat": "Fantasy Score",
-      "line": 24.0
+      "line": 30
     },
     {
-      "player": "Devin Vassell",
+      "player": "Max Strus",
       "stat": "Fantasy Score",
-      "line": 23.0
+      "line": 18
     },
     {
-      "player": "Julian Champagnie",
+      "player": "Sam Merrill",
       "stat": "Fantasy Score",
-      "line": 20.5
-    },
-    {
-      "player": "Keldon Johnson",
-      "stat": "Fantasy Score",
-      "line": 20.5
-    },
-    {
-      "player": "Dylan Harper",
-      "stat": "Fantasy Score",
-      "line": 19.5
-    },
-    {
-      "player": "Jerami Grant",
-      "stat": "Fantasy Score",
-      "line": 19.0
-    },
-    {
-      "player": "Shaedon Sharpe",
-      "stat": "Fantasy Score",
-      "line": 18.0
-    },
-    {
-      "player": "Scoot Henderson",
-      "stat": "Fantasy Score",
-      "line": 17.5
+      "line": 15.5
     }
   ],
-  "last_updated": "2026-04-19"
+  "last_updated": "2026-04-20T22:20:47.440864"
 }
