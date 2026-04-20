@@ -209,8 +209,8 @@ function useSlateData(sport, slateDate) {
     const liveUrl = sport === 'mma' ? './slate-mma.json'
                   : sport === 'nba' ? './slate-nba.json'
                   : './slate.json';
-    const url = isArchive ? `/slates/${sport}/${slateDate}.json` : liveUrl;
-    fetch(url)
+    const url = isArchive ? `/slates/${sport}/${slateDate}.json?t=${Date.now()}` : liveUrl;
+    fetch(url, { cache: 'no-store' })
       .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
       .then(d => finalize(() => { hasLoadedRef.current = true; setData(d); }))
       .catch(e => finalize(() => setError(e.message)));
@@ -220,12 +220,13 @@ function useSlateData(sport, slateDate) {
 
 // Loads the list of archived slates from /slates/{sport}/manifest.json.
 // Returns null while loading, then an array (possibly empty) once the fetch resolves.
+// Cache-busted on every sport load so stale CDN/browser caches don't serve old entries.
 // Manifest shape: { slates: [{ date: "YYYY-MM-DD", label: "optional label" }, ...] }
 function useSlateManifest(sport) {
   const [slates, setSlates] = useState(null);
   useEffect(() => {
-    setSlates(null); // reset to loading state when sport changes
-    fetch(`/slates/${sport}/manifest.json`)
+    setSlates(null);
+    fetch(`/slates/${sport}/manifest.json?t=${Date.now()}`, { cache: 'no-store' })
       .then(r => r.ok ? r.json() : { slates: [] })
       .then(m => setSlates(m.slates || []))
       .catch(() => setSlates([]));
@@ -1013,33 +1014,43 @@ export default function App() {
   // When sport changes, clear the auto-default flag AND reset slateDate so no stale fetch fires.
   useEffect(() => { autoDefaultedFor.current = null; setSlateDate(null); }, [sport]);
   // Auto-pick today's slate (or fallback to most recent dated slate) once the manifest loads.
+  // ALSO self-heals: if slateDate doesn't match any manifest entry (e.g. user had a stale cached
+  // slateDate pointing to a non-existent file), we re-run the default logic.
   useEffect(() => {
-    if (autoDefaultedFor.current === sport) return; // already auto-defaulted (or user picked) for this sport
     if (!manifestSlates) return; // manifest still loading
+    // Self-heal: if we already auto-defaulted but slateDate points to a non-existent entry, reset.
+    const slateExists = slateDate === 'live' || slateDate == null ||
+      manifestSlates.some(s => s.date === slateDate);
+    if (autoDefaultedFor.current === sport && slateExists) return; // already settled
     if (manifestSlates.length === 0) {
       // No archive available — fall back to the legacy live URL
       setSlateDate('live');
       autoDefaultedFor.current = sport;
       return;
     }
-    // Build today's date key in YYYY-MM-DD format
-    const d = new Date();
-    const todayKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // Build today's date key in YYYY-MM-DD format — use ET since tip times are ET-based
+    const etFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    const parts = etFormatter.formatToParts(new Date());
+    const getPart = (type) => parts.find(p => p.type === type)?.value || '';
+    const todayKey = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+    const nowMin = (+getPart('hour')) * 60 + (+getPart('minute'));
     // Find any slates whose date field starts with today's key (e.g. "2026-04-20-tor-cle")
     const todaySlates = manifestSlates.filter(s => (s.date || '').startsWith(todayKey));
     if (todaySlates.length > 0) {
-      // Smart default: pick the next slate that hasn't tipped yet.
+      // Smart default: pick the next slate that hasn't tipped yet (ET time).
       // If all have tipped, pick the most recently started (last by tip_time_24).
-      // Sort ascending by tip time for ordered scan.
       const sorted = [...todaySlates].sort((a, b) =>
         (a.tip_time_24 || '99:99').localeCompare(b.tip_time_24 || '99:99')
       );
-      const nowMin = d.getHours() * 60 + d.getMinutes();
       const nextUpcoming = sorted.find(s => {
         const t = s.tip_time_24;
         if (!t) return false;
         const [h, m] = t.split(':').map(Number);
-        return (h * 60 + m) > nowMin; // strictly future
+        return (h * 60 + m) > nowMin;
       });
       if (nextUpcoming) {
         setSlateDate(nextUpcoming.date);
@@ -1054,7 +1065,7 @@ export default function App() {
       else setSlateDate('live');
     }
     autoDefaultedFor.current = sport;
-  }, [sport, manifestSlates]);
+  }, [sport, manifestSlates, slateDate]);
   // Wrap the date-change handler so manual user picks are remembered (block auto-default re-runs)
   const handleSlateDateChange = useCallback((d) => {
     setSlateDate(d);
