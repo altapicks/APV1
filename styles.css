@@ -114,6 +114,7 @@ thead th {
 }
 thead th:hover { color: var(--primary-light); }
 thead th.sorted { color: var(--primary); }
+thead th.num { text-align: right; }
 thead th .sort-arrow { margin-left: 4px; font-size: 10px; }
 tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
 tbody tr:hover { background: var(--card-hover); }
