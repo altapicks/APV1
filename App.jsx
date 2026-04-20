@@ -3369,14 +3369,10 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       <div className="metric">
         <div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div>
         <div className="metric-value" style={{ color: 'var(--green-text)' }}>{gemName || '-'}</div>
-        <div className="metric-sub">
-          {gemKind === 'replacer' ? "Teammate can absorb trap's production"
-            : gemKind === 'value' ? "Low-owned value in trap's price band"
-            : 'Low ownership, high upside'}
-        </div>
+        <div className="metric-sub">Next-best captain value (&gt; $6K)</div>
         {pivotName && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
-            or pivot: <span style={{ color: 'var(--text-muted)' }}>{pivotName}</span> <span style={{ fontSize: 10 }}>({pivotKind})</span>
+            or pivot: <span style={{ color: 'var(--text-muted)' }}>{pivotName}</span>
           </div>
         )}
       </div>
@@ -3479,8 +3475,8 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (ic) badges.push({ icon: 'rocket', label: 'Top 3 Ceiling' });
-      if (ig) badges.push({ icon: 'gem',    label: gemKind === 'replacer' ? 'Hidden Gem (replacer)' : 'Hidden Gem (value)' });
-      if (ip) badges.push({ icon: 'gem',    label: pivotKind === 'replacer' ? 'Gem pivot (replacer)' : 'Gem pivot (value)' });
+      if (ig) badges.push({ icon: 'gem',    label: 'Hidden Gem' });
+      if (ip) badges.push({ icon: 'gem',    label: 'Gem pivot' });
       if (it) badges.push({ icon: 'bomb',   label: 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
       const dimStyle = p.isOut || !p.projectable ? { opacity: p.isOut ? 0.4 : 0.6 } : {};
