@@ -187,6 +187,9 @@ function useSlateData(sport, slateDate) {
   const hasLoadedRef = useRef(false);
   useEffect(() => {
     setData(null); setError(null);
+    // slateDate === null means "auto-default is pending" — don't fetch anything yet.
+    // The auto-default effect will set a real date once the manifest loads.
+    if (slateDate == null) return;
     const startTime = Date.now();
     // First load: full splash (5000ms). Tennis/NBA switch: 2000ms so the
     // ball-bounce animation plays. UFC switch: 900ms (dots only).
@@ -996,7 +999,7 @@ export default function App() {
   if (showSignIn) return <SignInPrompt />;
 
   const [sport, setSport] = useState('tennis');
-  const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD-{slug}
+  const [slateDate, setSlateDate] = useState(null); // null = auto-default pending; 'live' = legacy file; YYYY-MM-DD-{slug} = archive
   const { data, error } = useSlateData(sport, slateDate);
   const manifestSlates = useSlateManifest(sport);
   const [tab, setTab] = useState('dk');
@@ -1005,14 +1008,14 @@ export default function App() {
   // When the user manually picks a slate via the dropdown, we mark them as "user-picked"
   // so subsequent manifest re-renders don't override their choice.
   const autoDefaultedFor = useRef(null);
-  // When sport changes, clear the auto-default flag so we recompute for the new sport.
-  useEffect(() => { autoDefaultedFor.current = null; }, [sport]);
+  // When sport changes, clear the auto-default flag AND reset slateDate so no stale fetch fires.
+  useEffect(() => { autoDefaultedFor.current = null; setSlateDate(null); }, [sport]);
   // Auto-pick today's slate (or fallback to most recent dated slate) once the manifest loads.
   useEffect(() => {
     if (autoDefaultedFor.current === sport) return; // already auto-defaulted (or user picked) for this sport
     if (!manifestSlates) return; // manifest still loading
     if (manifestSlates.length === 0) {
-      // No archive available — fall back to the live URL
+      // No archive available — fall back to the legacy live URL
       setSlateDate('live');
       autoDefaultedFor.current = sport;
       return;
@@ -1023,7 +1026,6 @@ export default function App() {
     // Find any slates whose date field starts with today's key (e.g. "2026-04-20-tor-cle")
     const todaySlates = manifestSlates.filter(s => (s.date || '').startsWith(todayKey));
     if (todaySlates.length > 0) {
-      // Pick the first one (manifest is typically tip-time ordered)
       setSlateDate(todaySlates[0].date);
     } else {
       // Fallback: most recent slate by date
@@ -1635,11 +1637,13 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
 
   // Active slate's display label for the trigger button
   const currentSlate = manifestSlates.find(s => s.date === slateDate);
-  const triggerLabel = slateDate === 'live'
+  const triggerLabel = slateDate == null
+    ? 'Loading…'
+    : slateDate === 'live'
     ? 'Live slate'
     : currentSlate ? `${matchupOf(currentSlate)}${currentSlate.tip_time ? ' · ' + currentSlate.tip_time : ''}` : slateDate;
 
-  const isCustom = slateDate !== 'live';
+  const isCustom = slateDate !== 'live' && slateDate != null;
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
