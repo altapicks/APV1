@@ -1676,19 +1676,20 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
-      <button
-        onClick={() => prevSlate && onSlateDateChange(prevSlate.date)}
-        disabled={!prevSlate}
-        title={prevSlate ? `Previous: ${matchupOf(prevSlate)}` : 'No earlier slate'}
-        style={{
-          background: 'var(--bg)',
-          border: '1px solid var(--border-light)',
-          color: prevSlate ? 'var(--text-muted)' : 'var(--text-dim)',
-          borderRadius: 6, width: 26, height: 30, cursor: prevSlate ? 'pointer' : 'not-allowed',
-          opacity: prevSlate ? 1 : 0.4, padding: 0, fontSize: 14, fontWeight: 700,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >‹</button>
+      {prevSlate && (
+        <button
+          onClick={() => onSlateDateChange(prevSlate.date)}
+          title={`Previous: ${matchupOf(prevSlate)}`}
+          style={{
+            background: 'var(--bg)',
+            border: '1px solid var(--border-light)',
+            color: 'var(--text-muted)',
+            borderRadius: 6, width: 26, height: 30, cursor: 'pointer',
+            padding: 0, fontSize: 14, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >‹</button>
+      )}
       <button
         onClick={() => setOpen(o => !o)}
         title="Select slate"
@@ -1703,19 +1704,20 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
           backgroundRepeat: 'no-repeat', backgroundPosition: 'right 7px center',
         }}
       >{triggerLabel}</button>
-      <button
-        onClick={() => nextSlate && onSlateDateChange(nextSlate.date)}
-        disabled={!nextSlate}
-        title={nextSlate ? `Next: ${matchupOf(nextSlate)}` : 'No later slate'}
-        style={{
-          background: 'var(--bg)',
-          border: '1px solid var(--border-light)',
-          color: nextSlate ? 'var(--text-muted)' : 'var(--text-dim)',
-          borderRadius: 6, width: 26, height: 30, cursor: nextSlate ? 'pointer' : 'not-allowed',
-          opacity: nextSlate ? 1 : 0.4, padding: 0, fontSize: 14, fontWeight: 700,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >›</button>
+      {nextSlate && (
+        <button
+          onClick={() => onSlateDateChange(nextSlate.date)}
+          title={`Next: ${matchupOf(nextSlate)}`}
+          style={{
+            background: 'var(--bg)',
+            border: '1px solid var(--border-light)',
+            color: 'var(--text-muted)',
+            borderRadius: 6, width: 26, height: 30, cursor: 'pointer',
+            padding: 0, fontSize: 14, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >›</button>
+      )}
 
       {open && (
         <div style={{
@@ -1724,17 +1726,11 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
           boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: 260, maxWidth: 320,
           maxHeight: 420, overflowY: 'auto', padding: '6px 0',
         }}>
-          {/* Live slate option always at top */}
-          <button
-            onClick={() => { onSlateDateChange('live'); setOpen(false); }}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              background: slateDate === 'live' ? 'rgba(245,197,24,0.15)' : 'transparent',
-              border: 'none', color: slateDate === 'live' ? 'var(--primary)' : 'var(--text)',
-              padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            }}
-          >Live slate</button>
-
+          {sortedDateKeys.length === 0 && (
+            <div style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text-dim)' }}>
+              No slates available for this sport yet.
+            </div>
+          )}
           {sortedDateKeys.map(dk => {
             const isToday = dk === todayKey;
             return (
