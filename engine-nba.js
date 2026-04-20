@@ -546,12 +546,20 @@ export function simulateFieldShowdown(players, nSims = 1500, salaryCap = 50000) 
 //   2. Exposure caps via maxExp/minExp (percentages)
 //   3. Phase-1 min-exposure fill with urgency weighting (mirror tennis)
 // ============================================================
-export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, minSalary = 48000) {
+export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, minSalary = 48000, opts = {}) {
+  // opts: { locked: Set<string>, excluded: Set<string> }
+  // For NBA showdown the "locked" constraint must land somewhere on the lineup
+  // (CPT or any UTIL slot). Lock enforcement happens post-generation since
+  // enumeration already tries every CPT.
+  const lockedSet = opts.locked instanceof Set ? opts.locked : new Set(opts.locked || []);
+  const excludedSet = opts.excluded instanceof Set ? opts.excluded : new Set(opts.excluded || []);
+
   const valid = players.filter(p =>
     p.projection > 0 &&
     p.util_salary > 0 &&
     p.cpt_salary > 0 &&
-    (p.status || 'ACTIVE').toUpperCase() !== 'OUT'
+    (p.status || 'ACTIVE').toUpperCase() !== 'OUT' &&
+    !excludedSet.has(p.name)
   );
   if (valid.length < 6) return { lineups: [], counts: [], total: 0 };
 
@@ -569,20 +577,25 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
     const cpt = valid[c];
     const cptProj = 1.5 * cpt.projection;
     const cptSal = cpt.cpt_salary;
-    if (cptSal > salaryCap - 5 * 1000) continue;   // need at least $1K per FLEX
+    if (cptSal > salaryCap - 5 * 1000) continue;
 
-    // Pool of UTIL candidates, sorted by value (proj/sal * proj for ceiling-ish weight)
+    // When there are locked players, ensure the UTIL pool includes them
+    // regardless of value rank — otherwise they'd get filtered out by top-K.
+    // Locked players must appear across the roster (CPT + 5 UTIL slots).
     const utilPool = valid
       .map((p, i) => ({ p, i }))
       .filter(({ i }) => i !== c)
       .sort((a, b) => {
+        // Boost locked candidates to the front so they're always in the pool
+        const aLocked = lockedSet.has(a.p.name) ? 1 : 0;
+        const bLocked = lockedSet.has(b.p.name) ? 1 : 0;
+        if (aLocked !== bLocked) return bLocked - aLocked;
         const va = a.p.projection / Math.max(a.p.util_salary, 1);
         const vb = b.p.projection / Math.max(b.p.util_salary, 1);
         return vb - va;
       })
       .slice(0, K);
 
-    // Enumerate all 5-combinations from the top-K pool (C(18,5) = 8568 — fine)
     const pool = utilPool;
     for (let a = 0; a < pool.length - 4; a++) {
       const pa = pool[a].p;
@@ -601,6 +614,14 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
               if (needBothTeams) {
                 const teamSet = new Set([cpt.team, pa.team, pb.team, pd.team, pe.team, pf.team]);
                 if (teamSet.size < 2) continue;
+              }
+
+              // Lock check — every locked name must be in this 6-player lineup
+              if (lockedSet.size > 0) {
+                const luNames = new Set([cpt.name, pa.name, pb.name, pd.name, pe.name, pf.name]);
+                let allLocked = true;
+                for (const ln of lockedSet) { if (!luNames.has(ln)) { allLocked = false; break; } }
+                if (!allLocked) continue;
               }
 
               const totalProj = cptProj + pa.projection + pb.projection + pd.projection + pe.projection + pf.projection;
@@ -717,11 +738,19 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
 // Single-game slates don't need this, but provided for future.
 // Randomized greedy with position-eligibility check.
 // ============================================================
-export function optimizeClassic(players, nLineups = 500, salaryCap = 50000, minSalary = 48000) {
+export function optimizeClassic(players, nLineups = 500, salaryCap = 50000, minSalary = 48000, opts = {}) {
+  // opts: { locked: Set<string>, excluded: Set<string> }
+  // Excluded players are filtered out of the `valid` pool up front.
+  // Locked players get forcibly placed at the best eligible slot at the start
+  // of each lineup attempt (before randomized greedy fill of remaining slots).
+  const lockedSet = opts.locked instanceof Set ? opts.locked : new Set(opts.locked || []);
+  const excludedSet = opts.excluded instanceof Set ? opts.excluded : new Set(opts.excluded || []);
+
   const valid = players.filter(p =>
     p.projection > 0 &&
     p.salary > 0 &&
-    (p.status || 'ACTIVE').toUpperCase() !== 'OUT'
+    (p.status || 'ACTIVE').toUpperCase() !== 'OUT' &&
+    !excludedSet.has(p.name)
   );
   if (valid.length < 8) return { lineups: [], counts: [], total: 0 };
 
@@ -736,6 +765,15 @@ export function optimizeClassic(players, nLineups = 500, salaryCap = 50000, minS
     UTIL: () => true,
   };
   const SLOTS = ['PG','SG','SF','PF','C','G','F','UTIL'];
+
+  // Resolve locked player indices + validate they exist in the pool
+  // (locked-but-filtered-out players would make every lineup impossible).
+  const lockedIndices = [];
+  for (const name of lockedSet) {
+    const i = valid.findIndex(p => p.name === name);
+    if (i >= 0) lockedIndices.push(i);
+  }
+  if (lockedIndices.length > SLOTS.length) return { lineups: [], counts: [], total: 0 };
 
   const counts = new Array(valid.length).fill(0);
   const selected = [];
@@ -763,25 +801,62 @@ export function optimizeClassic(players, nLineups = 500, salaryCap = 50000, minS
     return -1;
   }
 
+  // Place locked players into the best-fit slot from SLOTS — greedy assignment
+  // that tries stricter slots first (e.g. C before UTIL for a Center-only player).
+  function placeLocked(locked, slots) {
+    const assignments = new Map();  // slotIdx → playerIdx
+    const remaining = [...locked];
+    // Sort by slot strictness — PG/SG/SF/PF/C first, then G/F, then UTIL
+    const slotOrder = slots.map((s, i) => i);
+    for (const pid of remaining) {
+      const p = valid[pid];
+      let placed = false;
+      for (const si of slotOrder) {
+        if (assignments.has(si)) continue;
+        if (ELIG[slots[si]](p)) { assignments.set(si, pid); placed = true; break; }
+      }
+      if (!placed) return null;  // this locked player can't fit anywhere — abort
+    }
+    return assignments;
+  }
+
   let attempts = 0;
   const MAX_ATTEMPTS = nLineups * 30;
   while (selected.length < nLineups && attempts < MAX_ATTEMPTS) {
     attempts++;
-    const picks = [];
+    const picks = new Array(SLOTS.length).fill(-1);
     const blocked = new Set();
     let sal = 0;
     let ok = true;
-    for (const slot of SLOTS) {
-      const idx = pick(ELIG[slot], blocked);
+
+    // Step 1: slot locked players first
+    if (lockedIndices.length > 0) {
+      const assign = placeLocked(lockedIndices, SLOTS);
+      if (!assign) { ok = false; }
+      else {
+        for (const [slotIdx, playerIdx] of assign) {
+          picks[slotIdx] = playerIdx;
+          blocked.add(playerIdx);
+          sal += valid[playerIdx].salary;
+          if (sal > salaryCap) { ok = false; break; }
+        }
+      }
+    }
+    if (!ok) continue;
+
+    // Step 2: fill remaining slots with weighted random picks
+    for (let si = 0; si < SLOTS.length; si++) {
+      if (picks[si] !== -1) continue;  // already filled by a lock
+      const idx = pick(ELIG[SLOTS[si]], blocked);
       if (idx < 0) { ok = false; break; }
-      picks.push(idx);
+      picks[si] = idx;
       blocked.add(idx);
       sal += valid[idx].salary;
       if (sal > salaryCap) { ok = false; break; }
     }
     if (!ok) continue;
     if (sal > salaryCap) continue;
-    if (sal < minSalary) continue;   // min-spend floor — avoid under-budget lineups
+    if (sal < minSalary) continue;
     const sortedPlayers = [...picks].sort((a, b) => a - b);
     const key = sortedPlayers.join(',');
     if (usedKeys.has(key)) continue;
