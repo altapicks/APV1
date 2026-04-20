@@ -547,12 +547,20 @@ export function simulateFieldShowdown(players, nSims = 1500, salaryCap = 50000) 
 //   3. Phase-1 min-exposure fill with urgency weighting (mirror tennis)
 // ============================================================
 export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, minSalary = 48000, opts = {}) {
-  // opts: { locked: Set<string>, excluded: Set<string> }
-  // For NBA showdown the "locked" constraint must land somewhere on the lineup
-  // (CPT or any UTIL slot). Lock enforcement happens post-generation since
-  // enumeration already tries every CPT.
-  const lockedSet = opts.locked instanceof Set ? opts.locked : new Set(opts.locked || []);
-  const excludedSet = opts.excluded instanceof Set ? opts.excluded : new Set(opts.excluded || []);
+  // opts: {
+  //   locked:       Set<string>  — must appear somewhere in lineup (CPT or UTIL)
+  //   excluded:     Set<string>  — removed from pool entirely
+  //   cptLocked:    Set<string>  — must be the CPT of every lineup (effectively size ≤ 1)
+  //   flexLocked:   Set<string>  — must appear in a UTIL slot of every lineup
+  //   cptExcluded:  Set<string>  — may appear as UTIL but never as CPT
+  //   flexExcluded: Set<string>  — may appear as CPT but never as UTIL
+  // }
+  const lockedSet       = opts.locked        instanceof Set ? opts.locked        : new Set(opts.locked        || []);
+  const excludedSet     = opts.excluded      instanceof Set ? opts.excluded      : new Set(opts.excluded      || []);
+  const cptLockedSet    = opts.cptLocked     instanceof Set ? opts.cptLocked     : new Set(opts.cptLocked     || []);
+  const flexLockedSet   = opts.flexLocked    instanceof Set ? opts.flexLocked    : new Set(opts.flexLocked    || []);
+  const cptExcludedSet  = opts.cptExcluded   instanceof Set ? opts.cptExcluded   : new Set(opts.cptExcluded   || []);
+  const flexExcludedSet = opts.flexExcluded  instanceof Set ? opts.flexExcluded  : new Set(opts.flexExcluded  || []);
 
   const valid = players.filter(p =>
     p.projection > 0 &&
@@ -575,6 +583,10 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
 
   for (let c = 0; c < valid.length; c++) {
     const cpt = valid[c];
+    // CPT-specific exclude: never use this player as captain
+    if (cptExcludedSet.has(cpt.name)) continue;
+    // CPT-specific lock: if user has locked a specific player as CPT, only allow that player
+    if (cptLockedSet.size > 0 && !cptLockedSet.has(cpt.name)) continue;
     const cptProj = 1.5 * cpt.projection;
     const cptSal = cpt.cpt_salary;
     if (cptSal > salaryCap - 5 * 1000) continue;
@@ -584,11 +596,17 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
     // Locked players must appear across the roster (CPT + 5 UTIL slots).
     const utilPool = valid
       .map((p, i) => ({ p, i }))
-      .filter(({ i }) => i !== c)
+      .filter(({ p, i }) => {
+        if (i === c) return false;
+        // FLEX-specific exclude: this player is not allowed in UTIL slots
+        if (flexExcludedSet.has(p.name)) return false;
+        return true;
+      })
       .sort((a, b) => {
-        // Boost locked candidates to the front so they're always in the pool
-        const aLocked = lockedSet.has(a.p.name) ? 1 : 0;
-        const bLocked = lockedSet.has(b.p.name) ? 1 : 0;
+        // Boost locked candidates (any-slot OR flex-specific) to the front so
+        // they're always present in the top-K UTIL pool.
+        const aLocked = (lockedSet.has(a.p.name) || flexLockedSet.has(a.p.name)) ? 1 : 0;
+        const bLocked = (lockedSet.has(b.p.name) || flexLockedSet.has(b.p.name)) ? 1 : 0;
         if (aLocked !== bLocked) return bLocked - aLocked;
         const va = a.p.projection / Math.max(a.p.util_salary, 1);
         const vb = b.p.projection / Math.max(b.p.util_salary, 1);
@@ -622,6 +640,16 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
                 let allLocked = true;
                 for (const ln of lockedSet) { if (!luNames.has(ln)) { allLocked = false; break; } }
                 if (!allLocked) continue;
+              }
+              // FLEX-specific lock — every flex-locked name must be in a UTIL slot
+              // (not as CPT). If a flexLocked player happened to be captain, fail.
+              if (flexLockedSet.size > 0) {
+                const utilNames = new Set([pa.name, pb.name, pd.name, pe.name, pf.name]);
+                let allFlexLocked = true;
+                for (const fn of flexLockedSet) {
+                  if (!utilNames.has(fn)) { allFlexLocked = false; break; }
+                }
+                if (!allFlexLocked) continue;
               }
 
               const totalProj = cptProj + pa.projection + pb.projection + pd.projection + pe.projection + pf.projection;
