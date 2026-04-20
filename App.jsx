@@ -4114,6 +4114,7 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
         const utils = lu.utils.map(i => res.pData[i]);
         const allOwns = [cpt, ...utils].map(p => ownership[p.name] || 0);
         const avgO = Math.round(allOwns.reduce((a, b) => a + b, 0) / allOwns.length);
+        const cptOwn = ownership[cpt.name] || 0;
         return <div className="lu-card" key={idx}>
           <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
           <div className="lu-row">
@@ -4122,14 +4123,19 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
             <span className="lu-opp"><TeamBadge team={cpt.team} /></span>
             <span className="lu-sal">${(cpt.cpt_salary || 0).toLocaleString()}</span>
             <span className="lu-pts">{fmt(cpt.projection * 1.5, 1)}</span>
+            <span style={{ width: 36, textAlign: 'right', color: cptOwn > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(cptOwn, 0)}%</span>
           </div>
-          {utils.map((p, j) => <div className="lu-row" key={p.name}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>UTIL</span>
-            <span className="lu-name">{p.name}</span>
-            <span className="lu-opp"><TeamBadge team={p.team} /></span>
-            <span className="lu-sal">${(p.util_salary || p.salary).toLocaleString()}</span>
-            <span className="lu-pts">{fmt(p.projection, 1)}</span>
-          </div>)}
+          {utils.map((p, j) => {
+            const ownPct = ownership[p.name] || 0;
+            return <div className="lu-row" key={p.name}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>UTIL</span>
+              <span className="lu-name">{p.name}</span>
+              <span className="lu-opp"><TeamBadge team={p.team} /></span>
+              <span className="lu-sal">${(p.util_salary || p.salary).toLocaleString()}</span>
+              <span className="lu-pts">{fmt(p.projection, 1)}</span>
+              <span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span>
+            </div>;
+          })}
           <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: avgO > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {avgO}%</span></div>
         </div>;
       }
@@ -4138,12 +4144,16 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
       const lineupOwn = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0) / ps.length);
       return <div className="lu-card" key={idx}>
         <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
-        {ps.map(p => <div className="lu-row" key={p.name}>
-          <span className="lu-name">{p.name}</span>
-          <span className="lu-opp"><TeamBadge team={p.team} /></span>
-          <span className="lu-sal">${p.salary.toLocaleString()}</span>
-          <span className="lu-pts">{fmt(p.projection, 1)}</span>
-        </div>)}
+        {ps.map(p => {
+          const ownPct = ownership[p.name] || 0;
+          return <div className="lu-row" key={p.name}>
+            <span className="lu-name">{p.name}</span>
+            <span className="lu-opp"><TeamBadge team={p.team} /></span>
+            <span className="lu-sal">${p.salary.toLocaleString()}</span>
+            <span className="lu-pts">{fmt(p.projection, 1)}</span>
+            <span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span>
+          </div>;
+        })}
         <div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupOwn}%</span></div>
       </div>;
     })}</div>
