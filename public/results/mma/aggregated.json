@@ -21,8 +21,9 @@
       "type": "bust_rate",
       "n": 1,
       "bust_rate": 1.0,
-      "counter_edge": null,
-      "edge_units": "DK FPTS — trap fighter (Kyler Phillips) lost by decision, NOT in winning lineup. Field was 52.9% simOwn on him with only 44.7% real win prob. Exact DK score pending UFC stats CSV re-upload.",
+      "counter_edge": 22,
+      "avg_edge": 0,
+      "edge_units": "DK FPTS — trap (Kyler Phillips) busted: lost by decision, est ~22 DK, NOT in winning lineup. Field was 52.9% simOwn on him with only 44.7% real win prob. Estimate pending CSV for exact DK.",
       "signal": "early — correct fade on N=1"
     },
     {
