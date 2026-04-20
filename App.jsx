@@ -776,18 +776,6 @@ function matchesSearch(item, query, fields = ['name', 'player', 'team', 'opponen
   return false;
 }
 const fmt = (n, d = 1) => typeof n === 'number' ? n.toFixed(d) : '-';
-
-// Abbreviate long player names for compact lineup display (e.g. "Victor Wembanyama"
-// → "V. Wembanyama", "Shai Gilgeous-Alexander" → "S. Gilgeous-Alexander").
-// Display-only — exports and data layers always use the full name. Keeps
-// lineup cards from squeezing the team badge off the row when the name runs long.
-function abbrevName(name) {
-  if (!name || typeof name !== 'string') return name || '';
-  if (name.length <= 14) return name;
-  const parts = name.split(/\s+/);
-  if (parts.length < 2) return name;
-  return parts[0].charAt(0).toUpperCase() + '. ' + parts.slice(1).join(' ');
-}
 const fmtPct = n => typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '-';
 const fmtSal = n => '$' + n.toLocaleString();
 const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(AM|PM)/i); if (m) { let h = parseInt(m[4]); const ap = m[6].toUpperCase(); if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return (h > 12 ? h - 12 : h || 12) + ':' + m[5] + ' ' + ap; } try { const d = new Date(s); if (!isNaN(d)) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch {} return s; };
@@ -1032,7 +1020,19 @@ export default function App() {
   // passed to optimizers. Reset on slate/sport change — new slate means different active players.
   const [lockedPlayers, setLockedPlayers] = useState([]);
   const [excludedPlayers, setExcludedPlayers] = useState([]);
-  useEffect(() => { setLockedPlayers([]); setExcludedPlayers([]); }, [sport, data]);
+  // NBA-only per-slot lock/exclude. Populated when the user clicks lock/exclude
+  // while the NBA DK tab is in CPT or FLEX scope. Separate from the "any-slot"
+  // sets above so users can e.g. lock SGA as FLEX-only (not CPT) without
+  // affecting his any-slot status. Tennis/MMA never touch these.
+  const [cptLockedPlayers, setCptLockedPlayers]       = useState([]);
+  const [flexLockedPlayers, setFlexLockedPlayers]     = useState([]);
+  const [cptExcludedPlayers, setCptExcludedPlayers]   = useState([]);
+  const [flexExcludedPlayers, setFlexExcludedPlayers] = useState([]);
+  useEffect(() => {
+    setLockedPlayers([]); setExcludedPlayers([]);
+    setCptLockedPlayers([]); setFlexLockedPlayers([]);
+    setCptExcludedPlayers([]); setFlexExcludedPlayers([]);
+  }, [sport, data]);
 
   // Toggle handlers: lock and exclude are mutually exclusive — toggling one clears the other
   // for that player (preventing an impossible "must-be-in AND must-be-out" contradiction).
@@ -1046,6 +1046,27 @@ export default function App() {
   }, []);
   const onClearLocks = useCallback(() => setLockedPlayers([]), []);
   const onClearExcludes = useCallback(() => setExcludedPlayers([]), []);
+  // Per-slot NBA toggles. Same mutual-exclusion within the slot's lock/exclude pair.
+  const onToggleCptLock = useCallback((name) => {
+    setCptLockedPlayers(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    setCptExcludedPlayers(prev => prev.filter(n => n !== name));
+  }, []);
+  const onToggleCptExclude = useCallback((name) => {
+    setCptExcludedPlayers(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    setCptLockedPlayers(prev => prev.filter(n => n !== name));
+  }, []);
+  const onToggleFlexLock = useCallback((name) => {
+    setFlexLockedPlayers(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    setFlexExcludedPlayers(prev => prev.filter(n => n !== name));
+  }, []);
+  const onToggleFlexExclude = useCallback((name) => {
+    setFlexExcludedPlayers(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    setFlexLockedPlayers(prev => prev.filter(n => n !== name));
+  }, []);
+  const onClearCptLocks      = useCallback(() => setCptLockedPlayers([]), []);
+  const onClearCptExcludes   = useCallback(() => setCptExcludedPlayers([]), []);
+  const onClearFlexLocks     = useCallback(() => setFlexLockedPlayers([]), []);
+  const onClearFlexExcludes  = useCallback(() => setFlexExcludedPlayers([]), []);
   // Cursor-tracking gold glow: follows mouse, rendered via CSS custom properties on <body>.
   // Throttled via rAF so mousemove doesn't thrash layout.
   useEffect(() => {
@@ -1508,9 +1529,9 @@ export default function App() {
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'nba' && (<>
-        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} cptOwn={cptOwnership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
+        {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} cptOwn={cptOwnership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} cptLockedPlayers={cptLockedPlayers} flexLockedPlayers={flexLockedPlayers} cptExcludedPlayers={cptExcludedPlayers} flexExcludedPlayers={flexExcludedPlayers} onToggleCptLock={onToggleCptLock} onToggleCptExclude={onToggleCptExclude} onToggleFlexLock={onToggleFlexLock} onToggleFlexExclude={onToggleFlexExclude} />}
         {tab === 'pp' && <NBAPPTab rows={ppRows} />}
-        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} />}
+        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} cptLockedPlayers={cptLockedPlayers} flexLockedPlayers={flexLockedPlayers} cptExcludedPlayers={cptExcludedPlayers} flexExcludedPlayers={flexExcludedPlayers} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
@@ -2187,7 +2208,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
           <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
           {slots.map(s => <div className="lu-row" key={s.role}>
             <span style={{ fontSize: 10, fontWeight: 700, color: s.color, width: 44, flexShrink: 0, letterSpacing: 0.5 }}>{s.role}</span>
-            <span className="lu-name" title={s.p.name}>{abbrevName(s.p.name)}</span>
+            <span className="lu-name">{s.p.name}</span>
             <span className="lu-opp">vs {s.p.opponent}</span>
             <span className="lu-sal">${s.sal.toLocaleString()}</span>
             <span className="lu-pts">{fmt(s.p.projection * s.mult, 1)}</span>
@@ -2197,7 +2218,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
       }
       // Classic: unchanged
       const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary);
-      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name" title={p.name}>{abbrevName(p.name)}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
+      return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(p.projection, 1)}</span></div>)}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span>{lu.proj}</span></div></div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
   </>);
@@ -2878,7 +2899,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
       return <div className="lu-card" key={idx}><div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>{ps.map(p => {
         const ownPct = ownership[p.name] || 0;
         const scoreShown = mode === 'ceiling' ? p.ceiling : p.projection;
-        return <div className="lu-row" key={p.name}><span className="lu-name" title={p.name}>{abbrevName(p.name)}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
+        return <div className="lu-row" key={p.name}><span className="lu-name">{p.name}</span><span className="lu-opp">vs {p.opponent}</span><span className="lu-sal">${p.salary.toLocaleString()}</span><span className="lu-pts">{fmt(scoreShown, 1)}</span><span style={{ width: 36, textAlign: 'right', color: ownPct > 35 ? 'var(--amber)' : 'var(--text-dim)', fontSize: 11 }}>{fmt(ownPct, 0)}%</span></div>;
       })}<div className="lu-footer"><span>${lu.sal.toLocaleString()}</span><span style={{ color: lineupAvgOwn > 30 ? 'var(--amber)' : 'var(--green)' }}>Avg: {lineupAvgOwn}%</span></div></div>;
     })}</div>
     {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
@@ -2955,9 +2976,14 @@ function StatusChip({ status, onCycle }) {
 }
 
 // NBA DK Tab — projections, value, ownership, status, mins/usg, cascade
-function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, lockedPlayers = [], excludedPlayers = [], onToggleLock, onToggleExclude, onClearLocks, onClearExcludes }) {
+function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, lockedPlayers = [], excludedPlayers = [], onToggleLock, onToggleExclude, onClearLocks, onClearExcludes, cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [], onToggleCptLock, onToggleCptExclude, onToggleFlexLock, onToggleFlexExclude }) {
   const [statusMap, setStatusMap] = useState({});
   const [q, setQ] = useState('');
+  // Per-slot display mode for showdown: 'all' shows total ownership + UTIL-priced salary/proj,
+  // 'cpt' shows CPT-specific ownership + CPT-priced salary (1.5×) and 1.5× projection,
+  // 'flex' shows flex-only ownership (total − CPT) + UTIL-priced salary/proj.
+  // Lock/exclude buttons operate on the corresponding per-slot set when scope ≠ 'all'.
+  const [dkScope, setDkScope] = useState('all');
   const cycleStatus = (name) => {
     setStatusMap(prev => {
       const cur = prev[name] ?? (players.find(p => p.name === name)?.status || 'ACTIVE');
@@ -3210,7 +3236,40 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       );
     })()}
     <SearchBar value={q} onChange={setQ} placeholder="Search players, teams, positions" total={pw.length} filtered={pwFiltered.length} />
-    <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
+
+    {/* Scope tabs — All / CPT / FLEX. Mirrors the builder's exposure scope
+        pattern. Switches which salary, projection, and ownership values are
+        shown in the table, and which lock/exclude set is affected when the
+        user clicks the lock or exclude button on a row. */}
+    <div className="oo-nba-scope-wrap" style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, padding: '8px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }}>
+      <style>{`
+        .oo-nba-dkscope-btn { padding: 5px 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; }
+        .oo-nba-dkscope-btn:hover { color: var(--text); border-color: var(--border-light); }
+        .oo-nba-dkscope-btn.active { background: var(--primary); color: #0A1628; border-color: var(--primary); }
+      `}</style>
+      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>View</span>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {[
+          { k: 'all',  label: 'All' },
+          { k: 'cpt',  label: 'Captain' },
+          { k: 'flex', label: 'Flex' },
+        ].map(({ k, label }) => (
+          <button key={k} className={`oo-nba-dkscope-btn ${dkScope === k ? 'active' : ''}`} onClick={() => setDkScope(k)}>{label}</button>
+        ))}
+      </div>
+      <span style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+        {dkScope === 'all'  && 'All-slot view · lock/exclude applies to any slot'}
+        {dkScope === 'cpt'  && 'Captain view — salary/proj ×1.5 · lock/exclude targets CPT slot only'}
+        {dkScope === 'flex' && 'Flex view — flex-only ownership · lock/exclude targets UTIL slot only'}
+      </span>
+    </div>
+
+    {/* Per-scope LockBar: shows the lock/exclude pills for the active scope.
+        Helps users see at a glance what they've locked/excluded at each slot level. */}
+    {dkScope === 'all' && <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
+    {dkScope === 'cpt'  && <LockBar lockedPlayers={cptLockedPlayers}  excludedPlayers={cptExcludedPlayers}  onToggleLock={onToggleCptLock}  onToggleExclude={onToggleCptExclude} />}
+    {dkScope === 'flex' && <LockBar lockedPlayers={flexLockedPlayers} excludedPlayers={flexExcludedPlayers} onToggleLock={onToggleFlexLock} onToggleExclude={onToggleFlexExclude} />}
+
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
       <S label="Sal" colKey="salary" num />
@@ -3246,17 +3305,17 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         </td>
         <td><TeamBadge team={p.team} /></td>
         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.positions_str}</td>
-        <td className="num">{fmtSal(p.salary)}</td>
-        <td className="num" style={{ color: p.simOwn > 40 ? 'var(--red-text)' : p.simOwn > 25 ? 'var(--amber)' : 'var(--text-muted)' }}>{noLine ? '—' : fmt(p.simOwn, 1) + '%'}</td>
+        <td className="num">{dkScope === 'cpt' ? fmtSal(p.cpt_salary || p.salary * 1.5) : fmtSal(p.salary)}</td>
+        <td className="num" style={{ color: p.simOwn > 40 ? 'var(--red-text)' : p.simOwn > 25 ? 'var(--amber)' : 'var(--text-muted)' }}>{noLine ? '—' : (dkScope === 'cpt' ? fmt(p.cptOwnPct, 1) : dkScope === 'flex' ? fmt(p.flexOwnPct, 1) : fmt(p.simOwn, 1)) + '%'}</td>
         <td className="num" title="Captain-specific ownership in top 1500 lineups" style={{ color: p.cptOwnPct > 30 ? 'var(--red-text)' : p.cptOwnPct > 15 ? 'var(--amber)' : 'var(--text-dim)', fontWeight: p.cptOwnPct > 20 ? 600 : 400 }}>{noLine ? '—' : fmt(p.cptOwnPct, 1) + '%'}</td>
         <td className="num">
           {noLine ? <span style={{ color: 'var(--text-dim)' }}>—</span> : (
             <span className={iv ? 'cell-top3' : 'cell-proj'}>
               <input type="number" step="0.1" className={`proj-edit ${isOver ? 'overridden' : ''}`}
-                value={isOver ? overrides[p.name] : (p.proj != null ? p.proj : '')}
+                value={isOver ? overrides[p.name] : (p.proj != null ? (dkScope === 'cpt' ? (p.proj * 1.5).toFixed(1) : p.proj) : '')}
                 onChange={e => onOverride && onOverride(p.name, e.target.value)}
                 onDoubleClick={() => onOverride && onOverride(p.name, null)}
-                title={isOver ? 'Overridden — double-click to reset' : 'Click to edit'} />
+                title={isOver ? 'Overridden — double-click to reset' : dkScope === 'cpt' ? 'CPT projection shown as proj × 1.5 — editing overrides the base proj' : 'Click to edit'} />
             </span>
           )}
         </td>
@@ -3266,7 +3325,15 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         <td className="num">{fmt(p.projMins, 1)}</td>
         <td className="num muted" title="Informational — minutes are not used in projections (DK lines already price them in)">{noLine ? '—' : 'DK'}</td>
         <td><StatusChip status={p.effStatus} onCycle={() => cycleStatus(p.name)} /></td>
-        <td style={{ textAlign: 'right', paddingRight: 10 }}><LockExcludeButtons name={p.name} isLocked={lockedPlayers.includes(p.name)} isExcluded={excludedPlayers.includes(p.name)} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} /></td>
+        <td style={{ textAlign: 'right', paddingRight: 10 }}>
+          <LockExcludeButtons
+            name={p.name}
+            isLocked={(dkScope === 'cpt' ? cptLockedPlayers : dkScope === 'flex' ? flexLockedPlayers : lockedPlayers).includes(p.name)}
+            isExcluded={(dkScope === 'cpt' ? cptExcludedPlayers : dkScope === 'flex' ? flexExcludedPlayers : excludedPlayers).includes(p.name)}
+            onToggleLock={dkScope === 'cpt' ? onToggleCptLock : dkScope === 'flex' ? onToggleFlexLock : onToggleLock}
+            onToggleExclude={dkScope === 'cpt' ? onToggleCptExclude : dkScope === 'flex' ? onToggleFlexExclude : onToggleExclude}
+          />
+        </td>
       </tr>; })}</tbody></table></div>
   </>);
 }
@@ -3325,7 +3392,7 @@ function NBAPPTab({ rows }) {
 }
 
 // NBA Builder Tab — contrarian lineup building for showdown or classic
-function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [] }) {
+function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [], cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [] }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
   const [nL, setNL] = useState(20);
@@ -3338,6 +3405,26 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   const [expScope, setExpScope] = useState('all');
   const [poolQ, setPoolQ] = useState('');
   const isShowdown = (slateType || 'showdown') === 'showdown';
+
+  // Favorited lineups — stored as name-based tuples so they survive rebuilds
+  // (player indices change between builds when the active pool changes).
+  // Each entry: { cpt, utils[], proj, sal } for showdown OR { players[], proj, sal } for classic.
+  // After each Build, these are merged into the front of res.lineups so they
+  // always appear in the display and get included in CSV exports.
+  const [favoriteLineups, setFavoriteLineups] = useState([]);
+  const favoriteKey = (fav) => fav.cpt !== undefined
+    ? `CPT:${fav.cpt}|${[...fav.utils].sort().join('|')}`
+    : [...(fav.players || [])].sort().join('|');
+  const toggleFavoriteLineup = useCallback((lu, pData) => {
+    const fav = isShowdown
+      ? { cpt: pData[lu.cpt].name, utils: lu.utils.map(i => pData[i].name), proj: lu.proj, sal: lu.sal }
+      : { players: lu.players.map(i => pData[i].name), proj: lu.proj, sal: lu.sal };
+    const key = favoriteKey(fav);
+    setFavoriteLineups(prev => {
+      const exists = prev.some(f => favoriteKey(f) === key);
+      return exists ? prev.filter(f => favoriteKey(f) !== key) : [...prev, fav];
+    });
+  }, [isShowdown]);
 
   // Per-scope field names in the `exp` state object
   const scopeField = (kind /* 'min' | 'max' */) => {
@@ -3647,8 +3734,36 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         };
       });
       enforceMinNudge(pd, baseProjs);
-      const r = nbaOptimizeShowdown(pd, nL, 50000, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
-      setRes({ ...r, pData: pd, isShowdown: true });
+      const r = nbaOptimizeShowdown(pd, nL, 50000, 48000, {
+        locked: new Set(lockedPlayers),
+        excluded: new Set(excludedPlayers),
+        cptLocked: new Set(cptLockedPlayers),
+        flexLocked: new Set(flexLockedPlayers),
+        cptExcluded: new Set(cptExcludedPlayers),
+        flexExcluded: new Set(flexExcludedPlayers),
+      });
+      // Merge favorited lineups: remap name-based favorites to the new pData
+      // indices, prepend to r.lineups, and recompute counts so the exposure
+      // tallies include favorited lineups. Favorites with missing players
+      // (e.g. marked OUT since favoriting) are dropped silently.
+      const favShow = [];
+      const nameIdx = new Map(pd.map((p, i) => [p.name, i]));
+      for (const fav of favoriteLineups) {
+        if (fav.cpt === undefined) continue; // classic favorite, skip in showdown mode
+        const cptIdx = nameIdx.get(fav.cpt);
+        if (cptIdx === undefined) continue;
+        const utilIdxs = fav.utils.map(n => nameIdx.get(n));
+        if (utilIdxs.some(i => i === undefined)) continue;
+        favShow.push({ cpt: cptIdx, utils: utilIdxs, players: [cptIdx, ...utilIdxs], proj: fav.proj, sal: fav.sal, _fav: true });
+      }
+      // De-dupe: if a favorite also got generated by the optimizer, keep the fav
+      // entry and drop the optimizer's copy so we don't have two cards for one lineup.
+      const favKeys = new Set(favShow.map(lu => `${lu.cpt}|${[...lu.utils].sort().join(',')}`));
+      const dedupedR = r.lineups.filter(lu => !favKeys.has(`${lu.cpt}|${[...lu.utils].sort().join(',')}`));
+      const mergedLineups = [...favShow, ...dedupedR];
+      const mergedCounts = new Array(pd.length).fill(0);
+      for (const lu of mergedLineups) { mergedCounts[lu.cpt]++; lu.utils.forEach(i => mergedCounts[i]++); }
+      setRes({ ...r, lineups: mergedLineups, counts: mergedCounts, pData: pd, isShowdown: true });
       return;
     }
     // Classic
@@ -3668,7 +3783,21 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     });
     enforceMinNudge(pd, baseProjs);
     const r = nbaOptimizeClassic(pd, nL, 50000, 48000, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
-    setRes({ ...r, pData: pd, isShowdown: false });
+    // Merge classic favorites the same way
+    const favCls = [];
+    const nameIdxC = new Map(pd.map((p, i) => [p.name, i]));
+    for (const fav of favoriteLineups) {
+      if (fav.cpt !== undefined) continue; // showdown favorite
+      const idxs = (fav.players || []).map(n => nameIdxC.get(n));
+      if (idxs.some(i => i === undefined)) continue;
+      favCls.push({ players: idxs, proj: fav.proj, sal: fav.sal, _fav: true });
+    }
+    const favKeysC = new Set(favCls.map(lu => [...lu.players].sort().join(',')));
+    const dedupedRC = r.lineups.filter(lu => !favKeysC.has([...lu.players].sort().join(',')));
+    const mergedC = [...favCls, ...dedupedRC];
+    const mergedCountsC = new Array(pd.length).fill(0);
+    for (const lu of mergedC) { lu.players.forEach(i => mergedCountsC[i]++); }
+    setRes({ ...r, lineups: mergedC, counts: mergedCountsC, pData: pd, isShowdown: false });
   };
 
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
@@ -3984,14 +4113,64 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} />}
+    {res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
 
-function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount }) {
+function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount, favoriteLineups = [], onToggleFavorite }) {
   const isShowdown = res.isShowdown;
   const [view, setView] = useState('all');   // 'all' | 'cpt' | 'flex'
   const [q, setQ] = useState('');
+
+  // Favorites are managed by the parent (NBABuilderTab) so they persist across
+  // Build clicks. Here we derive the set of favorited lineup hashes for quick
+  // lookup in the card renderer.
+  const favoriteKeySet = useMemo(() => {
+    const s = new Set();
+    for (const fav of favoriteLineups) {
+      if (fav.cpt !== undefined) s.add(`CPT:${fav.cpt}|${[...fav.utils].sort().join('|')}`);
+      else s.add((fav.players || []).slice().sort().join('|'));
+    }
+    return s;
+  }, [favoriteLineups]);
+  const lineupHash = (lu) => {
+    if (isShowdown) {
+      const cpt = res.pData[lu.cpt].name;
+      const utils = lu.utils.map(i => res.pData[i].name).sort();
+      return `CPT:${cpt}|${utils.join('|')}`;
+    }
+    return lu.players.map(i => res.pData[i].name).sort().join('|');
+  };
+
+  // Player filter — when enabled on a player, only lineups containing that
+  // player (in the specified slot) are shown in the lineups grid.
+  // For showdown: filter entries are { name, slot: 'cpt'|'flex'|'any' }.
+  // Multiple active filters AND together (all must match).
+  const [lineupFilters, setLineupFilters] = useState(() => []);
+  const toggleFilter = (name, slot = 'any') => {
+    setLineupFilters(prev => {
+      const existing = prev.findIndex(f => f.name === name && f.slot === slot);
+      if (existing >= 0) return prev.filter((_, i) => i !== existing);
+      return [...prev, { name, slot }];
+    });
+  };
+  const clearFilters = () => setLineupFilters([]);
+  const matchesFilters = (lu) => {
+    if (lineupFilters.length === 0) return true;
+    for (const f of lineupFilters) {
+      if (isShowdown) {
+        const cptName = res.pData[lu.cpt].name;
+        const utilNames = new Set(lu.utils.map(i => res.pData[i].name));
+        if (f.slot === 'cpt'  && cptName !== f.name)      return false;
+        if (f.slot === 'flex' && !utilNames.has(f.name))  return false;
+        if (f.slot === 'any'  && cptName !== f.name && !utilNames.has(f.name)) return false;
+      } else {
+        const names = new Set(lu.players.map(i => res.pData[i].name));
+        if (!names.has(f.name)) return false;
+      }
+    }
+    return true;
+  };
 
   // Tally CPT vs FLEX occurrences across the user's built lineups
   const { cptCnt, flexCnt } = useMemo(() => {
@@ -4106,21 +4285,63 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
       <S label={pctColLabel} colKey="pct" />
       <S label={simColLabel} colKey="simOwn" />
       <S label="Leverage" colKey="lev" num />
+      <th title="Filter displayed lineups by this player" style={{ textAlign: 'center' }}>Filter</th>
     </tr></thead>
-    <tbody>{sorted.map(p => <tr key={p.name}>
-      <td className="name">{p.name}</td>
-      <td>{p.team ? <TeamBadge team={p.team} /> : ''}</td>
-      <td className="num">${p.salary.toLocaleString()}</td>
-      <td className="num">{fmt(p.projection, 1)}</td>
-      <td className="num">{fmt(p.val, 2)}</td>
-      <td className="num">{p.cnt}</td>
-      <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
-      <td className="num muted">{fmt(p.simOwn, 1)}%</td>
-      <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
-    </tr>)}</tbody></table></div>
+    <tbody>{sorted.map(p => {
+      const filteredAny  = lineupFilters.some(f => f.name === p.name && f.slot === 'any');
+      const filteredCpt  = lineupFilters.some(f => f.name === p.name && f.slot === 'cpt');
+      const filteredFlex = lineupFilters.some(f => f.name === p.name && f.slot === 'flex');
+      const btnStyle = (active, color) => ({
+        width: 24, height: 24, padding: 0, border: `1px solid ${active ? color : 'var(--border)'}`, background: active ? color : 'transparent',
+        color: active ? '#0A1628' : 'var(--text-muted)', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700, lineHeight: '22px',
+      });
+      return <tr key={p.name}>
+        <td className="name">{p.name}</td>
+        <td>{p.team ? <TeamBadge team={p.team} /> : ''}</td>
+        <td className="num">${p.salary.toLocaleString()}</td>
+        <td className="num">{fmt(p.projection, 1)}</td>
+        <td className="num">{fmt(p.val, 2)}</td>
+        <td className="num">{p.cnt}</td>
+        <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
+        <td className="num muted">{fmt(p.simOwn, 1)}%</td>
+        <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
+        <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+          {isShowdown ? (
+            <span style={{ display: 'inline-flex', gap: 3 }}>
+              <button style={btnStyle(filteredCpt,  '#F5C518')} onClick={() => toggleFilter(p.name, 'cpt')}  title={filteredCpt  ? 'Remove CPT filter'  : `Filter lineups with ${p.name} as CPT`}>C</button>
+              <button style={btnStyle(filteredFlex, 'var(--primary)')} onClick={() => toggleFilter(p.name, 'flex')} title={filteredFlex ? 'Remove FLEX filter' : `Filter lineups with ${p.name} in FLEX`}>F</button>
+            </span>
+          ) : (
+            <button style={btnStyle(filteredAny, 'var(--primary)')} onClick={() => toggleFilter(p.name, 'any')} title={filteredAny ? 'Remove filter' : `Show only lineups containing ${p.name}`}>⌕</button>
+          )}
+        </td>
+      </tr>;
+    })}</tbody></table></div>
 
-    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups</div>
-    <div className="lineup-grid">{res.lineups.slice(0, 30).map((lu, idx) => {
+    {/* Active filter chips — click a chip to remove the filter. */}
+    {lineupFilters.length > 0 && (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Filtering</span>
+        {lineupFilters.map((f, i) => {
+          const color = f.slot === 'cpt' ? '#F5C518' : f.slot === 'flex' ? 'var(--primary)' : 'var(--primary)';
+          const slotLabel = f.slot === 'cpt' ? 'CPT' : f.slot === 'flex' ? 'FLEX' : '';
+          return <button key={i}
+            onClick={() => toggleFilter(f.name, f.slot)}
+            style={{ padding: '3px 9px', background: 'transparent', border: `1px solid ${color}`, color, borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+            title="Click to remove this filter">
+            {slotLabel && <span style={{ fontSize: 9, opacity: 0.8 }}>{slotLabel}</span>}
+            {f.name}
+            <span style={{ opacity: 0.6 }}>✕</span>
+          </button>;
+        })}
+        <button onClick={clearFilters} style={{ marginLeft: 'auto', padding: '3px 9px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>Clear all</button>
+      </div>
+    )}
+
+    <div className="section-head"><Icon name="target" size={16} color="#F5C518"/> Lineups{lineupFilters.length > 0 && <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 500, marginLeft: 8 }}>· {res.lineups.filter(matchesFilters).length} matching</span>}</div>
+    <div className="lineup-grid">{res.lineups.filter(matchesFilters).slice(0, 30).map((lu, idx) => {
+      const luHash = lineupHash(lu);
+      const isFav = favoriteKeySet.has(luHash) || lu._fav;
       if (res.isShowdown) {
         const cpt = res.pData[lu.cpt];
         const utils = lu.utils.map(i => res.pData[i]);
@@ -4134,11 +4355,22 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
         const cumOwn = Math.round(cptOwnOnly + utilCumOwn);
         const cumColor = cumOwn > 220 ? 'var(--amber)' : cumOwn > 180 ? 'var(--primary)' : 'var(--green)';
         const cumLabel = `Cumulative ownership — sum of CPT% (${cptOwnOnly.toFixed(1)}%) and each UTIL player's FLEX-only% (total own − CPT own). Lower = more unique vs field. Typical range: 150 super-contrarian → 280+ mega-chalk.`;
-        return <div className="lu-card" key={idx}>
-          <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
+        return <div className="lu-card" key={idx} style={isFav ? { borderColor: '#F5C518', boxShadow: '0 0 0 1px #F5C518 inset, 0 2px 8px rgba(245,197,24,0.15)' } : undefined}>
+          <div className="lu-header">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={() => onToggleFavorite && onToggleFavorite(lu, res.pData)}
+                title={isFav ? 'Unfavorite — will no longer persist through rebuilds' : 'Favorite this lineup — it survives rebuilds and is always exported'}
+                style={{ width: 20, height: 20, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: isFav ? '#F5C518' : 'var(--text-dim)', fontSize: 14, lineHeight: 1 }}>
+                {isFav ? '★' : '☆'}
+              </button>
+              <span>#{idx + 1}</span>
+            </span>
+            <span className="lu-proj">{lu.proj} pts</span>
+          </div>
           <div className="lu-row">
             <span style={{ fontSize: 10, fontWeight: 700, color: '#F5C518', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>CPT</span>
-            <span className="lu-name" title={cpt.name}>{abbrevName(cpt.name)}</span>
+            <span className="lu-name">{cpt.name}</span>
             <span className="lu-opp"><TeamBadge team={cpt.team} /></span>
             <span className="lu-sal">${(cpt.cpt_salary || 0).toLocaleString()}</span>
             <span className="lu-pts">{fmt(cpt.projection * 1.5, 1)}</span>
@@ -4148,7 +4380,7 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
             const flexOwn = Math.max(0, (ownership[p.name] || 0) - (cptOwnership[p.name] || 0));
             return <div className="lu-row" key={p.name}>
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', width: 44, flexShrink: 0, letterSpacing: 0.5 }}>UTIL</span>
-              <span className="lu-name" title={p.name}>{abbrevName(p.name)}</span>
+              <span className="lu-name">{p.name}</span>
               <span className="lu-opp"><TeamBadge team={p.team} /></span>
               <span className="lu-sal">${(p.util_salary || p.salary).toLocaleString()}</span>
               <span className="lu-pts">{fmt(p.projection, 1)}</span>
@@ -4166,12 +4398,23 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
       const cumClassic = Math.round(ps.reduce((s, p) => s + (ownership[p.name] || 0), 0));
       const classicColor = cumClassic > 120 ? 'var(--amber)' : cumClassic > 90 ? 'var(--primary)' : 'var(--green)';
       const classicLabel = `Cumulative field ownership — sum of each player's total own%. Lower = more unique vs field.`;
-      return <div className="lu-card" key={idx}>
-        <div className="lu-header"><span>#{idx + 1}</span><span className="lu-proj">{lu.proj} pts</span></div>
+      return <div className="lu-card" key={idx} style={isFav ? { borderColor: '#F5C518', boxShadow: '0 0 0 1px #F5C518 inset, 0 2px 8px rgba(245,197,24,0.15)' } : undefined}>
+        <div className="lu-header">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={() => onToggleFavorite && onToggleFavorite(lu, res.pData)}
+              title={isFav ? 'Unfavorite — will no longer persist through rebuilds' : 'Favorite this lineup — it survives rebuilds and is always exported'}
+              style={{ width: 20, height: 20, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', color: isFav ? '#F5C518' : 'var(--text-dim)', fontSize: 14, lineHeight: 1 }}>
+              {isFav ? '★' : '☆'}
+            </button>
+            <span>#{idx + 1}</span>
+          </span>
+          <span className="lu-proj">{lu.proj} pts</span>
+        </div>
         {ps.map(p => {
           const ownPct = ownership[p.name] || 0;
           return <div className="lu-row" key={p.name}>
-            <span className="lu-name" title={p.name}>{abbrevName(p.name)}</span>
+            <span className="lu-name">{p.name}</span>
             <span className="lu-opp"><TeamBadge team={p.team} /></span>
             <span className="lu-sal">${p.salary.toLocaleString()}</span>
             <span className="lu-pts">{fmt(p.projection, 1)}</span>
@@ -4184,6 +4427,6 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
         </div>
       </div>;
     })}</div>
-    {res.lineups.length > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {res.lineups.length - 30} more</div>}
+    {(() => { const vis = res.lineups.filter(matchesFilters).length; return vis > 30 && <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 13, marginTop: 8 }}>+ {vis - 30} more{lineupFilters.length > 0 && ' matching filters'}</div>; })()}
   </>);
 }
