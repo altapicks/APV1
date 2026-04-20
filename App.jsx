@@ -1333,7 +1333,7 @@ export default function App() {
       {buildError && <div className="empty" style={{ padding: '40px 20px' }}>
         <h2 style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Projection build failed</h2>
         <p style={{ marginTop: 12, fontFamily: 'monospace', fontSize: 13, color: 'var(--red)' }}>{buildError}</p>
-        <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>Check that slate-{sport === 'mma' ? 'mma' : ''}.json has valid odds fields for all {sport === 'mma' ? 'fights' : 'matches'}.</p>
+        <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>Check that slate{sport === 'mma' ? '-mma' : sport === 'nba' ? '-nba' : ''}.json has valid odds fields for all {sport === 'mma' ? 'fights' : sport === 'nba' ? 'games' : 'matches'}.</p>
       </div>}
       {!buildError && <ErrorBoundary>
       {sport === 'tennis' && (<>
@@ -2064,7 +2064,7 @@ function TrackRecordTab({ sport }) {
       </div>
       <div className="section-hero-text">
         <h2 className="section-hero-title">Track Record</h2>
-        <div className="section-hero-sub">{loadState === 'loaded' ? `${data.slates_tracked} ${sport === 'tennis' ? 'tennis' : 'UFC'} slate${data.slates_tracked === 1 ? '' : 's'} tracked · sorted by profitability` : 'How each tag has performed across completed slates'}</div>
+        <div className="section-hero-sub">{loadState === 'loaded' ? `${data.slates_tracked} ${sport === 'tennis' ? 'tennis' : sport === 'mma' ? 'UFC' : sport === 'nba' ? 'NBA' : sport} slate${data.slates_tracked === 1 ? '' : 's'} tracked · sorted by profitability` : 'How each tag has performed across completed slates'}</div>
       </div>
     </div>
   );
