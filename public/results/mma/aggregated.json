@@ -1,7 +1,396 @@
 {
   "sport": "mma",
-  "data_status": "empty",
-  "slates_tracked": 0,
-  "categories": [],
-  "_notes": { "status": "no slates graded yet" }
+  "data_status": "active",
+  "slates_tracked": 1,
+  "slate_dates": [
+    "2026-04-18-burns-malott"
+  ],
+  "last_updated": "2026-04-18",
+  "slate_avg_fpts": 630.56,
+  "featured_insight": {
+    "headline": "Top 3 Finish Path hits 3/3 in winning lineup",
+    "detail": "The three fighters we flagged with the highest finish probability — Marcio Barbosa (68%), Mike Malott (57%), and Robert Valentin (46%) — all won by finish AND all three appeared in ShadyGoat's $6,500 winning lineup. Finish-path model validated cleanly on a KO-heavy slate. N=1 — needs more slates to confirm the pattern.",
+    "icon": "fist"
+  },
+  "categories": [
+    {
+      "key": "biggest_trap",
+      "label": "Biggest Trap",
+      "description": "Who the field needs most",
+      "icon": "warning",
+      "type": "bust_rate",
+      "n": 1,
+      "bust_rate": 0.0,
+      "counter_edge": -108.67,
+      "edge_units": "DK FPTS — trap fighter (John Yannis) won by R1 KO for 108.67",
+      "signal": "early — dog-heavy slate punished trap model"
+    },
+    {
+      "key": "hidden_gem",
+      "label": "Hidden Gem",
+      "description": "Primary (opp of trap) + pivot (salary-band value)",
+      "icon": "gem",
+      "type": "hit_rate_dual",
+      "n": 1,
+      "primary_hit_rate": 0.0,
+      "pivot_hit_rate": 0.0,
+      "both_in_winner_rate": 0.0,
+      "avg_edge": 0,
+      "edge_units": "DK FPTS — neither gem landed in winning lineup",
+      "signal": "early"
+    },
+    {
+      "key": "top_value",
+      "label": "Top 3 Value",
+      "description": "Highest projected pts/$1k salary",
+      "icon": "trophy",
+      "type": "hit_rate",
+      "n": 3,
+      "hit_rate": 0.333,
+      "avg_edge": 0,
+      "edge_units": "val points above 6.0 threshold",
+      "signal": "early"
+    },
+    {
+      "key": "top_finish",
+      "label": "Top 3 Finish Path",
+      "description": "Highest finish probability",
+      "icon": "fist",
+      "type": "hit_rate",
+      "n": 3,
+      "hit_rate": 1.0,
+      "avg_edge": 0,
+      "edge_units": "all 3 in winning lineup, all 3 won by finish",
+      "signal": "strong"
+    },
+    {
+      "key": "pp_edge",
+      "label": "PP Edge (MORE)",
+      "description": "Players we flagged MORE vs PP line",
+      "icon": "flame",
+      "type": "hit_rate",
+      "n": 7,
+      "hit_rate": 0.571,
+      "avg_edge": 0,
+      "edge_units": "PP actual vs line (positive = correct over)",
+      "signal": "moderate"
+    },
+    {
+      "key": "pp_fade",
+      "label": "PP Fade (LESS)",
+      "description": "Players we flagged LESS vs PP line",
+      "icon": "trending-down",
+      "type": "hit_rate",
+      "n": 10,
+      "hit_rate": 0.6,
+      "avg_edge": 0,
+      "edge_units": "PP FPTS under line (positive = correct fade)",
+      "signal": "moderate"
+    },
+    {
+      "key": "pp_top_edge",
+      "label": "PP Top Edges (7 strongest)",
+      "description": "Our 7 highest-confidence PP picks by edge magnitude",
+      "icon": "target",
+      "type": "hit_rate",
+      "n": 7,
+      "hit_rate": 0.714,
+      "avg_edge": 0,
+      "edge_units": "hit rate on highest-confidence calls",
+      "signal": "strong"
+    }
+  ],
+  "per_slate_detail": [
+    {
+      "date": "2026-04-18-burns-malott",
+      "label": "4/18 UFC Fight Night: Burns vs Malott",
+      "winning_lineup": {
+        "username": "ShadyGoat",
+        "prize": 6500,
+        "total_dk": 630.56,
+        "fighters": [
+          {
+            "player": "Mike Malott",
+            "salary": 9300,
+            "dk_pts": 87.82,
+            "result": "W KO/TKO R3",
+            "draft_pct": 39.4
+          },
+          {
+            "player": "Jai Herbert",
+            "salary": 7400,
+            "dk_pts": 120.61,
+            "result": "W KO/TKO R1",
+            "draft_pct": 19.5
+          },
+          {
+            "player": "Marcio Barbosa",
+            "salary": 9400,
+            "dk_pts": 101.60,
+            "result": "W KO/TKO R1",
+            "draft_pct": 48.5
+          },
+          {
+            "player": "Robert Valentin",
+            "salary": 8300,
+            "dk_pts": 102.26,
+            "result": "W Sub R1",
+            "draft_pct": 36.4
+          },
+          {
+            "player": "Gokhan Saricam",
+            "salary": 8500,
+            "dk_pts": 109.60,
+            "result": "W KO/TKO R2",
+            "draft_pct": 25.6
+          },
+          {
+            "player": "John Yannis",
+            "salary": 7100,
+            "dk_pts": 108.67,
+            "result": "W KO/TKO R1",
+            "draft_pct": 13.6
+          }
+        ]
+      },
+      "calls": {
+        "biggest_trap": {
+          "player": "John Yannis",
+          "salary": 7100,
+          "sim_own": 19.6,
+          "win_prob": 0.31,
+          "actual_dk": 108.67,
+          "in_winner": true,
+          "result": "MISS — 31% dog won by R1 KO, scored 108.67. Tail outcome punished the trap model."
+        },
+        "hidden_gem_primary": {
+          "player": "Jamie Siraj",
+          "kind": "opponent of trap",
+          "actual_dk": 0,
+          "in_winner": false,
+          "result": "MISS — Siraj lost by R1 KO (gem model assumed opp of trap would win)"
+        },
+        "hidden_gem_pivot": {
+          "player": "Daria Zhelezniakova",
+          "kind": "salary-band value",
+          "actual_dk": 0,
+          "in_winner": false,
+          "result": "MISS — lost by decision, scored below value threshold"
+        },
+        "top_value_picks": [
+          {
+            "player": "Jasmine Jasudavicius",
+            "salary": 9200,
+            "projected_val": 9.48,
+            "actual_dk": 66.87,
+            "in_winner": false,
+            "result": "MISS — won but not in winning lineup"
+          },
+          {
+            "player": "Marcio Barbosa",
+            "salary": 9400,
+            "projected_val": 8.70,
+            "actual_dk": 101.60,
+            "in_winner": true,
+            "result": "HIT"
+          },
+          {
+            "player": "John Castaneda",
+            "salary": 8000,
+            "projected_val": 8.49,
+            "actual_dk": 0,
+            "in_winner": false,
+            "result": "MISS — draw, split the scoring"
+          }
+        ],
+        "top_finish_picks": [
+          {
+            "player": "Marcio Barbosa",
+            "salary": 9400,
+            "finish_prob": 0.68,
+            "actual_dk": 101.60,
+            "actual_method": "KO/TKO R1",
+            "in_winner": true,
+            "result": "HIT"
+          },
+          {
+            "player": "Mike Malott",
+            "salary": 9300,
+            "finish_prob": 0.57,
+            "actual_dk": 87.82,
+            "actual_method": "KO/TKO R3",
+            "in_winner": true,
+            "result": "HIT"
+          },
+          {
+            "player": "Robert Valentin",
+            "salary": 8300,
+            "finish_prob": 0.46,
+            "actual_dk": 102.26,
+            "actual_method": "Sub R1",
+            "in_winner": true,
+            "result": "HIT"
+          }
+        ],
+        "pp_edge_picks": [
+          {
+            "player": "Mandel Nallo",
+            "stat": "Significant Strikes",
+            "line": 35.5,
+            "projected": 42.5,
+            "actual": 16.0,
+            "play": "MORE",
+            "result": "MISS — early KO loss cut fight short"
+          },
+          {
+            "player": "Jasmine Jasudavicius",
+            "stat": "Fantasy Score",
+            "line": 48.55,
+            "projected": 53.0,
+            "actual": 66.87,
+            "play": "MORE",
+            "result": "HIT"
+          },
+          {
+            "player": "Gauge Young",
+            "stat": "Fantasy Score",
+            "line": 44.55,
+            "projected": 47.7,
+            "actual": 90.81,
+            "play": "MORE",
+            "result": "HIT"
+          },
+          {
+            "player": "Mike Malott",
+            "stat": "Significant Strikes",
+            "line": 41.5,
+            "projected": 44.5,
+            "actual": 56.0,
+            "play": "MORE",
+            "result": "HIT"
+          },
+          {
+            "player": "Marcio Barbosa",
+            "stat": "Fight Time",
+            "line": 5.25,
+            "projected": 5.99,
+            "actual": 1.33,
+            "play": "MORE",
+            "result": "MISS — R1 KO at 1:20"
+          },
+          {
+            "player": "Mark Vologdin",
+            "stat": "Fight Time",
+            "line": 14.99,
+            "projected": 15.0,
+            "actual": 15.0,
+            "play": "MORE",
+            "result": "HIT — full 3 rounds"
+          },
+          {
+            "player": "Gokhan Saricam",
+            "stat": "Fight Time",
+            "line": 14.99,
+            "projected": 15.0,
+            "actual": 9.72,
+            "play": "MORE",
+            "result": "MISS — R2 KO"
+          }
+        ],
+        "pp_fade_picks": [
+          {
+            "player": "Mike Malott",
+            "stat": "Fight Time",
+            "line": 12.25,
+            "projected": 12.07,
+            "actual": 12.13,
+            "play": "LESS",
+            "result": "HIT (barely — R3 finish at 12:08)"
+          },
+          {
+            "player": "Robert Valentin",
+            "stat": "Fight Time",
+            "line": 9.75,
+            "projected": 9.5,
+            "actual": 2.37,
+            "play": "LESS",
+            "result": "HIT — R1 submission"
+          },
+          {
+            "player": "Mandel Nallo",
+            "stat": "Fight Time",
+            "line": 10.25,
+            "projected": 9.71,
+            "actual": 2.08,
+            "play": "LESS",
+            "result": "HIT — R1 KO loss"
+          },
+          {
+            "player": "Jai Herbert",
+            "stat": "Significant Strikes",
+            "line": 37.5,
+            "projected": 36.5,
+            "actual": 19.0,
+            "play": "LESS",
+            "result": "HIT — R1 KO cut count short"
+          },
+          {
+            "player": "Charles Jourdain",
+            "stat": "Significant Strikes",
+            "line": 55.5,
+            "projected": 53.5,
+            "actual": 58.0,
+            "play": "LESS",
+            "result": "MISS — high-volume decision"
+          },
+          {
+            "player": "Gilbert Burns",
+            "stat": "Significant Strikes",
+            "line": 33.5,
+            "projected": 31.5,
+            "actual": 40.0,
+            "play": "LESS",
+            "result": "MISS — pushed over on loss"
+          },
+          {
+            "player": "Charles Jourdain",
+            "stat": "Fantasy Score",
+            "line": 46.55,
+            "projected": 44.35,
+            "actual": 58.83,
+            "play": "LESS",
+            "result": "MISS — decision win got him over"
+          },
+          {
+            "player": "Kyler Phillips",
+            "stat": "Significant Strikes",
+            "line": 50.5,
+            "projected": 45.5,
+            "actual": 36.0,
+            "play": "LESS",
+            "result": "HIT"
+          },
+          {
+            "player": "Mike Malott",
+            "stat": "Fantasy Score",
+            "line": 56.55,
+            "projected": 49.97,
+            "actual": 87.82,
+            "play": "LESS",
+            "result": "MISS — KO finish ballooned score"
+          },
+          {
+            "player": "Mandel Nallo",
+            "stat": "Fantasy Score",
+            "line": 56.55,
+            "projected": 46.63,
+            "actual": 16.7,
+            "play": "LESS",
+            "result": "HIT — R1 KO loss"
+          }
+        ]
+      }
+    }
+  ],
+  "_notes": "First MMA slate graded. N=1 — signals are early and not yet statistically meaningful. Honest framing: Top 3 Finish Path hit 3/3 in the winning lineup (strong signal), PP top-confidence edges hit 5/7 (71%), but Biggest Trap missed on a tail outcome (31% dog won by R1 KO). Slate was dog-heavy: 6/6 fighters in winning lineup won by finish, including two ~30-40% underdogs. Will extend with more slates to assess whether trap model consistently struggles on upset-heavy cards or whether this was a one-slate tail."
 }
