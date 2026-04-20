@@ -1,4 +1,11 @@
 {
   "sport": "mma",
-  "slates": []
+  "slates": [
+    {
+      "date": "2026-04-18-burns-malott",
+      "label": "4/18 UFC Burns vs Malott",
+      "event": "UFC Fight Night: Burns vs Malott",
+      "graded": true
+    }
+  ]
 }
