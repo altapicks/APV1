@@ -3765,13 +3765,15 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     // Scaling: at strength 0.6 → primary 50%, pivot 40%
     const primaryMin = Math.max(5, Math.round(20 + contrarianStrength * 50));
     const pivotMin   = Math.max(5, Math.round(15 + contrarianStrength * 42));
-    // CPT-specific floors — ensures gem players actually land in the CAPTAIN
-    // slot often enough to align with winning lineups. Without these, a gem
-    // at min 50% total exposure splits ~5:1 into FLEX:CPT by default since
-    // there are 5 flex slots vs 1 cpt slot. Primary gem 20% CPT @ 0.6 guarantees
-    // the gem is captained in ~1 in 5 lineups (scales with strength).
+    // CPT-specific floor — ensures the primary gem actually lands in the
+    // CAPTAIN slot often enough to align with winning lineups. Without this,
+    // a gem at min 50% total exposure splits ~5:1 into FLEX:CPT by default
+    // since there are 5 flex slots vs 1 cpt slot. Primary gem 20% CPT @ 0.6
+    // guarantees the gem is captained in ~1 in 5 lineups (scales with strength).
+    // Gem pivot no longer uses a cpt floor — instead it gets a +10pp flex
+    // leverage min (see pivot cap block below) so it's overexposed in UTIL
+    // rather than forced into captain.
     const primaryCptMin = Math.max(5, Math.round(8 + contrarianStrength * 20));   // 20 @ 0.6
-    const pivotCptMin   = Math.max(5, Math.round(6 + contrarianStrength * 15));   // 15 @ 0.6
 
     const gemPrimary = gemScored[0]?.p;
     const gemPrimaryKind = gemScored[0]?.kind || 'value';
@@ -3793,12 +3795,22 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const gemPivot = nextCandidate.p;
       if (!caps[gemPivot.name]) {
         const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
+        // No cptMin — gem pivot isn't forced into the captain slot. Instead
+        // we leverage them at FLEX: their flex exposure is +10pp over field
+        // sim ownership. This keeps the pivot heavily-played in UTIL (where
+        // the field already uses them) while staying flexible on the captain
+        // slot, since the primary gem already has a CPT floor and forcing
+        // two gems into captain compresses the CPT distribution unnaturally.
+        // Capped at 90 to avoid impossible-to-satisfy floors on mega-chalk
+        // plays (if fieldOwn is already 85+, flex+10 would overshoot).
+        const flexLeverageMin = Math.max(0, Math.min(90, fieldOwn + 10));
         caps[gemPivot.name] = {
           min: pivotMin,
           max: 100,
-          cptMin: pivotCptMin,
+          flexMin: flexLeverageMin,
           _isGem: true, _kind: 'pivot', _gemType: nextCandidate.kind,
           _fieldOwn: fieldOwn,
+          _flexLeverage: 10,
         };
       }
     }
