@@ -14,6 +14,9 @@ import {
   devig as nbaDevig,
   lineToProjection as nbaLineToProjection,
 } from './engine-nba.js';
+import { useAuth } from './lib/auth-context';
+import { UserMenu } from './components/UserMenu';
+import { SignInPrompt } from './components/SignInPrompt';
 
 // ═══════════════════════════════════════════════════════════════════════
 // ERROR BOUNDARY — catches any runtime crash and shows it on screen
@@ -870,6 +873,16 @@ function SportSwitchLoader({ sport }) {
 // MAIN APP — adds sport toggle on top of existing structure
 // ═══════════════════════════════════════════════════════════════════════
 export default function App() {
+  // Phase 1 auth — #signin hash reveals the magic-link sign-in card.
+  // Doesn't gate anything yet (Phase 3 adds paywall overlays on paid tabs).
+  const [showSignIn, setShowSignIn] = useState(() => typeof window !== 'undefined' && window.location.hash === '#signin');
+  useEffect(() => {
+    const sync = () => setShowSignIn(window.location.hash === '#signin');
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
+  if (showSignIn) return <SignInPrompt />;
+
   const [sport, setSport] = useState('tennis');
   const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD
   const { data, error } = useSlateData(sport, slateDate);
@@ -1465,6 +1478,7 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
       <a href="https://x.com/OverOwnedDFS" target="_blank" rel="noopener noreferrer" className="twitter-btn" title="@OverOwnedDFS">
         <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       </a>
+      <UserMenu />
     </div>
     <svg className="mountain-watermark" viewBox="0 0 340 68" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
       <path d="M0,68 L40,30 L90,50 L150,20 L210,42 L260,28 L310,38 L340,32 L340,68 Z" fill="#F5C518" opacity="0.55"/>
