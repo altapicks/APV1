@@ -787,6 +787,7 @@ function Icon({ name, size = 14, color, style, className }) {
     case 'trophy':         return <svg {...p}><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h3"/><path d="M17 6h3a2 2 0 0 1 0 4h-3"/><path d="M12 13v4"/><path d="M8 21h8"/></svg>;
     case 'target':         return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>;
     case 'gem':            return <svg {...p}><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="M9 3l3 6 3-6"/></svg>;
+    case 'sleeper':        return <svg {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/><path d="M18 3v2M17 4h2"/></svg>;
     case 'bomb':           return <svg {...p}><circle cx="10" cy="14" r="7"/><path d="M14 8l3-3"/><path d="M18 3h3M19.5 1.5v3"/></svg>;
     case 'flame':          return <svg {...p}><path d="M13 2C13 5 14 7 15 8C15 6 16 5 16 5C18 7 19 11 19 14A7 7 0 0 1 5 14C5 11 7 10 8 9C9 10 10 11 10 10C10 7 11 5 13 2Z"/><path d="M12 13C11 14 10 15 10 17A2.5 2.5 0 0 0 15 17C15 15 14 14 12 13Z"/></svg>;
     case 'trending-down':  return <svg {...p}><path d="M2 7l6.5 6.5 5-5 8.5 8.5"/><path d="M16 17h6v-6"/></svg>;
@@ -3015,6 +3016,32 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     return sorted[0]?.name || '';
   }, [pw]);
   // ═══════════════════════════════════════════════════════════════════════
+  // FLEX TRAP — "Biggest Trap Primary 2" — same chalk-vs-value formula as
+  // the main Trap but operates on FLEX-ONLY ownership (total − CPT). This
+  // surfaces players the field is stacking in UTIL slots specifically, which
+  // can be different from the captain trap. Always a DIFFERENT player from
+  // the main Trap (main trap excluded from candidate pool). Gate lowered to
+  // 20% flex-only ownership since the flex ownership pie is smaller than
+  // total (captains absorb ~35-50% on chalk plays).
+  // ═══════════════════════════════════════════════════════════════════════
+  const flexTrap = useMemo(() => {
+    const active = pw.filter(p => !p.isOut && p.projectable && p.name !== trap);
+    if (active.length === 0) return '';
+    const hasOwn = active.some(p => (p.flexOwnPct || 0) > 0);
+    if (!hasOwn) return '';
+    const vals = active.map(p => p.val || 0).filter(v => v > 0).sort((a, b) => a - b);
+    const medianVal = vals.length ? vals[Math.floor(vals.length / 2)] : 4.0;
+    const K = 25 / Math.max(medianVal, 1.0);
+    const gated = active.filter(p => (p.flexOwnPct || 0) >= 20);
+    const pool = gated.length > 0 ? gated : active;
+    const sorted = [...pool].sort((a, b) => {
+      const aScore = (a.flexOwnPct || 0) - (a.val || 0) * K;
+      const bScore = (b.flexOwnPct || 0) - (b.val || 0) * K;
+      return bScore - aScore;
+    });
+    return sorted[0]?.name || '';
+  }, [pw, trap]);
+  // ═══════════════════════════════════════════════════════════════════════
   // GEM ALGORITHM — NBA v3 (slate-type aware, dual-pivot)
   //
   // Showdown: position overlap is IGNORED because any player can be
@@ -3126,7 +3153,16 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
+      <div className="metric">
+        <div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div>
+        <div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div>
+        <div className="metric-sub">Who the field needs most</div>
+        {flexTrap && (
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
+            or flex: <span style={{ color: 'var(--text-muted)' }}>{flexTrap}</span> <span style={{ fontSize: 10 }}>(UTIL chalk)</span>
+          </div>
+        )}
+      </div>
     </div>
     {unprojectablePlayers.length > 0 && (
       <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -3344,8 +3380,20 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     }
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
-      caps[trap.name] = { max: maxCap, _isTrap: true };
+      // Per-slot caps (replaces old total-ownership max).
+      // Base values at strength 0.6: CPT max 10, FLEX min 60, FLEX max 85.
+      // The trap is fully faded as CPT (where differentiation matters most
+      // on showdown) but still forced into 60-85% of lineups as UTIL since
+      // dominant players like SGA/Wemby/Cade are must-have projection plays.
+      // Scaling anchored at 0.6: more contrarian → lower CPT max + higher flex min.
+      const cptMax  = Math.max(0,  Math.round(10 - (contrarianStrength - 0.6) * 25));
+      const flexMin = Math.min(80, Math.max(40, Math.round(60 + (contrarianStrength - 0.6) * 25)));
+      const flexMax = Math.min(95, Math.max(70, Math.round(85 - (contrarianStrength - 0.6) * 10)));
+      caps[trap.name] = {
+        cptMax, flexMin, flexMax,
+        _isTrap: true,
+        _fieldOwn: Math.round(trapFieldOwn),
+      };
     }
 
     // STUD — overowned star with worst value
@@ -3359,16 +3407,21 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const stud = overownedStars.sort((a, b) => (a.val || 0) - (b.val || 0))[0];
     if (stud) {
       const fieldOwn = Math.round(ownership[stud.name] || 0);
+      // Match field ownership on the chalk-adjacent stud — avoids the prior
+      // overshoot where +16-22pp boost pushed stud min well above what Seth
+      // actually ran (Bane 24.5% field → Seth 30.9% vs old 48%).
       caps[stud.name] = {
-        min: Math.min(85, fieldOwn + boostFloor),
+        min: fieldOwn,
         max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: 'stud'
+        _isBoost: true, _leverage: 0, _type: 'stud'
       };
     }
 
-    // GEM v2 — two parallel tracks (value-adjacent + same-team replacer),
-    // whichever scores higher wins. Mirrors the NBADKTab gem logic so the
-    // user sees the same gem pick in contrarian builds as on the DK table.
+    // GEM v3 — dual-track (value-adjacent + same-team replacer). Now surfaces
+    // BOTH primary gem and pivot gem (same tracks as NBADKTab's gem logic)
+    // with MIN-exposure caps rather than a single pick. At base contrarian
+    // strength 0.6: primary gem floor 50%, pivot gem floor 40% — scales
+    // linearly with strength.
     const trapSal = trap?.salary ?? 0;
     const trapProj = trap?.proj ?? 0;
     const trapUsageFactor = Math.max(0.3, Math.min(1.0, trapProj / 35));
@@ -3403,16 +3456,122 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const kind = replacerScore > valueScore ? 'replacer' : 'value';
       return { p, score, kind };
     }).sort((a, b) => b.score - a.score);
-    const gem = gemScored[0]?.p;
-    const gemKind = gemScored[0]?.kind || 'value';
-    if (gem) {
-      const fieldOwn = Math.round(ownership[gem.name] || 0);
-      caps[gem.name] = {
-        min: Math.min(85, fieldOwn + boostFloor),
-        max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: gemKind === 'replacer' ? 'gem-replacer' : 'gem'
+
+    // Scaling: at strength 0.6 → primary 50%, pivot 40%
+    const primaryMin = Math.max(5, Math.round(20 + contrarianStrength * 50));
+    const pivotMin   = Math.max(5, Math.round(15 + contrarianStrength * 42));
+    // CPT-specific floors — ensures gem players actually land in the CAPTAIN
+    // slot often enough to align with winning lineups. Without these, a gem
+    // at min 50% total exposure splits ~5:1 into FLEX:CPT by default since
+    // there are 5 flex slots vs 1 cpt slot. Primary gem 20% CPT @ 0.6 guarantees
+    // the gem is captained in ~1 in 5 lineups (scales with strength).
+    const primaryCptMin = Math.max(5, Math.round(8 + contrarianStrength * 20));   // 20 @ 0.6
+    const pivotCptMin   = Math.max(5, Math.round(6 + contrarianStrength * 15));   // 15 @ 0.6
+
+    const gemPrimary = gemScored[0]?.p;
+    const gemPrimaryKind = gemScored[0]?.kind || 'value';
+    if (gemPrimary) {
+      const fieldOwn = Math.round(ownership[gemPrimary.name] || 0);
+      caps[gemPrimary.name] = {
+        min: primaryMin,
+        max: 100,
+        cptMin: primaryCptMin,
+        _isGem: true, _kind: 'primary', _gemType: gemPrimaryKind,
+        _fieldOwn: fieldOwn,
       };
     }
+
+    // Pivot — same threshold as NBADKTab (next highest, ≥25% of primary score)
+    const primaryScore = gemScored[0]?.score || 0;
+    const nextCandidate = gemScored[1];
+    if (nextCandidate && nextCandidate.p && primaryScore > 0 && nextCandidate.score >= primaryScore * 0.25) {
+      const gemPivot = nextCandidate.p;
+      if (!caps[gemPivot.name]) {
+        const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
+        caps[gemPivot.name] = {
+          min: pivotMin,
+          max: 100,
+          cptMin: pivotCptMin,
+          _isGem: true, _kind: 'pivot', _gemType: nextCandidate.kind,
+          _fieldOwn: fieldOwn,
+        };
+      }
+    }
+
+    // SLEEPER — top 2 low-owned value plays. Formula empirically tuned against
+    // Seth's 3 winning contest lineups: projected ≥ 12 DK FS + sim ownership
+    // ≤ 25% + rank by val × ceil (val-weighted ceiling). Retrohit rate
+    // 3/6 picks across 3 slates (PHX: Jaylin Williams + Ajay Mitchell;
+    // ORL: Wendell Carter Jr). Distinct from gem: sleeper is low-owned
+    // independent of trap relationship, captures plays the field is sleeping
+    // on. At base strength 0.6: 25% floor; scales linearly.
+    const sleeperCandidates = withSal.filter(p => {
+      if (caps[p.name]) return false;                   // don't double up trap/stud/gem
+      if (trap && p.name === trap.name) return false;
+      if ((p.proj || 0) < 12) return false;
+      if ((ownership[p.name] || 0) > 25) return false;   // "projected under 25% owned"
+      return true;
+    }).sort((a, b) => {
+      const aScore = (a.val || 0) * (a.ceil || a.proj || 0);
+      const bScore = (b.val || 0) * (b.ceil || b.proj || 0);
+      return bScore - aScore;
+    }).slice(0, 2);
+
+    const sleeperMin = Math.max(3, Math.round(10 + contrarianStrength * 33));  // 30 @ 0.6, 43 @ 1.0
+    sleeperCandidates.forEach((p, idx) => {
+      const fieldOwn = Math.round(ownership[p.name] || 0);
+      caps[p.name] = {
+        min: sleeperMin,
+        max: 100,
+        _isSleeper: true, _sleeperRank: idx + 1,
+        _fieldOwn: fieldOwn,
+      };
+    });
+
+    // EXTENDED SLEEPER POOL — every other player passing a wider filter
+    // (proj ≥ 12 + simOwn ≤ 30) gets a small floor at fieldOwn + 5pp
+    // (scales with strength). This ensures Scoot/Kornet/Goga-type plays
+    // — ranked below top 2 on val × ceil — still show up in at least a
+    // couple of lineups so the user always has exposure to potential
+    // low-owned winners. The wider 30% sim cap accommodates sim noise
+    // (e.g., Goga Bitadze sim 26.8% but actual field 23.0%).
+    const extSleeperBoost = 5 * (contrarianStrength / 0.6);  // 5pp @ 0.6, 8.3pp @ 1.0
+    withSal.forEach(p => {
+      if (caps[p.name]) return;                              // already capped
+      if (trap && p.name === trap.name) return;
+      if ((p.proj || 0) < 12) return;
+      if ((ownership[p.name] || 0) > 30) return;
+      const fieldOwn = Math.round(ownership[p.name] || 0);
+      const extMin = Math.min(35, Math.max(3, Math.round(fieldOwn + extSleeperBoost)));
+      caps[p.name] = {
+        min: extMin,
+        max: 100,
+        _isExtSleeper: true,
+        _fieldOwn: fieldOwn,
+      };
+    });
+
+    // MID-CHALK — legit chalk plays (field 25-65%) that aren't trap/stud/gem/sleeper.
+    // Winning lineups often include mid-chalk non-trap pieces (e.g., Deni Avdija
+    // 59.7% field won POR as CPT, Franz Wagner 39% field won ORL, Tobias Harris
+    // 55.5% field won ORL, Dillon Brooks 26.5% won PHX, Robert Williams 28.5% won POR).
+    // Without this tier, these plays get globalFloor 5% and get obliterated in
+    // contrarian builds. Matching field ownership on them ensures we include
+    // them as the field does. Lower bound 25% catches "tweener" conviction
+    // plays the field is moderately on.
+    withSal.forEach(p => {
+      if (caps[p.name]) return;
+      const fieldOwn = ownership[p.name] || 0;
+      if (fieldOwn < 25 || fieldOwn > 65) return;
+      const minExp = Math.round(fieldOwn);
+      const maxExp = Math.min(95, minExp + LEV_CAP);
+      caps[p.name] = {
+        min: minExp,
+        max: maxExp,
+        _isMidChalk: true,
+        _fieldOwn: Math.round(fieldOwn),
+      };
+    });
 
     // GLOBAL FLOOR — small min exposure for rest, +30pp cap for ≥15% field plays
     const globalFloor = Math.round(1 + contrarianStrength * 7);
@@ -3455,6 +3614,13 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         const userMax = userSet.max !== undefined ? userSet.max : globalMax;
         const effMin = Math.max(userMin, cap.min || 0);
         const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
+        // Per-slot caps — merge contrarian caps (e.g., trap CPT max 10 /
+        // FLEX min 60) with user-set caps by taking the MORE-RESTRICTIVE
+        // of each bound, consistent with how all/min/max merge works.
+        const userCptMin  = userSet.cptMin  !== undefined ? userSet.cptMin  : 0;
+        const userCptMax  = userSet.cptMax  !== undefined ? userSet.cptMax  : 100;
+        const userFlexMin = userSet.flexMin !== undefined ? userSet.flexMin : 0;
+        const userFlexMax = userSet.flexMax !== undefined ? userSet.flexMax : 100;
         return {
           name: p.name, team: p.team, projection: p.proj * jitter(),
           util_salary: p.util_salary || p.salary, cpt_salary: p.cpt_salary,
@@ -3462,12 +3628,10 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           salary: p.util_salary || p.salary, id: p.util_id || p.id,
           positions: p.positions || [], status: p.status,
           maxExp: effMax, minExp: effMin,
-          // Per-slot caps — only applied when user has set them via the
-          // CPT / FLEX tabs in the builder; otherwise full range (0–100).
-          cptMinExp:  userSet.cptMin  !== undefined ? userSet.cptMin  : 0,
-          cptMaxExp:  userSet.cptMax  !== undefined ? userSet.cptMax  : 100,
-          flexMinExp: userSet.flexMin !== undefined ? userSet.flexMin : 0,
-          flexMaxExp: userSet.flexMax !== undefined ? userSet.flexMax : 100,
+          cptMinExp:  Math.max(userCptMin,  cap.cptMin  !== undefined ? cap.cptMin  : 0),
+          cptMaxExp:  Math.min(userCptMax,  cap.cptMax  !== undefined ? cap.cptMax  : 100),
+          flexMinExp: Math.max(userFlexMin, cap.flexMin !== undefined ? cap.flexMin : 0),
+          flexMaxExp: Math.min(userFlexMax, cap.flexMax !== undefined ? cap.flexMax : 100),
         };
       });
       enforceMinNudge(pd, baseProjs);
@@ -3570,15 +3734,27 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
-      const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost);
+      const studEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost && c._type === 'stud');
+      const gemPrimaryEntry = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'primary');
+      const gemPivotEntry   = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'pivot');
+      const sleeperEntries = Object.entries(contrarianCaps)
+        .filter(([, c]) => c._isSleeper)
+        .sort((a, b) => (a[1]._sleeperRank || 0) - (b[1]._sleeperRank || 0));
+      const extSleeperCount = Object.values(contrarianCaps).filter(c => c._isExtSleeper).length;
+      const midChalkCount = Object.values(contrarianCaps).filter(c => c._isMidChalk).length;
       const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
-          {boostEntries.map(([name, c]) => (
-            <span key={name}>{c._type === 'stud' ? <><Icon name="trophy" size={12}/> Stud</> : <><Icon name="gem" size={12}/> Gem</>} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
+          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>}
+          {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
+          {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
+          {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> · field {(ownership[gemPivotEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1].min}%</span></span>}
+          {sleeperEntries.map(([name, c]) => (
+            <span key={name}><Icon name="sleeper" size={12}/> Sleeper <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
           ))}
-          {floorCount > 0 && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} others · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{Math.round(1 + contrarianStrength * 7)}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
+          {extSleeperCount > 0 && <span><Icon name="sleeper" size={12} color="var(--text-dim)"/> +{extSleeperCount} extended sleepers · each min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>field+{Math.round(5 * (contrarianStrength / 0.6))}pp</span></span>}
+          {midChalkCount > 0 && <span><Icon name="target" size={12} color="var(--text-muted)"/> {midChalkCount} mid-chalk · each min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>= field</span></span>}
+          {floorCount > 0 && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} others · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{Math.round(1 + contrarianStrength * 7)}%</span></span>}
         </div>
       );
     })()}
