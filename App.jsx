@@ -996,13 +996,48 @@ export default function App() {
   if (showSignIn) return <SignInPrompt />;
 
   const [sport, setSport] = useState('tennis');
-  const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD
+  const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD-{slug}
   const { data, error } = useSlateData(sport, slateDate);
   const manifestSlates = useSlateManifest(sport);
   const [tab, setTab] = useState('dk');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  // Reset to live when sport changes so user isn't stuck on a date that may not exist in new sport
-  useEffect(() => { setSlateDate('live'); }, [sport]);
+  // Auto-default tracking: which (sport) we've already auto-selected a slate for.
+  // When the user manually picks a slate via the dropdown, we mark them as "user-picked"
+  // so subsequent manifest re-renders don't override their choice.
+  const autoDefaultedFor = useRef(null);
+  // When sport changes, clear the auto-default flag so we recompute for the new sport.
+  useEffect(() => { autoDefaultedFor.current = null; }, [sport]);
+  // Auto-pick today's slate (or fallback to most recent dated slate) once the manifest loads.
+  useEffect(() => {
+    if (autoDefaultedFor.current === sport) return; // already auto-defaulted (or user picked) for this sport
+    if (!manifestSlates) return; // manifest still loading
+    if (manifestSlates.length === 0) {
+      // No archive available — fall back to the live URL
+      setSlateDate('live');
+      autoDefaultedFor.current = sport;
+      return;
+    }
+    // Build today's date key in YYYY-MM-DD format
+    const d = new Date();
+    const todayKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // Find any slates whose date field starts with today's key (e.g. "2026-04-20-tor-cle")
+    const todaySlates = manifestSlates.filter(s => (s.date || '').startsWith(todayKey));
+    if (todaySlates.length > 0) {
+      // Pick the first one (manifest is typically tip-time ordered)
+      setSlateDate(todaySlates[0].date);
+    } else {
+      // Fallback: most recent slate by date
+      const sorted = [...manifestSlates].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      if (sorted[0] && sorted[0].date) setSlateDate(sorted[0].date);
+      else setSlateDate('live');
+    }
+    autoDefaultedFor.current = sport;
+  }, [sport, manifestSlates]);
+  // Wrap the date-change handler so manual user picks are remembered (block auto-default re-runs)
+  const handleSlateDateChange = useCallback((d) => {
+    setSlateDate(d);
+    autoDefaultedFor.current = sport; // mark this sport as user-handled
+  }, [sport]);
   // Projection overrides: user-entered projection values keyed by player name. Reset when slate/sport swaps.
   const [projOverrides, setProjOverrides] = useState({});
   useEffect(() => { setProjOverrides({}); }, [sport, data]);
@@ -1501,7 +1536,7 @@ export default function App() {
       }
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
-    <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} />
+    <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={handleSlateDateChange} manifestSlates={manifestSlates} />
     <div className="tab-bar">{tabs.map(t => (
       <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
         {t.icon}
@@ -1538,6 +1573,152 @@ export default function App() {
       </ErrorBoundary>}
     </div>
   </div>);
+}
+
+function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  // Group slates by calendar date (extracted from id "YYYY-MM-DD-foo-bar")
+  const grouped = useMemo(() => {
+    const g = new Map();
+    for (const s of manifestSlates) {
+      const parts = (s.date || '').split('-');
+      const dateKey = parts.length >= 3 ? `${parts[0]}-${parts[1]}-${parts[2]}` : (s.date || 'unknown');
+      if (!g.has(dateKey)) g.set(dateKey, []);
+      g.get(dateKey).push(s);
+    }
+    for (const [, arr] of g) {
+      arr.sort((a, b) => (a.tip_time_24 || a.tip_time || '').localeCompare(b.tip_time_24 || b.tip_time || ''));
+    }
+    return g;
+  }, [manifestSlates]);
+
+  const sortedDateKeys = useMemo(() => Array.from(grouped.keys()).sort().reverse(), [grouped]);
+
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }, []);
+
+  const fmtDateHeader = (dk) => {
+    const [y, m, d] = dk.split('-').map(Number);
+    if (!y) return dk;
+    const dt = new Date(y, m - 1, d);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const targ = new Date(y, m - 1, d); targ.setHours(0,0,0,0);
+    const diff = (targ - today) / 86400000;
+    let prefix = '';
+    if (diff === 0) prefix = 'Today · ';
+    else if (diff === -1) prefix = 'Yesterday · ';
+    else if (diff === 1) prefix = 'Tomorrow · ';
+    return prefix + dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  // Extract matchup name. Prefer explicit `matchup`/`game_short`, else parse id suffix
+  const matchupOf = (s) => {
+    if (s.matchup) return s.matchup;
+    const parts = (s.date || '').split('-');
+    if (parts.length >= 5) return `${parts[3].toUpperCase()} @ ${parts[4].toUpperCase()}`;
+    return s.label || s.date;
+  };
+
+  // Active slate's display label for the trigger button
+  const currentSlate = manifestSlates.find(s => s.date === slateDate);
+  const triggerLabel = slateDate === 'live'
+    ? 'Live slate'
+    : currentSlate ? `${matchupOf(currentSlate)}${currentSlate.tip_time ? ' · ' + currentSlate.tip_time : ''}` : slateDate;
+
+  const isCustom = slateDate !== 'live';
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Select slate"
+        style={{
+          background: isCustom ? 'rgba(245,197,24,0.12)' : 'var(--bg)',
+          border: `1px solid ${isCustom ? 'rgba(245,197,24,0.4)' : 'var(--border-light)'}`,
+          color: isCustom ? 'var(--primary)' : 'var(--text-muted)',
+          borderRadius: 6, padding: '5px 22px 5px 9px', fontSize: 11, fontWeight: 600,
+          cursor: 'pointer', height: 30, lineHeight: '18px', minWidth: 130, maxWidth: 220,
+          textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23F5C518' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+          backgroundRepeat: 'no-repeat', backgroundPosition: 'right 7px center',
+        }}
+      >{triggerLabel}</button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 1000,
+          background: 'var(--bg-elev)', border: '1px solid var(--border-light)', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: 260, maxWidth: 320,
+          maxHeight: 420, overflowY: 'auto', padding: '6px 0',
+        }}>
+          {/* Live slate option always at top */}
+          <button
+            onClick={() => { onSlateDateChange('live'); setOpen(false); }}
+            style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              background: slateDate === 'live' ? 'rgba(245,197,24,0.15)' : 'transparent',
+              border: 'none', color: slateDate === 'live' ? 'var(--primary)' : 'var(--text)',
+              padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}
+          >Live slate</button>
+
+          {sortedDateKeys.map(dk => {
+            const isToday = dk === todayKey;
+            return (
+              <div key={dk}>
+                <div style={{
+                  padding: '8px 14px 4px', fontSize: 10, fontWeight: 700,
+                  color: isToday ? 'var(--primary)' : 'var(--text-dim)',
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                  borderTop: '1px solid var(--border)', marginTop: 4,
+                }}>{fmtDateHeader(dk)}</div>
+                {grouped.get(dk).map(s => {
+                  const active = s.date === slateDate;
+                  const isLive = s.live === true;
+                  const isGraded = s.graded === true;
+                  return (
+                    <button key={s.date}
+                      onClick={() => { onSlateDateChange(s.date); setOpen(false); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        width: '100%', textAlign: 'left',
+                        background: active ? 'rgba(245,197,24,0.15)' : 'transparent',
+                        border: 'none', color: active ? 'var(--primary)' : 'var(--text)',
+                        padding: '7px 14px', fontSize: 12, cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <span style={{ fontWeight: 600 }}>{matchupOf(s)}</span>
+                        {s.tip_time && <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>{s.tip_time}</span>}
+                      </span>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 3,
+                        background: isLive ? 'rgba(34,197,94,0.18)' : isGraded ? 'rgba(148,163,184,0.18)' : 'transparent',
+                        color: isLive ? '#4ade80' : isGraded ? 'var(--text-dim)' : 'var(--text-muted)',
+                      }}>{isLive ? 'LIVE' : isGraded ? 'FINAL' : ''}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateChange, manifestSlates = [] }) {
@@ -1595,43 +1776,13 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
           </svg>
         </button>
       </div>
-      {hasArchive && onSlateDateChange && (() => {
-        // UI shows most recent 6; backend (manifest.json) keeps the full list.
-        // Older slates are still accessible by direct URL or by extending the manifest
-        // if a "See all" option is added later.
-        const recentSlates = manifestSlates.slice(0, 6);
-        const isOlderSelected = slateDate !== 'live' && !recentSlates.some(s => s.date === slateDate);
-        return (
-          <select
-            value={slateDate}
-            onChange={e => onSlateDateChange(e.target.value)}
-            title="Select slate date"
-            className="slate-picker"
-            style={{
-              background: slateDate !== 'live' ? 'rgba(245,197,24,0.12)' : 'var(--bg)',
-              border: `1px solid ${slateDate !== 'live' ? 'rgba(245,197,24,0.4)' : 'var(--border-light)'}`,
-              borderRadius: 6,
-              color: slateDate !== 'live' ? 'var(--primary)' : 'var(--text-muted)',
-              padding: '5px 22px 5px 9px',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-              appearance: 'none',
-              height: 30,
-              lineHeight: '18px',
-              maxWidth: 140,
-              backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23F5C518' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 7px center',
-            }}>
-            <option value="live">Live slate</option>
-            {recentSlates.map(s => (
-              <option key={s.date} value={s.date}>{s.label || s.date}</option>
-            ))}
-            {isOlderSelected && <option value={slateDate}>{slateDate}</option>}
-          </select>
-        );
-      })()}
+      {hasArchive && onSlateDateChange && (
+        <SlateSelector
+          slateDate={slateDate}
+          onSlateDateChange={onSlateDateChange}
+          manifestSlates={manifestSlates}
+        />
+      )}
       {data && <div className="topbar-date">
         <span className="topbar-date-main">{data.date} · {
           sport === 'nba' ? `${data.game ? `${data.game.away}@${data.game.home}` : ''} · ${(data.dk_players || []).length} players`
@@ -3633,7 +3784,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   // CONTRARIAN MODE (NBA) — mirrors tennis/MMA with NBA-specific gem band
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
-    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
+    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.proj || 0) >= 1.0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
     if (withSal.length === 0) return {};
     const caps = {};
 
@@ -3958,7 +4109,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   }, [rp, ownership, cptOwnership, contrarianOn, contrarianStrength, avgVal]);
 
   const sp = useMemo(() =>
-    [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
+    [...rp].filter(p => p.salary > 0 && p.projectable && (p.proj || 0) >= 1.0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
            .sort((a, b) => b.val - a.val),
     [rp]);
 
@@ -4377,7 +4528,11 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       {sp.length} players in pool
       {sp.length < rp.filter(p => p.salary > 0).length && (
         <span style={{ marginLeft: 10, color: 'var(--amber-text)' }}>
-          · {rp.filter(p => p.salary > 0 && !p.projectable).length} excluded (no DK line, no manual projection)
+          · {rp.filter(p => p.salary > 0 && !p.projectable).length} excluded (no DK line)
+          {(() => {
+            const lowProj = rp.filter(p => p.salary > 0 && p.projectable && (p.proj || 0) < 1.0 && (p.status || 'ACTIVE').toUpperCase() !== 'OUT').length;
+            return lowProj > 0 ? <> · {lowProj} excluded (proj &lt; 1.0 FS)</> : null;
+          })()}
         </span>
       )}
     </div>
