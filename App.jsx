@@ -1028,7 +1028,25 @@ export default function App() {
     // Find any slates whose date field starts with today's key (e.g. "2026-04-20-tor-cle")
     const todaySlates = manifestSlates.filter(s => (s.date || '').startsWith(todayKey));
     if (todaySlates.length > 0) {
-      setSlateDate(todaySlates[0].date);
+      // Smart default: pick the next slate that hasn't tipped yet.
+      // If all have tipped, pick the most recently started (last by tip_time_24).
+      // Sort ascending by tip time for ordered scan.
+      const sorted = [...todaySlates].sort((a, b) =>
+        (a.tip_time_24 || '99:99').localeCompare(b.tip_time_24 || '99:99')
+      );
+      const nowMin = d.getHours() * 60 + d.getMinutes();
+      const nextUpcoming = sorted.find(s => {
+        const t = s.tip_time_24;
+        if (!t) return false;
+        const [h, m] = t.split(':').map(Number);
+        return (h * 60 + m) > nowMin; // strictly future
+      });
+      if (nextUpcoming) {
+        setSlateDate(nextUpcoming.date);
+      } else {
+        // All games have tipped — pick the most recent (last in sorted order)
+        setSlateDate(sorted[sorted.length - 1].date);
+      }
     } else {
       // Fallback: most recent slate by date
       const sorted = [...manifestSlates].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -1181,27 +1199,25 @@ export default function App() {
   const cptOwnership = ownershipData.cpt;
 
   if (error) {
-    const expectedUrl = sport === 'mma' ? './slate-mma.json'
-                      : sport === 'nba' ? './slate-nba.json'
-                      : './slate.json';
-    const expectedPath = sport === 'mma' ? 'public/slate-mma.json'
-                       : sport === 'nba' ? 'public/slate-nba.json'
-                       : 'public/slate.json';
+    // Pass slate selector + sport switcher so the user can navigate out of the error state
+    // instead of being trapped. Show whichever URL the fetch actually attempted.
+    const isArchive = slateDate && slateDate !== 'live';
+    const attemptedUrl = isArchive
+      ? `/slates/${sport}/${slateDate}.json`
+      : sport === 'mma' ? './slate-mma.json'
+      : sport === 'nba' ? './slate-nba.json'
+      : './slate.json';
     return <div className="app">
-      <Topbar sport={sport} onSportChange={setSport} data={null} />
+      <Topbar sport={sport} onSportChange={setSport} data={null}
+              slateDate={slateDate} onSlateDateChange={handleSlateDateChange}
+              manifestSlates={manifestSlates} />
       <div className="empty" style={{ padding: '40px 20px' }}>
         <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="warning" size={18} color="#EF4444"/> Slate not loaded</h2>
-        <p style={{ marginTop: 12 }}>Fetch failed for <code style={{ background: 'var(--card)', padding: '2px 8px', borderRadius: 4, color: 'var(--primary)' }}>{expectedUrl}</code></p>
+        <p style={{ marginTop: 12 }}>Fetch failed for <code style={{ background: 'var(--card)', padding: '2px 8px', borderRadius: 4, color: 'var(--primary)' }}>{attemptedUrl}</code></p>
         <p style={{ marginTop: 8, fontSize: 13 }}>Error: <span style={{ color: 'var(--red)' }}>{error}</span></p>
-        <div style={{ marginTop: 20, padding: '16px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, maxWidth: 600, margin: '20px auto', textAlign: 'left', fontSize: 13 }}>
-          <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: 8 }}>Troubleshooting checklist:</div>
-          <div style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            1. File must be at <code style={{ color: 'var(--primary-light)' }}>{expectedPath}</code> in your repo<br/>
-            2. Confirm the file is committed + pushed to GitHub<br/>
-            3. Wait 30–60s for Vercel to redeploy, then hard-refresh (Cmd+Shift+R / Ctrl+F5)<br/>
-            4. Open browser DevTools → Network tab → click this sport again → check slate-mma.json status code
-          </div>
-        </div>
+        <p style={{ marginTop: 20, fontSize: 13, color: 'var(--text-muted)' }}>
+          Use the dropdown above to pick another slate, or switch sports.
+        </p>
       </div>
     </div>;
   }
@@ -1647,8 +1663,32 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
 
   const isCustom = slateDate !== 'live' && slateDate != null;
 
+  // Compute prev/next for arrow navigation. Walk the same date's slates first;
+  // if at the boundary, hop to the adjacent date's first/last slate.
+  const flatList = useMemo(() => {
+    const all = [];
+    for (const dk of sortedDateKeys) all.push(...grouped.get(dk));
+    return all;
+  }, [sortedDateKeys, grouped]);
+  const currentIdx = currentSlate ? flatList.findIndex(s => s.date === currentSlate.date) : -1;
+  const prevSlate = currentIdx > 0 ? flatList[currentIdx - 1] : null;
+  const nextSlate = currentIdx >= 0 && currentIdx < flatList.length - 1 ? flatList[currentIdx + 1] : null;
+
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <button
+        onClick={() => prevSlate && onSlateDateChange(prevSlate.date)}
+        disabled={!prevSlate}
+        title={prevSlate ? `Previous: ${matchupOf(prevSlate)}` : 'No earlier slate'}
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--border-light)',
+          color: prevSlate ? 'var(--text-muted)' : 'var(--text-dim)',
+          borderRadius: 6, width: 26, height: 30, cursor: prevSlate ? 'pointer' : 'not-allowed',
+          opacity: prevSlate ? 1 : 0.4, padding: 0, fontSize: 14, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >‹</button>
       <button
         onClick={() => setOpen(o => !o)}
         title="Select slate"
@@ -1663,6 +1703,19 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
           backgroundRepeat: 'no-repeat', backgroundPosition: 'right 7px center',
         }}
       >{triggerLabel}</button>
+      <button
+        onClick={() => nextSlate && onSlateDateChange(nextSlate.date)}
+        disabled={!nextSlate}
+        title={nextSlate ? `Next: ${matchupOf(nextSlate)}` : 'No later slate'}
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--border-light)',
+          color: nextSlate ? 'var(--text-muted)' : 'var(--text-dim)',
+          borderRadius: 6, width: 26, height: 30, cursor: nextSlate ? 'pointer' : 'not-allowed',
+          opacity: nextSlate ? 1 : 0.4, padding: 0, fontSize: 14, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >›</button>
 
       {open && (
         <div style={{
