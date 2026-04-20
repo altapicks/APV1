@@ -4,28 +4,59 @@
     {
       "date": "2026-04-20-tor-cle",
       "label": "4/20 TOR @ CLE",
+      "matchup": "TOR @ CLE",
+      "tip_time": "7:00pm ET",
+      "tip_time_24": "19:00",
       "event": "Raptors @ Cavaliers (showdown)",
+      "graded": false,
+      "live": true
+    },
+    {
+      "date": "2026-04-20-atl-nyk",
+      "label": "4/20 ATL @ NYK",
+      "matchup": "ATL @ NYK",
+      "tip_time": "8:00pm ET",
+      "tip_time_24": "20:00",
+      "event": "Hawks @ Knicks (showdown)",
+      "graded": false,
+      "live": true
+    },
+    {
+      "date": "2026-04-20-min-den",
+      "label": "4/20 MIN @ DEN",
+      "matchup": "MIN @ DEN",
+      "tip_time": "10:30pm ET",
+      "tip_time_24": "22:30",
+      "event": "Timberwolves @ Nuggets (showdown)",
       "graded": false,
       "live": true
     },
     {
       "date": "2026-04-19-phx-okc",
       "label": "4/19 PHX @ OKC",
+      "matchup": "PHX @ OKC",
+      "tip_time": "10:00pm ET",
+      "tip_time_24": "22:00",
       "event": "Suns @ Thunder (showdown)",
       "graded": true
     },
     {
       "date": "2026-04-19-orl-det",
       "label": "4/19 ORL @ DET",
+      "matchup": "ORL @ DET",
+      "tip_time": "7:00pm ET",
+      "tip_time_24": "19:00",
       "event": "Magic @ Pistons (showdown)",
       "graded": true
     },
     {
       "date": "2026-04-19-por-sas",
       "label": "4/19 POR @ SAS",
+      "matchup": "POR @ SAS",
+      "tip_time": "9:00pm ET",
+      "tip_time_24": "21:00",
       "event": "Trail Blazers @ Spurs (showdown)",
-      "graded": true,
-      "graded_note": "PP Fantasy Score calls graded; winning-lineup verification pending screenshot"
+      "graded": true
     }
   ]
 }
