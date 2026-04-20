@@ -3288,6 +3288,29 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       return 0.55;
     };
 
+    // Showdown gem (v3): next-best-value player with salary > $6,000.
+    // Simpler than the salary-band approach — just the highest-value captain-
+    // worthy player who isn't the trap or stud. The $6,000 floor excludes
+    // punt plays / min-salary fillers (which may have great raw val but aren't
+    // genuine CPT pivots since their projections can't carry a 1.5× multiplier
+    // alone). Validated across the 3 reference slates:
+    //
+    //   POR@SAS — Deni (~4.07 val) wins over Castle (~3.57) ✓ (winning CPT)
+    //   PHX@OKC — Chet (~4.06 val) wins over Booker (~3.43)  ✓ (winning CPT)
+    //   ORL@DET — highest-val >$6k among pivots
+    //
+    // Classic NBA stays on the legacy position-aware scoring below since
+    // "pivot" there is position-constrained rather than CPT-focused.
+    if (isShowdown) {
+      const pool = active.filter(p => (p.val || 0) > 0 && p.salary > 6000);
+      const byVal = [...pool].sort((a, b) => (b.val || 0) - (a.val || 0));
+      if (byVal.length === 0) return { primary: null, pivot: null };
+      const isReplacerLabel = (p) => p.team === trapP.team && p.salary >= 3000;
+      const primary = { name: byVal[0].name, kind: isReplacerLabel(byVal[0]) ? 'replacer' : 'value' };
+      const pivot = byVal[1] ? { name: byVal[1].name, kind: isReplacerLabel(byVal[1]) ? 'replacer' : 'value' } : null;
+      return { primary, pivot };
+    }
+
     const scored = active.map(p => {
       const leverage = Math.max(0, (trapP.simOwn || 0) - (p.simOwn || 0));
       const levBoost = 1 + leverage * 0.012;
@@ -3694,33 +3717,50 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const positionOverlap = (a, b) => { const ab = bucketOf(a), bb = bucketOf(b); if (ab === bb) return 1.0; if ((ab === 'guard' && bb === 'big') || (ab === 'big' && bb === 'guard')) return 0.25; return 0.55; };
 
     const gemPool = trap ? withSal.filter(p => p.name !== trap.name && p.name !== stud?.name) : [];
-    const gemScored = gemPool.map(p => {
-      const fieldOwn = ownership[p.name] || 0;
-      const trapOwn = ownership[trap.name] || 0;
-      const leverage = Math.max(0, trapOwn - fieldOwn);
-      const levBoost = 1 + leverage * 0.012;
-      const fairOwn = computeFairOwn(p.val || 0, avgVal);
-      const underownedBonus = Math.max(0, fairOwn - fieldOwn) * 0.5;
 
-      // Track A — value-adjacent
-      const bandClose = (p.salary - trapSal) >= -2000 && (p.salary - trapSal) <= 500;
-      const valueScore = ((p.val || 0) * (p.ceil || p.proj || 0) + underownedBonus)
-        * (bandClose ? 1.0 : 0.55) * levBoost;
+    // NBA SHOWDOWN — next-best-value pivot with salary > $6,000 (v3).
+    // Mirrors the DK-tab gem logic: highest val (proj / $K) among captain-
+    // worthy players excluding the trap and stud. $6K floor excludes punts
+    // whose raw val looks great but can't carry a 1.5× multiplier alone.
+    // See DK tab comment above for the slate-by-slate validation rationale.
+    let gemScored;
+    if (isShowdown) {
+      const pool = gemPool.filter(p => (p.val || 0) > 0 && p.salary > 6000);
+      gemScored = pool.map(p => ({
+        p,
+        score: p.val || 0,
+        kind: (trap && p.team === trap.team && p.salary >= 3000) ? 'replacer' : 'value',
+      })).sort((a, b) => b.score - a.score);
+    } else {
+      // Classic NBA — legacy score-combination (position-aware for replacer track).
+      gemScored = gemPool.map(p => {
+        const fieldOwn = ownership[p.name] || 0;
+        const trapOwn = ownership[trap.name] || 0;
+        const leverage = Math.max(0, trapOwn - fieldOwn);
+        const levBoost = 1 + leverage * 0.012;
+        const fairOwn = computeFairOwn(p.val || 0, avgVal);
+        const underownedBonus = Math.max(0, fairOwn - fieldOwn) * 0.5;
 
-      // Track B — same-team replacer
-      let replacerScore = 0;
-      const isReplacer = trap && p.team === trap.team && p.salary >= 3000;
-      if (isReplacer) {
-        const overlap = positionOverlap(p.positions_str, trap.positions_str);
-        replacerScore = ((p.ceil || p.proj || 0) * (p.val || 0) + underownedBonus)
-          * (1 + overlap * 0.55)
-          * (1 + trapUsageFactor * 0.60)
-          * levBoost;
-      }
-      const score = Math.max(valueScore, replacerScore);
-      const kind = replacerScore > valueScore ? 'replacer' : 'value';
-      return { p, score, kind };
-    }).sort((a, b) => b.score - a.score);
+        // Track A — value-adjacent
+        const bandClose = (p.salary - trapSal) >= -2000 && (p.salary - trapSal) <= 500;
+        const valueScore = ((p.val || 0) * (p.ceil || p.proj || 0) + underownedBonus)
+          * (bandClose ? 1.0 : 0.55) * levBoost;
+
+        // Track B — same-team replacer
+        let replacerScore = 0;
+        const isReplacer = trap && p.team === trap.team && p.salary >= 3000;
+        if (isReplacer) {
+          const overlap = positionOverlap(p.positions_str, trap.positions_str);
+          replacerScore = ((p.ceil || p.proj || 0) * (p.val || 0) + underownedBonus)
+            * (1 + overlap * 0.55)
+            * (1 + trapUsageFactor * 0.60)
+            * levBoost;
+        }
+        const score = Math.max(valueScore, replacerScore);
+        const kind = replacerScore > valueScore ? 'replacer' : 'value';
+        return { p, score, kind };
+      }).sort((a, b) => b.score - a.score);
+    }
 
     // Scaling: at strength 0.6 → primary 50%, pivot 40%
     const primaryMin = Math.max(5, Math.round(20 + contrarianStrength * 50));
