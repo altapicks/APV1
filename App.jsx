@@ -209,9 +209,14 @@ function useSlateData(sport, slateDate) {
     const liveUrl = sport === 'mma' ? './slate-mma.json'
                   : sport === 'nba' ? './slate-nba.json'
                   : './slate.json';
-    const url = isArchive ? `/slates/${sport}/${slateDate}.json?t=${Date.now()}` : liveUrl;
+    // Trim any accidental whitespace on slateDate (paranoia)
+    const cleanDate = typeof slateDate === 'string' ? slateDate.trim() : slateDate;
+    const url = isArchive ? `/slates/${sport}/${cleanDate}.json` : liveUrl;
     fetch(url, { cache: 'no-store' })
-      .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status} at ${url}`);
+        return r.json().catch(err => { throw new Error(`JSON parse failed at ${url}: ${err.message}`); });
+      })
       .then(d => finalize(() => { hasLoadedRef.current = true; setData(d); }))
       .catch(e => finalize(() => setError(e.message)));
   }, [sport, slateDate]);
