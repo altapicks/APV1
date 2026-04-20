@@ -219,10 +219,12 @@ function useSlateData(sport, slateDate) {
 }
 
 // Loads the list of archived slates from /slates/{sport}/manifest.json.
+// Returns null while loading, then an array (possibly empty) once the fetch resolves.
 // Manifest shape: { slates: [{ date: "YYYY-MM-DD", label: "optional label" }, ...] }
 function useSlateManifest(sport) {
-  const [slates, setSlates] = useState([]);
+  const [slates, setSlates] = useState(null);
   useEffect(() => {
+    setSlates(null); // reset to loading state when sport changes
     fetch(`/slates/${sport}/manifest.json`)
       .then(r => r.ok ? r.json() : { slates: [] })
       .then(m => setSlates(m.slates || []))
@@ -1592,7 +1594,7 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
   // Group slates by calendar date (extracted from id "YYYY-MM-DD-foo-bar")
   const grouped = useMemo(() => {
     const g = new Map();
-    for (const s of manifestSlates) {
+    for (const s of (manifestSlates || [])) {
       const parts = (s.date || '').split('-');
       const dateKey = parts.length >= 3 ? `${parts[0]}-${parts[1]}-${parts[2]}` : (s.date || 'unknown');
       if (!g.has(dateKey)) g.set(dateKey, []);
@@ -1636,7 +1638,7 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
   };
 
   // Active slate's display label for the trigger button
-  const currentSlate = manifestSlates.find(s => s.date === slateDate);
+  const currentSlate = (manifestSlates || []).find(s => s.date === slateDate);
   const triggerLabel = slateDate == null
     ? 'Loading…'
     : slateDate === 'live'
@@ -1726,7 +1728,9 @@ function SlateSelector({ slateDate, onSlateDateChange, manifestSlates }) {
 }
 
 function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateChange, manifestSlates = [] }) {
-  const hasArchive = manifestSlates && manifestSlates.length > 0;
+  // Render the selector while the manifest is loading (null) OR when it has entries.
+  // Only hide it if the fetch completed with zero slates (legacy single-file mode).
+  const hasArchive = manifestSlates === null || (manifestSlates && manifestSlates.length > 0);
   return (<div className="topbar">
     <div className="topbar-brand">
       <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-label="OverOwned">
