@@ -3847,8 +3847,63 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       caps[p.name] = { min: globalFloor, max: maxCap, _isFloor: true };
     });
 
+    // ─── CPT PIVOT (utility-chalk captain leverage) ───────────────────────
+    // Identifies players the field heavily plays at UTIL but rarely captains.
+    // When the chalk captain is a mega-trap (Wemby 53% CPT), the leverage pivot
+    // isn't always the gem or sleeper — often it's the 2nd-most-owned overall
+    // player who the field almost never captains. Captaining them = 1.5× their
+    // points while the field has them at 1× UTIL.
+    //
+    // Validation against Seth's 3 winning lineups:
+    //   POR@SAS  — Winning CPT: Deni Avdija (59.7% total, 10.4% CPT, flex 49%)
+    //              → #1 utility-chalk CPT pivot ✓
+    //   PHX@OKC  — Winning CPT: Chet Holmgren (gem territory, trap=SGA)
+    //              → Booker surfaces here (harmless; gem logic handles Chet)
+    //   ORL@DET  — Winning CPT: Cade Cunningham (trap territory)
+    //              → Harris/Paolo surface here (harmless; trap logic handles Cade)
+    //
+    // This tier runs LAST and only ADDS cptMin to whatever was already set by
+    // prior tiers, so it's purely additive — never downgrades an existing cap.
+    // Gate: flexOwn ≥ 35% (field's UTIL pick), cptOwn ≤ 15% (not already chalk
+    // CPT), projection in top 30% (captain-worthy), not trap or stud.
+    const cptPivots = withSal.filter(p => {
+      if (p.name === trap?.name || p.name === stud?.name) return false;
+      const totalOwn = ownership[p.name] || 0;
+      const cptOwn = cptOwnership[p.name] || 0;
+      const flexOwn = Math.max(0, totalOwn - cptOwn);
+      if (flexOwn < 35) return false;
+      if (cptOwn > 15) return false;
+      if (!topProjSet.has(p.name)) return false;
+      return true;
+    }).sort((a, b) => {
+      // Rank by flexOwn × ceiling — highest = best CPT-pivot candidate
+      const aFlex = Math.max(0, (ownership[a.name] || 0) - (cptOwnership[a.name] || 0));
+      const bFlex = Math.max(0, (ownership[b.name] || 0) - (cptOwnership[b.name] || 0));
+      return bFlex * (b.ceil || b.proj || 0) - aFlex * (a.ceil || a.proj || 0);
+    });
+
+    // Primary floor 15% @ 0.6 (→ 23 @ 1.0); secondary 8% @ 0.6 (→ 12 @ 1.0).
+    // Primary receives full floor; a close 2nd candidate gets a lighter floor
+    // so we don't over-commit the CPT slot across multiple pivots in a 20-lineup build.
+    const primCptPivotMin = Math.max(5, Math.round(3 + contrarianStrength * 20));
+    const secCptPivotMin  = Math.max(3, Math.round(2 + contrarianStrength * 10));
+    cptPivots.slice(0, 2).forEach((p, idx) => {
+      const existing = caps[p.name] || {};
+      const flr = idx === 0 ? primCptPivotMin : secCptPivotMin;
+      const totalOwn = ownership[p.name] || 0;
+      const cptOwn = cptOwnership[p.name] || 0;
+      caps[p.name] = {
+        ...existing,
+        cptMin: Math.max(existing.cptMin || 0, flr),
+        _isCptPivot: true,
+        _cptPivotRank: idx + 1,
+        _cptPivotFlexOwn: Math.round(Math.max(0, totalOwn - cptOwn)),
+        _cptPivotCptOwn: Math.round(cptOwn),
+      };
+    });
+
     return caps;
-  }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
+  }, [rp, ownership, cptOwnership, contrarianOn, contrarianStrength, avgVal]);
 
   const sp = useMemo(() =>
     [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
