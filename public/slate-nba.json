@@ -6,16 +6,16 @@
     "away": "POR",
     "home": "SAS",
     "tip": "04/19/2026 09:00PM ET",
-    "spread_sas": null,
-    "total": null,
-    "implied_sas": null,
-    "implied_por": null,
-    "ml_sas": null,
-    "ml_por": null,
-    "pace_sas": null,
-    "pace_por": null,
-    "blowout_risk_sas": null,
-    "blowout_risk_por": null
+    "spread_sas": -12.5,
+    "total": 223.5,
+    "implied_sas": 118.0,
+    "implied_por": 105.5,
+    "ml_sas": -800,
+    "ml_por": 560,
+    "pace_sas": 99.0,
+    "pace_por": 101.5,
+    "blowout_risk_sas": 0.42,
+    "blowout_risk_por": 0.05
   },
   "dk_players": [
     {
