@@ -1,8 +1,25 @@
 {
   "sport": "tennis",
   "slates": [
-    { "date": "2026-04-19", "label": "Sun 4/19 — Showdown Finals", "type": "showdown" },
-    { "date": "2026-04-18", "label": "Sat 4/18 — Classic", "type": "classic" },
-    { "date": "2026-04-17", "label": "Fri 4/17 — Classic", "type": "classic" }
+    {
+      "date": "2026-04-21",
+      "label": "Tue 4/21 \u2014 WTA Madrid R1",
+      "type": "classic"
+    },
+    {
+      "date": "2026-04-19",
+      "label": "Sun 4/19 \u2014 Showdown Finals",
+      "type": "showdown"
+    },
+    {
+      "date": "2026-04-18",
+      "label": "Sat 4/18 \u2014 Classic",
+      "type": "classic"
+    },
+    {
+      "date": "2026-04-17",
+      "label": "Fri 4/17 \u2014 Classic",
+      "type": "classic"
+    }
   ]
 }
