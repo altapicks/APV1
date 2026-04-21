@@ -510,6 +510,11 @@ function buildNBAProjections(data) {
       if (!player || !player.projectable) return;
       const projected = Math.round(nbaPpProjection(player.stats) * 100) / 100;
       const ev = nbaPpEV(projected, line.line);
+      // Attach PP line + edge to the player so Builder can read them without
+      // re-joining through ppRows. Edge = our DK proj − PP line; negative edge
+      // means PP is pricing the player higher than us ("LESS" play signal).
+      player.ppLine = line.line;
+      player.ppEdge = Math.round((player.proj - line.line) * 100) / 100;
       ppRows.push({
         player: line.player, stat: 'Fantasy Score', line: line.line,
         projected, ev,
@@ -3785,12 +3790,64 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   // CONTRARIAN MODE (NBA) — mirrors tennis/MMA with NBA-specific gem band
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
+    // PP PROJECTION BOOST (v3.18) — Option A (cascading).
+    // Theory: the top-3 LESS edges on PrizePicks (players PP is pricing above
+    // our DK projection by ≥ 2 FS points) are signal that PP sees upside we're
+    // missing. We boost those players' proj / val / ceil to match the PP line,
+    // then cascade through the contrarian signals (trap / gem / pivot / etc.).
+    // simOwn is UNCHANGED — field ownership reflects original projections, so
+    // the gap between our boosted proj and field simOwn IS the leverage signal.
+    // DK tab signals remain unboosted; only contrarian builds see the boost.
+    // EXCLUSION: if a player would be the Primary Trap (on original projections),
+    // they do NOT qualify for the boost — they're already chalky, a boost on
+    // top would compound the leverage signal incorrectly.
+    const origWithSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
+    const origSalaryPool = origWithSal.filter(p => (p.salary || 0) > 6000);
+    const origGated = origSalaryPool.filter(p => (ownership[p.name] || 0) >= 25);
+    const origPool = origGated.length > 0 ? origGated : origSalaryPool;
+    const origPrimaryTrapName = [...origPool].sort((a, b) =>
+      ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
+    )[0]?.name || null;
+    const ppFadeCandidates = rp
+      .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => p.name !== origPrimaryTrapName)  // primary trap can't be boosted
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))  // most-negative first
+      .slice(0, 3);
+    const boostSet = new Map(ppFadeCandidates.map(p => [p.name, p]));
+    const boostedRp = rp.map(p => {
+      if (!boostSet.has(p.name)) return p;
+      const newProj = p.ppLine;                               // boost to PP line
+      const ceilRatio = (p.proj || 0) > 0 ? (p.ceil || 0) / p.proj : 1.25;
+      const newCeil = Math.round(newProj * ceilRatio * 100) / 100;
+      const sal = p.salary || p.util_salary || 0;
+      const newVal = sal > 0 ? Math.round(newProj / (sal / 1000) * 100) / 100 : p.val;
+      const newCval = sal > 0 ? Math.round(newCeil / (sal / 1000) * 100) / 100 : p.cval;
+      return {
+        ...p,
+        _ppBoosted: true,
+        _origProj: p.proj, _origCeil: p.ceil, _origVal: p.val,
+        proj: newProj, ceil: newCeil, val: newVal, cval: newCval,
+      };
+    });
     // Filter out low-projection players (proj < 5) — they're not viable
     // contrarian plays. Keeping them in meant the floor bucket was wasting
     // lineup slots on $1K players with 0.1-0.8 projections.
-    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
+    const withSal = boostedRp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
     if (withSal.length === 0) return {};
     const caps = {};
+    // Expose boost metadata via a well-known key so the ribbon can render a
+    // "PP Boosted: [names]" pill without re-deriving which players qualified.
+    if (ppFadeCandidates.length > 0) {
+      caps.__ppBoost = {
+        _isMeta: true,
+        names: ppFadeCandidates.map(p => ({
+          name: p.name,
+          origProj: p.proj,
+          boostedProj: p.ppLine,
+          edge: p.ppEdge,
+        })),
+      };
+    }
 
     const byProj = [...withSal].sort((a, b) => (b.ceil || b.proj || 0) - (a.ceil || a.proj || 0));
     const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
@@ -3938,10 +3995,10 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const bucketOf = s => { const str = String(s || ''); if (/C|PF/.test(str)) return 'big'; if (/SF/.test(str)) return 'wing'; return 'guard'; };
     const positionOverlap = (a, b) => { const ab = bucketOf(a), bb = bucketOf(b); if (ab === bb) return 1.0; if ((ab === 'guard' && bb === 'big') || (ab === 'big' && bb === 'guard')) return 0.25; return 0.55; };
 
-    // SECONDARY TRAP (builder v3.3) — defined after Gems below so it can
-    // skip any player already selected as Gem Primary / Gem Pivot. Same
-    // gates as Primary Trap (simOwn ≥ 25%, sal > $6K). Placeholder here
-    // so gemPool can reference it without a ReferenceError.
+    // SECONDARY TRAP (builder v3.17) — defined BEFORE gem pivots (reorder
+    // from v3.16) so mid-sal pivot can claim its slots ahead of gem pivots.
+    // Gem pivots then exclude anyone already capped (secondary trap + mid-sal).
+    // Placeholder here so gemPool can still reference it without ReferenceError.
     let secondaryTrap = null;
 
     const gemPool = trap ? withSal.filter(p =>
@@ -4023,37 +4080,92 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     }
 
-    // Pre-compute SECONDARY TRAP CANDIDATE (identification only — caps are
-    // applied further down in the existing block). We need the name early
-    // so Gem Pivot can exclude it from both its display and slot pools.
-    // Mirrors the later secondary trap logic exactly, just without side
-    // effects.
-    let secondaryTrapCandidateName = null;
+    // SECONDARY TRAP (v3.17) — moved BEFORE gem pivots so mid-sal pivot
+    // (which depends on secondary trap being a premium chalk) can claim
+    // its slots first. Gem pivots then exclude anyone already capped.
+    // Formula: max(simOwn × val), simOwn ≥ 30%, no salary gate.
+    // Caps: multiplicative leverage fade (split cpt/flex at premium salary).
+    //   STANDARD (salary ≤ $10K) — unified cap:
+    //     base 0.6: cap = simOwn × 0.55 (45% leverage fade)
+    //   PREMIUM (salary > $10K) — split cpt/flex since salary-critical:
+    //     base 0.6: cptMax = cptOwn × 0.45 (55% leverage fade, cpt-specific own)
+    //                flexMax = simOwn × 0.90 (10% leverage fade)
     if (trap) {
-      const preSet = new Set([trap.name, stud?.name, gemPrimary?.name].filter(Boolean));
-      const prePool = withSal.filter(p =>
-        !preSet.has(p.name) &&
+      const stExcluded = new Set([trap.name, stud?.name, gemPrimary?.name].filter(Boolean));
+      const stPool = withSal.filter(p =>
+        !stExcluded.has(p.name) &&
         (ownership[p.name] || 0) >= 30 &&
         (p.val || 0) > 0
       );
-      const preRanked = [...prePool].sort((a, b) =>
+      const stRanked = [...stPool].sort((a, b) =>
         ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
       );
-      secondaryTrapCandidateName = preRanked[0]?.name || null;
+      secondaryTrap = stRanked[0] || null;
+      if (secondaryTrap) {
+        const stFieldOwn = ownership[secondaryTrap.name] || 0;
+        const stCptFieldOwn = cptOwnership[secondaryTrap.name] || 0;
+        const isPremium = (secondaryTrap.salary || 0) > 10000;
+        let stCptMax, stFlexMax;
+        if (isPremium) {
+          const cptLevFrac  = Math.min(1, Math.max(0, contrarianStrength * (0.55 / 0.6)));
+          const flexLevFrac = Math.min(1, Math.max(0, contrarianStrength * (0.10 / 0.6)));
+          stCptMax  = Math.max(0, Math.round(stCptFieldOwn * (1 - cptLevFrac)));
+          stFlexMax = Math.max(0, Math.round(stFieldOwn    * (1 - flexLevFrac)));
+        } else {
+          const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));
+          stCptMax = stFlexMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
+        }
+        caps[secondaryTrap.name] = {
+          cptMax: stCptMax,
+          flexMax: stFlexMax,
+          _isSecondaryTrap: true,
+          _isPremium: isPremium,
+          _fieldOwn: Math.round(stFieldOwn),
+          _cptFieldOwn: Math.round(stCptFieldOwn),
+        };
+      }
     }
 
-    // Pivot (NBA v3.16): owned-but-not-chalky leverage plays, ranked by
+    // MID-SALARY CPT+FLEX PIVOT FLOOR (v3.12) — when secondary trap salary
+    // > $10K (premium chalk), force top-2 val in $4K-$6.8K band to appear as
+    // BOTH cptMin 12% / flexMin 10% at base 0.6. Selected BEFORE gem pivots
+    // so these claim their slots first.
+    if (secondaryTrap && (secondaryTrap.salary || 0) > 10000) {
+      const cptPivotMinPct  = Math.round(contrarianStrength * (12 / 0.6));
+      const flexPivotMinPct = Math.round(contrarianStrength * (10 / 0.6));
+      const midSalValuePool = withSal
+        .filter(p =>
+          !caps[p.name] &&
+          (p.salary || 0) >= 4000 &&
+          (p.salary || 0) <= 6800 &&
+          (p.val || 0) > 0
+        )
+        .sort((a, b) => (b.val || 0) - (a.val || 0))
+        .slice(0, 2);
+      midSalValuePool.forEach((p, idx) => {
+        const fieldOwn = Math.round(ownership[p.name] || 0);
+        caps[p.name] = {
+          min: 0, max: 100,
+          cptMin: cptPivotMinPct,
+          flexMin: flexPivotMinPct,
+          _isMidSalCptPivot: true, _midSalCptPivotRank: idx + 1,
+          _fieldOwn: fieldOwn,
+        };
+      });
+    }
+
+    // Pivot (NBA v3.17): owned-but-not-chalky leverage plays, ranked by
     //   ceiling-value (ceil per $1K). Mirrors NBADKTab's pivot rule so
     //   DK tab display and Builder caps target the same players.
-    //   • not a trap (primary OR secondary) or stud or primary gem
+    //   • not already capped (primary trap, stud, gem primary,
+    //     secondary trap, mid-sal pivots all claimed their slots first)
     //   • salary ≥ $2,700
     //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
     //   • Pivot #1 pool: 6% ≤ simOwn < 34% (chalk-leaning pivots allowed)
     //   • Pivot #2 pool: 6% ≤ simOwn < 27% (traditional low-owned leverage,
     //     excluding Pivot #1 so the two picks are distinct)
     const pivotPool1 = gemPool.filter(p =>
-      (!gemPrimary || p.name !== gemPrimary.name) &&
-      p.name !== secondaryTrapCandidateName &&
+      !caps[p.name] &&
       (ownership[p.name] || 0) >= 6 &&
       (ownership[p.name] || 0) < 34 &&
       (p.salary || 0) >= 2700 &&
@@ -4062,8 +4174,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
     const pivot1 = [...pivotPool1].sort((a, b) => ceilValB(b) - ceilValB(a))[0];
     const pivotPool2 = gemPool.filter(p =>
-      (!gemPrimary || p.name !== gemPrimary.name) &&
-      p.name !== secondaryTrapCandidateName &&
+      !caps[p.name] &&
       (!pivot1 || p.name !== pivot1.name) &&
       (ownership[p.name] || 0) >= 6 &&
       (ownership[p.name] || 0) < 27 &&
@@ -4073,11 +4184,12 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const pivot2 = [...pivotPool2].sort((a, b) => ceilValB(b) - ceilValB(a))[0];
     const gemPivots = [pivot1, pivot2].filter(Boolean);
     // SLOT-TARGET POOL (v3.7/v3.15) — wider 6-35% simOwn band used only for
-    // slot-based exposure targeting (the "+N pool" in the ribbon). Same
-    // exclusions + $2,700 salary floor.
+    // slot-based exposure targeting (the "+N pool" in the ribbon). Excludes
+    // anyone already capped by earlier rules.
     const pivotSlotPool = gemPool.filter(p =>
-      (!gemPrimary || p.name !== gemPrimary.name) &&
-      p.name !== secondaryTrapCandidateName &&
+      !caps[p.name] &&
+      (!pivot1 || p.name !== pivot1.name) &&
+      (!pivot2 || p.name !== pivot2.name) &&
       (ownership[p.name] || 0) >= 6 &&
       (ownership[p.name] || 0) < 35 &&
       (p.salary || 0) >= 2700 &&
@@ -4123,103 +4235,6 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       });
     }
 
-    // SECONDARY TRAP (v3.8) — computed after gems so it can skip anyone
-    // already picked. Mirrors Primary Trap's simOwn×val formula with the
-    // additional exclusions (trap + gem primary + gem pivot):
-    //   • max(simOwn × val)
-    //   • simOwn ≥ 25% (same chalk gate as Primary)
-    //   • NO salary gate — any price can qualify
-    // Caps: multiplicative leverage fade (split cpt/flex at premium salary):
-    //   STANDARD (salary ≤ $10K) — unified cap:
-    //     base 0.6: cap = simOwn × 0.55 (45% leverage fade, both cpt & flex)
-    //     scale: secondaryLevFrac = strength × 0.75
-    //   PREMIUM (salary > $10K) — split cpt/flex since the piece is
-    //   salary-critical to FLEX in most lineups:
-    //     base 0.6: cptMax = simOwn × 0.60 (40% leverage fade at CPT)
-    //                flexMax = simOwn × 0.90 (10% leverage fade at FLEX)
-    //     scale cpt:  cptLevFrac  = strength × (0.40/0.6) = strength × 0.667
-    //     scale flex: flexLevFrac = strength × (0.10/0.6) = strength × 0.167
-    //   No flexMin floor either way (secondary traps aren't force-played).
-    if (trap) {
-      const gemPrimaryName = gemPrimary?.name;
-      const gemPivotName = Object.entries(caps).find(([, c]) => c._isGem && c._kind === 'pivot')?.[0];
-      const stExcluded = new Set([trap.name, stud?.name, gemPrimaryName, gemPivotName].filter(Boolean));
-      const stPool = withSal.filter(p =>
-        !stExcluded.has(p.name) &&
-        (ownership[p.name] || 0) >= 30 &&
-        (p.val || 0) > 0
-      );
-      const stRanked = [...stPool].sort((a, b) =>
-        ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
-      );
-      secondaryTrap = stRanked[0] || null;
-      if (secondaryTrap) {
-        const stFieldOwn = ownership[secondaryTrap.name] || 0;
-        const stCptFieldOwn = cptOwnership[secondaryTrap.name] || 0;
-        const isPremium = (secondaryTrap.salary || 0) > 10000;
-        let stCptMax, stFlexMax;
-        if (isPremium) {
-          // Premium salary → CPT uses captain-specific ownership with 55%
-          // leverage fade (cptOwn × 0.45 at base). Someone projected 40% at
-          // CPT caps at ~18%. FLEX uses total sim ownership with mild 10%
-          // leverage fade (simOwn × 0.90 at base) — premium salary is too
-          // valuable to aggressively fade at FLEX.
-          const cptLevFrac  = Math.min(1, Math.max(0, contrarianStrength * (0.55 / 0.6)));
-          const flexLevFrac = Math.min(1, Math.max(0, contrarianStrength * (0.10 / 0.6)));
-          stCptMax  = Math.max(0, Math.round(stCptFieldOwn * (1 - cptLevFrac)));
-          stFlexMax = Math.max(0, Math.round(stFieldOwn    * (1 - flexLevFrac)));
-        } else {
-          // Standard fade: unified cap for both slots
-          const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));
-          stCptMax = stFlexMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
-        }
-        caps[secondaryTrap.name] = {
-          cptMax: stCptMax,
-          flexMax: stFlexMax,
-          _isSecondaryTrap: true,
-          _isPremium: isPremium,
-          _fieldOwn: Math.round(stFieldOwn),
-          _cptFieldOwn: Math.round(stCptFieldOwn),
-        };
-      }
-    }
-
-    // MID-SALARY CPT+FLEX PIVOT FLOOR (v3.12) — when the secondary trap is
-    // a premium-salary chalk (> $10K), the CPT slot is heavily contested by
-    // expensive stars. This rule forces the top-2 value plays in the
-    // $4,000-$6,800 mid-salary band to appear as BOTH:
-    //   • CPT in at least 12% of lineups (at base 0.6)
-    //   • FLEX in at least 10% of lineups (at base 0.6)
-    // Rationale: creates balanced mid-salary diversification at both
-    // the captain AND utility slots when premium chalk dominates.
-    //   • Salary band: $4,000 ≤ sal ≤ $6,800 (true mid-range CPT value)
-    //   • Ranked by val (proj / $K)
-    //   • cptMin:  12pp @ 0.6 → 20pp @ 1.0, 0pp when contrarian off
-    //   • flexMin: 10pp @ 0.6 → 17pp @ 1.0, 0pp when contrarian off
-    //   • Only applies when secondary trap exists AND secondary sal > $10K
-    if (secondaryTrap && (secondaryTrap.salary || 0) > 10000) {
-      const cptPivotMinPct  = Math.round(contrarianStrength * (12 / 0.6));
-      const flexPivotMinPct = Math.round(contrarianStrength * (10 / 0.6));
-      const midSalValuePool = withSal
-        .filter(p =>
-          !caps[p.name] &&
-          (p.salary || 0) >= 4000 &&
-          (p.salary || 0) <= 6800 &&
-          (p.val || 0) > 0
-        )
-        .sort((a, b) => (b.val || 0) - (a.val || 0))
-        .slice(0, 2);
-      midSalValuePool.forEach((p, idx) => {
-        const fieldOwn = Math.round(ownership[p.name] || 0);
-        caps[p.name] = {
-          min: 0, max: 100,
-          cptMin: cptPivotMinPct,
-          flexMin: flexPivotMinPct,
-          _isMidSalCptPivot: true, _midSalCptPivotRank: idx + 1,
-          _fieldOwn: fieldOwn,
-        };
-      });
-    }
 
     // SLEEPER v3 — mirrors v3.3 Gem Pivot logic: owned-but-not-chalky plays
     // ranked by ceiling-value (ceil / $K). Effectively the "next best 2
@@ -4367,10 +4382,45 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     return caps;
   }, [rp, ownership, cptOwnership, contrarianOn, contrarianStrength, avgVal]);
 
-  const sp = useMemo(() =>
-    [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
-           .sort((a, b) => b.val - a.val),
-    [rp]);
+  const sp = useMemo(() => {
+    const base = [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
+    // PP BOOST (sp-layer, v3.18) — mirrors the boost applied inside
+    // contrarianCaps. When contrarian is on, the top-3 LESS edges (ppEdge ≤ -2,
+    // excluding the primary trap) get their proj / ceil / val scaled to match
+    // the PP line. This is what the optimizer actually SCORES on, so without
+    // this step the signals would cascade but the builder wouldn't try harder
+    // to play the boosted players.
+    if (contrarianOn) {
+      const origSalaryPool = base.filter(p => (p.salary || 0) > 6000 && (p.proj || 0) >= 5);
+      const origGated = origSalaryPool.filter(p => (ownership[p.name] || 0) >= 25);
+      const origPool = origGated.length > 0 ? origGated : origSalaryPool;
+      const origPrimaryTrapName = [...origPool].sort((a, b) =>
+        ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
+      )[0]?.name || null;
+      const boostNames = new Set(
+        base
+          .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+          .filter(p => p.name !== origPrimaryTrapName)
+          .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+          .slice(0, 3)
+          .map(p => p.name)
+      );
+      if (boostNames.size > 0) {
+        return base.map(p => {
+          if (!boostNames.has(p.name)) return p;
+          const newProj = p.ppLine;
+          const ceilRatio = (p.proj || 0) > 0 ? (p.ceil || 0) / p.proj : 1.25;
+          const newCeil = Math.round(newProj * ceilRatio * 100) / 100;
+          const sal = p.salary || p.util_salary || 0;
+          const newVal = sal > 0 ? Math.round(newProj / (sal / 1000) * 100) / 100 : p.val;
+          const newCval = sal > 0 ? Math.round(newCeil / (sal / 1000) * 100) / 100 : p.cval;
+          return { ...p, _ppBoosted: true, _origProj: p.proj, _origCeil: p.ceil, _origVal: p.val,
+                   proj: newProj, ceil: newCeil, val: newVal, cval: newCval };
+        }).sort((a, b) => b.val - a.val);
+      }
+    }
+    return base.sort((a, b) => b.val - a.val);
+  }, [rp, contrarianOn, ownership]);
 
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
@@ -4388,8 +4438,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       });
     };
     if (isShowdown) {
+      // Build PP-boost map once so showdown + classic paths share logic.
+      // boostedProj replaces p.proj for scoring; ceil is scaled by the same
+      // ratio so ceil-based strategies (variance path) also see the boost.
+      const ppBoostMap = new Map();
+      const ppMeta = contrarianCaps.__ppBoost;
+      if (ppMeta && Array.isArray(ppMeta.names)) {
+        ppMeta.names.forEach(b => { ppBoostMap.set(b.name, b.boostedProj); });
+      }
       const baseProjs = sp.map(p => p.proj);
       const pd = sp.map(p => {
+        const boosted = ppBoostMap.get(p.name);
+        const effProj = boosted !== undefined ? boosted : p.proj;
         const cap = contrarianCaps[p.name] || {};
         const userSet = exp[p.name] || {};
         const userMin = userSet.min !== undefined ? userSet.min : globalMin;
@@ -4398,7 +4458,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         // for pool slots against real contrarian plays. Setting maxExp = 0
         // keeps them in the `pd` array (preserves indexing) but blocks all
         // lineup inclusion.
-        const lowProj = (p.proj || 0) < 5;
+        const lowProj = effProj < 5;
         const effMin = lowProj ? 0 : Math.max(userMin, cap.min || 0);
         const effMax = lowProj ? 0 : Math.min(userMax, cap.max !== undefined ? cap.max : 100);
         // Per-slot caps — merge contrarian caps (e.g., trap CPT max 10 /
@@ -4409,7 +4469,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         const userFlexMin = userSet.flexMin !== undefined ? userSet.flexMin : 0;
         const userFlexMax = userSet.flexMax !== undefined ? userSet.flexMax : 100;
         return {
-          name: p.name, team: p.team, projection: p.proj * jitter(),
+          name: p.name, team: p.team, projection: effProj * jitter(),
           util_salary: p.util_salary || p.salary, cpt_salary: p.cpt_salary,
           util_id: p.util_id || p.id, cpt_id: p.cpt_id,
           salary: p.util_salary || p.salary, id: p.util_id || p.id,
@@ -4466,8 +4526,15 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       return;
     }
     // Classic
+    const ppBoostMapC = new Map();
+    const ppMetaC = contrarianCaps.__ppBoost;
+    if (ppMetaC && Array.isArray(ppMetaC.names)) {
+      ppMetaC.names.forEach(b => { ppBoostMapC.set(b.name, b.boostedProj); });
+    }
     const baseProjs = sp.map(p => p.proj);
     const pd = sp.map(p => {
+      const boosted = ppBoostMapC.get(p.name);
+      const effProj = boosted !== undefined ? boosted : p.proj;
       const cap = contrarianCaps[p.name] || {};
       const userSet = exp[p.name] || {};
       const userMin = userSet.min !== undefined ? userSet.min : globalMin;
@@ -4475,7 +4542,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const effMin = Math.max(userMin, cap.min || 0);
       const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
       return {
-        name: p.name, team: p.team, projection: p.proj * jitter(),
+        name: p.name, team: p.team, projection: effProj * jitter(),
         salary: p.salary, id: p.id, positions: p.positions || [],
         status: p.status, maxExp: effMax, minExp: effMin,
       };
@@ -4580,6 +4647,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const gemPivotEntries = Object.entries(contrarianCaps)
         .filter(([, c]) => c._isGem && c._kind === 'pivot')
         .sort((a, b) => (a[1]._pivotRank || 0) - (b[1]._pivotRank || 0));
+      const ppBoostMeta = contrarianCaps.__ppBoost;
       const sleeperEntries = Object.entries(contrarianCaps)
         .filter(([, c]) => c._isSleeper)
         .sort((a, b) => (a[1]._sleeperRank || 0) - (b[1]._sleeperRank || 0));
@@ -4591,6 +4659,25 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {(() => {
+            const ppBoostMeta = contrarianCaps.__ppBoost;
+            if (!ppBoostMeta || !ppBoostMeta.names || ppBoostMeta.names.length === 0) return null;
+            return (
+              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                <Icon name="rocket" size={12} color="var(--primary)"/>
+                <span>PP Boost:</span>
+                {ppBoostMeta.names.map((b, i) => (
+                  <span key={b.name}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{b.name}</span>{' '}
+                    <span style={{ color: 'var(--text-dim)' }}>({b.origProj.toFixed(1)}</span>
+                    <span style={{ color: 'var(--green-text)', fontWeight: 600 }}>→{b.boostedProj.toFixed(1)}</span>
+                    <span style={{ color: 'var(--text-dim)' }}>, +{Math.abs(b.edge).toFixed(2)})</span>
+                    {i < ppBoostMeta.names.length - 1 && <span style={{ color: 'var(--text-dim)' }}>{' · '}</span>}
+                  </span>
+                ))}
+              </span>
+            );
+          })()}
           {trapEntry && (trapEntry[1]._isWashTrap
             ? <span><Icon name="bomb" size={12} color="var(--amber)"/> #1 Value Trap <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → match <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span> <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>(shoot for wash)</span></span>
             : <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>
@@ -4612,6 +4699,11 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           {gemPivotEntries.map(([name, c], idx) => (
             <span key={name}><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot{gemPivotEntries.length > 1 ? ` ${idx + 1}` : ''} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._displayedCptMin}%</span> CPT{c._pivotPoolNames && <> · +{c._pivotPoolNames.length} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._pivotCptTarget}%</span></>}</span>
           ))}
+          {ppBoostMeta && ppBoostMeta.names && ppBoostMeta.names.length > 0 && (
+            <span><Icon name="rocket" size={12} color="var(--text-dim)"/> PP Boost {ppBoostMeta.names.map((n, i) => (
+              <span key={n.name}>{i > 0 ? ', ' : ''}<span style={{ color: 'var(--green)', fontWeight: 600 }}>{n.name}</span> <span style={{ color: 'var(--text-dim)' }}>({n.origProj.toFixed(1)}→{n.boostedProj.toFixed(1)}, +{Math.abs(n.edge).toFixed(2)})</span></span>
+            ))}</span>
+          )}
           {sleeperEntries.map(([name, c]) => (
             <span key={name}><Icon name="sleeper" size={12}/> Sleeper <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
           ))}
