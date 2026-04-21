@@ -3400,7 +3400,9 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
       // If no player clears the ownership band, no pivot is shown (cleaner
       // than a silent fallback that obscures the intent).
-      const pivotPool = active.filter(p =>
+      // Pivot #1: 6-34% simOwn pool (chalk-leaning leverage pivots allowed)
+      // Pivot #2: narrower 6-27% simOwn pool (traditional low-owned leverage)
+      const pivotPool1 = active.filter(p =>
         p.name !== primary.name &&
         (p.simOwn || 0) >= 6 &&
         (p.simOwn || 0) < 34 &&
@@ -3408,10 +3410,19 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         (p.ceil || 0) > 0
       );
       const ceilVal = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
-      const pivotByCeil = [...pivotPool].sort((a, b) => ceilVal(b) - ceilVal(a));
-      const pivots = pivotByCeil.slice(0, 2).map(pivotP => ({
-        name: pivotP.name,
-        kind: isReplacerLabel(pivotP) ? 'replacer' : 'value'
+      const pivot1 = [...pivotPool1].sort((a, b) => ceilVal(b) - ceilVal(a))[0];
+      const pivotPool2 = active.filter(p =>
+        p.name !== primary.name &&
+        (!pivot1 || p.name !== pivot1.name) &&
+        (p.simOwn || 0) >= 6 &&
+        (p.simOwn || 0) < 27 &&
+        (p.salary || 0) >= 2700 &&
+        (p.ceil || 0) > 0
+      );
+      const pivot2 = [...pivotPool2].sort((a, b) => ceilVal(b) - ceilVal(a))[0];
+      const pivots = [pivot1, pivot2].filter(Boolean).map(p => ({
+        name: p.name,
+        kind: isReplacerLabel(p) ? 'replacer' : 'value'
       }));
       return { primary, pivots };
     }
@@ -3444,11 +3455,8 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     const primaryKind = top.replacerScore > top.valueScore ? 'replacer' : 'value';
     const primary = { name: top.name, kind: primaryKind, score: top.overall };
 
-    // Pivot (NBA v3.3): owned-but-not-chalky leverage play, ranked by
-    //   ceiling-value (ceil per $1K). Same rule as showdown path above.
-    //   Classic uses `scored` array to recover the replacer/value kind
-    //   for labeling consistency.
-    const pivotPool = active.filter(p =>
+    // Pivot #1: 6-34% simOwn pool; Pivot #2: narrower 6-27% pool
+    const pivotPool1 = active.filter(p =>
       p.name !== primary.name &&
       (p.simOwn || 0) >= 6 &&
       (p.simOwn || 0) < 34 &&
@@ -3456,11 +3464,20 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       (p.ceil || 0) > 0
     );
     const ceilValC = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
-    const pivotByCeil = [...pivotPool].sort((a, b) => ceilValC(b) - ceilValC(a));
-    const pivots = pivotByCeil.slice(0, 2).map(pivotP => {
-      const pivotScored = scored.find(s => s.name === pivotP.name);
+    const pivot1 = [...pivotPool1].sort((a, b) => ceilValC(b) - ceilValC(a))[0];
+    const pivotPool2 = active.filter(p =>
+      p.name !== primary.name &&
+      (!pivot1 || p.name !== pivot1.name) &&
+      (p.simOwn || 0) >= 6 &&
+      (p.simOwn || 0) < 27 &&
+      (p.salary || 0) >= 2700 &&
+      (p.ceil || 0) > 0
+    );
+    const pivot2 = [...pivotPool2].sort((a, b) => ceilValC(b) - ceilValC(a))[0];
+    const pivots = [pivot1, pivot2].filter(Boolean).map(p => {
+      const pivotScored = scored.find(s => s.name === p.name);
       const nextKind = pivotScored && pivotScored.replacerScore > pivotScored.valueScore ? 'replacer' : 'value';
-      return { name: pivotP.name, kind: nextKind };
+      return { name: p.name, kind: nextKind };
     });
     return { primary, pivots };
   }, [pw, trap]);
@@ -3802,44 +3819,85 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         return bScore - aScore;
       })[0];
     }
+    // Identify the slate's TOP VALUE player (highest val = proj / $K).
+    // Used for two rules:
+    //   1. If primary trap = top value → "wash mode" (match field, no fade)
+    //   2. Otherwise cap top value player at 2% CPT / 10% FLEX
+    const topValuePlayer = [...withSal]
+      .filter(p => (p.val || 0) > 0)
+      .sort((a, b) => (b.val || 0) - (a.val || 0))[0] || null;
+    const isWashTrap = trap && topValuePlayer && trap.name === topValuePlayer.name;
+
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      // Trap caps v2 — leverage-based fade anchored on field ownership.
-      // Base values at strength 0.6:
-      //   • CPT  max  = simOwn − 60pp (severe CPT fade)
-      //   • FLEX min  = simOwn − 35pp (forced FLEX presence)
-      //   • FLEX max  = simOwn − 30pp (FLEX cap)
-      // → narrow 5pp FLEX exposure window between simOwn−35 and simOwn−30.
-      // Replaces the old absolute-value caps (10 / 60 / 85) which ignored
-      // how chalky the trap actually was. Now: chalkier trap = higher caps,
-      // milder trap = lower caps (down to 0). More contrarian strength
-      // widens the leverage gap (capped at 0% on the low end).
-      const cptLeverage     = Math.round(60 + (contrarianStrength - 0.6) * 100);  // 60pp @ 0.6, 100pp @ 1.0
-      const flexMaxLeverage = Math.round(30 + (contrarianStrength - 0.6) *  50);  // 30pp @ 0.6,  50pp @ 1.0
-      const flexMinLeverage = Math.round(35 + (contrarianStrength - 0.6) *  50);  // 35pp @ 0.6,  55pp @ 1.0
-      const cptMax  = Math.max(0, Math.round(trapFieldOwn - cptLeverage));
-      let   flexMax = Math.max(0, Math.round(trapFieldOwn - flexMaxLeverage));
-      let   flexMin = Math.max(0, Math.round(trapFieldOwn - flexMinLeverage));
-      // PREMIUM-SALARY TRAP RULE (v3.6) — if trap salary > $10,000 they're
-      // too salary-critical to fade at FLEX. Force flexMin to 80% at base
-      // strength 0.6 (scales proportionally: 0 @ off, 80 @ 0.6, 95 @ 1.0,
-      // capped at 95 so 5% of lineups can always skip them). CPT rules
-      // unchanged — the fade still happens at the captain slot only.
-      if ((trap.salary || 0) > 10000) {
-        const premiumFlexMin = Math.min(95, Math.round(contrarianStrength * (80 / 0.6)));
-        if (premiumFlexMin > flexMin) {
-          flexMin = premiumFlexMin;
-          // flexMax must be ≥ flexMin; if the leverage formula capped it
-          // below the premium floor, open it up to 100 so the optimizer
-          // has headroom to satisfy the floor.
-          if (flexMax < flexMin) flexMax = 100;
+      if (isWashTrap) {
+        // WASH MODE — primary trap IS the slate's top value. Rather than
+        // fading them (which punishes our lineups since they're the best
+        // pure value play), match field ownership exactly. Shoot for wash:
+        // same exposure as field, leverage comes from elsewhere.
+        const washExp = Math.round(trapFieldOwn);
+        caps[trap.name] = {
+          min: washExp,
+          max: washExp,
+          _isTrap: true, _isWashTrap: true,
+          _fieldOwn: Math.round(trapFieldOwn),
+        };
+      } else {
+        // Trap caps v2 — leverage-based fade anchored on field ownership.
+        // Base values at strength 0.6:
+        //   • CPT  max  = simOwn − 60pp (severe CPT fade)
+        //   • FLEX min  = simOwn − 35pp (forced FLEX presence)
+        //   • FLEX max  = simOwn − 30pp (FLEX cap)
+        // → narrow 5pp FLEX exposure window between simOwn−35 and simOwn−30.
+        // Replaces the old absolute-value caps (10 / 60 / 85) which ignored
+        // how chalky the trap actually was. Now: chalkier trap = higher caps,
+        // milder trap = lower caps (down to 0). More contrarian strength
+        // widens the leverage gap (capped at 0% on the low end).
+        const cptLeverage     = Math.round(60 + (contrarianStrength - 0.6) * 100);  // 60pp @ 0.6, 100pp @ 1.0
+        const flexMaxLeverage = Math.round(30 + (contrarianStrength - 0.6) *  50);  // 30pp @ 0.6,  50pp @ 1.0
+        const flexMinLeverage = Math.round(35 + (contrarianStrength - 0.6) *  50);  // 35pp @ 0.6,  55pp @ 1.0
+        const cptMax  = Math.max(0, Math.round(trapFieldOwn - cptLeverage));
+        let   flexMax = Math.max(0, Math.round(trapFieldOwn - flexMaxLeverage));
+        let   flexMin = Math.max(0, Math.round(trapFieldOwn - flexMinLeverage));
+        // PREMIUM-SALARY TRAP RULE (v3.6) — if trap salary > $10,000 they're
+        // too salary-critical to fade at FLEX. Force flexMin to 80% at base
+        // strength 0.6 (scales proportionally: 0 @ off, 80 @ 0.6, 95 @ 1.0,
+        // capped at 95 so 5% of lineups can always skip them). CPT rules
+        // unchanged — the fade still happens at the captain slot only.
+        if ((trap.salary || 0) > 10000) {
+          const premiumFlexMin = Math.min(95, Math.round(contrarianStrength * (80 / 0.6)));
+          if (premiumFlexMin > flexMin) {
+            flexMin = premiumFlexMin;
+            // flexMax must be ≥ flexMin; if the leverage formula capped it
+            // below the premium floor, open it up to 100 so the optimizer
+            // has headroom to satisfy the floor.
+            if (flexMax < flexMin) flexMax = 100;
+          }
         }
+        if (flexMin > flexMax) flexMin = flexMax;  // safety: floor never above cap
+        caps[trap.name] = {
+          cptMax, flexMin, flexMax,
+          _isTrap: true,
+          _fieldOwn: Math.round(trapFieldOwn),
+        };
       }
-      if (flexMin > flexMax) flexMin = flexMax;  // safety: floor never above cap
-      caps[trap.name] = {
-        cptMax, flexMin, flexMax,
-        _isTrap: true,
-        _fieldOwn: Math.round(trapFieldOwn),
+    }
+
+    // TOP VALUE CAP (v3.17) — if the slate's highest-val player is NOT the
+    // primary trap (i.e., not in wash mode), cap their CPT + FLEX exposure.
+    // Rationale: the top value is a chalk magnet — usually a cheap player
+    // like Mike Conley ($1.6K / 5.07 val / 34.5% own) that the field piles
+    // into. Heavy exposure to them kills leverage. Fixed cap at 2% CPT /
+    // 10% FLEX when contrarian is on.
+    if (topValuePlayer && !isWashTrap) {
+      const existing = caps[topValuePlayer.name] || {};
+      const fieldOwn = Math.round(ownership[topValuePlayer.name] || 0);
+      caps[topValuePlayer.name] = {
+        ...existing,
+        cptMax:  Math.min(existing.cptMax  !== undefined ? existing.cptMax  : 100, 2),
+        flexMax: Math.min(existing.flexMax !== undefined ? existing.flexMax : 100, 10),
+        _isTopValueCap: true,
+        _fieldOwn: fieldOwn,
       };
     }
 
@@ -3984,16 +4042,16 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       secondaryTrapCandidateName = preRanked[0]?.name || null;
     }
 
-    // Pivot (NBA v3.15): owned-but-not-chalky leverage plays, ranked by
+    // Pivot (NBA v3.16): owned-but-not-chalky leverage plays, ranked by
     //   ceiling-value (ceil per $1K). Mirrors NBADKTab's pivot rule so
     //   DK tab display and Builder caps target the same players.
     //   • not a trap (primary OR secondary) or stud or primary gem
-    //   • 6% ≤ simOwn < 34% (expanded upper bound — catches chalkier
-    //     pivots the field is on but aren't the single biggest trap)
     //   • salary ≥ $2,700
     //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
-    //   • TOP 2 picked — both get the same individual floor
-    const pivotPool = gemPool.filter(p =>
+    //   • Pivot #1 pool: 6% ≤ simOwn < 34% (chalk-leaning pivots allowed)
+    //   • Pivot #2 pool: 6% ≤ simOwn < 27% (traditional low-owned leverage,
+    //     excluding Pivot #1 so the two picks are distinct)
+    const pivotPool1 = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
       p.name !== secondaryTrapCandidateName &&
       (ownership[p.name] || 0) >= 6 &&
@@ -4002,8 +4060,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       (p.ceil || 0) > 0
     );
     const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
-    const pivotByCeil = [...pivotPool].sort((a, b) => ceilValB(b) - ceilValB(a));
-    const gemPivots = pivotByCeil.slice(0, 2);
+    const pivot1 = [...pivotPool1].sort((a, b) => ceilValB(b) - ceilValB(a))[0];
+    const pivotPool2 = gemPool.filter(p =>
+      (!gemPrimary || p.name !== gemPrimary.name) &&
+      p.name !== secondaryTrapCandidateName &&
+      (!pivot1 || p.name !== pivot1.name) &&
+      (ownership[p.name] || 0) >= 6 &&
+      (ownership[p.name] || 0) < 27 &&
+      (p.salary || 0) >= 2700 &&
+      (p.ceil || 0) > 0
+    );
+    const pivot2 = [...pivotPool2].sort((a, b) => ceilValB(b) - ceilValB(a))[0];
+    const gemPivots = [pivot1, pivot2].filter(Boolean);
     // SLOT-TARGET POOL (v3.7/v3.15) — wider 6-35% simOwn band used only for
     // slot-based exposure targeting (the "+N pool" in the ribbon). Same
     // exclusions + $2,700 salary floor.
@@ -4523,7 +4591,15 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>}
+          {trapEntry && (trapEntry[1]._isWashTrap
+            ? <span><Icon name="bomb" size={12} color="var(--amber)"/> #1 Value Trap <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → match <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span> <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>(shoot for wash)</span></span>
+            : <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>
+          )}
+          {(() => {
+            const topValueEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTopValueCap);
+            if (!topValueEntry) return null;
+            return <span><Icon name="trophy" size={12} color="var(--text-dim)"/> Top Value <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{topValueEntry[0]}</span> · field {(ownership[topValueEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{topValueEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{topValueEntry[1].flexMax}%</span></span>;
+          })()}
           {secondaryTrapEntry && <span><Icon name="bomb" size={12} color="var(--amber)"/> Secondary <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{secondaryTrapEntry[0]}</span> · field {(ownership[secondaryTrapEntry[0]] || 0).toFixed(1)}% → {secondaryTrapEntry[1]._isPremium
             ? <>CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].flexMax}%</span><span style={{ color: 'var(--amber)', fontSize: 10, marginLeft: 4 }}>★$10K+</span></>
             : <>max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></>
