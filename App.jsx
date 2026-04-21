@@ -3838,14 +3838,28 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
 
     // SECONDARY TRAP (builder) — mirrors NBADKTab's secondaryTrap:
     // pure highest-val player on the slate, any salary, excluding primary.
-    // Used only to exclude from the gem pool below — no separate fade
-    // caps applied (the primary trap already drives the contrarian logic).
+    // Capped with leverage-based fade (no flexMin — these are punt plays
+    // that don't need forced exposure):
+    //   • Base contrarian strength 0.6: cptMax = flexMax = simOwn − 45pp
+    //   • Scales linearly: secondaryLev = round(strength × 75)
+    //     → 0pp @ strength 0, 45pp @ 0.6, 75pp @ 1.0
     let secondaryTrap = null;
     if (trap) {
       const byVal = [...withSal]
         .filter(p => p.name !== trap.name && (p.val || 0) > 0)
         .sort((a, b) => (b.val || 0) - (a.val || 0));
       secondaryTrap = byVal[0] || null;
+    }
+    if (secondaryTrap) {
+      const stFieldOwn = ownership[secondaryTrap.name] || 0;
+      const secondaryLev = Math.round(contrarianStrength * 75);   // 45pp @ 0.6, 75pp @ 1.0
+      const stMax = Math.max(0, Math.round(stFieldOwn - secondaryLev));
+      caps[secondaryTrap.name] = {
+        cptMax: stMax,
+        flexMax: stMax,
+        _isSecondaryTrap: true,
+        _fieldOwn: Math.round(stFieldOwn),
+      };
     }
 
     const gemPool = trap ? withSal.filter(p =>
