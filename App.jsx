@@ -3181,21 +3181,20 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
   // have "good value". Good-value chalk is exactly where the field converges,
   // which is precisely what we're trying to differentiate from.
   // ═══════════════════════════════════════════════════════════════════════
-  // NBA TRAP ALGORITHM v2 — "Biggest Trap" via ownership vs value
+  // NBA TRAP ALGORITHM v3 — "Biggest Trap" via ownership × value product.
   //
-  //     trapScore = simOwn − (val × K)
+  //     bustScore = simOwn × val
   //
-  // Gate: simOwn ≥ 25% (ensures trap is actual chalk the field is on,
-  //       not an obscure low-owned player with terrible value).
+  // Philosophy shift from v2: DK prices players for a reason. When a player
+  // looks like elite value AND the field is already piled on, that's not
+  // an edge — it's a tournament trap. Best-value chalk provides zero
+  // leverage in a GPP; everyone has them, so you can't differentiate.
   //
-  // K auto-calibrates to the slate's median val so the break-even point
-  // (trapScore ≈ 0) tracks what "fair ownership per value" looks like on
-  // THIS slate. Formula: K = 25 / medianVal so that a median-val player
-  // needs 25%+ ownership to begin trapping. Showdown slates (val~3.8-4.2)
-  // yield K≈6; classic slates (val~4.5-5.5) yield K≈5 — self-tuning.
+  // Gate: simOwn ≥ 25% (must be actual chalk — a 10%-owned 7.0 val isn't
+  //       a "trap," it's an edge play the field missed).
   //
-  // Fallback: if nobody clears the 25% gate (slate with no clear chalk),
-  // revert to pure simOwn highest.
+  // Fallback: if nobody clears the 25% gate, use the full active pool
+  // (same product ranking) so we always return someone.
   // ═══════════════════════════════════════════════════════════════════════
   const trap = useMemo(() => {
     const active = pw.filter(p => !p.isOut && p.projectable);
@@ -3205,42 +3204,36 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       // No ownership data yet — fall back to highest projection
       return [...active].sort((a, b) => b.proj - a.proj)[0]?.name || '';
     }
-    // Auto-calibrate K from slate's median val
-    const vals = active.map(p => p.val || 0).filter(v => v > 0).sort((a, b) => a - b);
-    const medianVal = vals.length ? vals[Math.floor(vals.length / 2)] : 4.0;
-    const K = 25 / Math.max(medianVal, 1.0); // guard against tiny medians
-    // Primary pool: chalk (≥25% ownership) ranked by ownership−value penalty
+    // Chalk gate — only players the field is meaningfully on
     const gated = active.filter(p => p.simOwn >= 25);
     const pool = gated.length > 0 ? gated : active;
+    // Rank by ownership × value (both must be high to score high)
     const sorted = [...pool].sort((a, b) => {
-      const aScore = a.simOwn - (a.val || 0) * K;
-      const bScore = b.simOwn - (b.val || 0) * K;
+      const aScore = a.simOwn * (a.val || 0);
+      const bScore = b.simOwn * (b.val || 0);
       return bScore - aScore;
     });
     return sorted[0]?.name || '';
   }, [pw]);
   // ═══════════════════════════════════════════════════════════════════════
-  // FLEX TRAP — "Biggest Trap Primary 2" — same chalk-vs-value formula as
-  // the main Trap but operates on FLEX-ONLY ownership (total − CPT). This
-  // surfaces players the field is stacking in UTIL slots specifically, which
-  // can be different from the captain trap. Always a DIFFERENT player from
-  // the main Trap (main trap excluded from candidate pool). Gate lowered to
-  // 20% flex-only ownership since the flex ownership pie is smaller than
-  // total (captains absorb ~35-50% on chalk plays).
+  // FLEX TRAP — "Biggest Trap Primary 2" — same ownership × value product
+  // as the main Trap but operates on FLEX-ONLY ownership (total − CPT).
+  // This surfaces the value-chalk the field is stacking in UTIL slots
+  // specifically, which can be different from the captain trap. Always a
+  // DIFFERENT player from the main Trap (main trap excluded from candidate
+  // pool). Gate lowered to 20% flex-only ownership since the flex pie is
+  // smaller than total (captains absorb ~35-50% on chalk plays).
   // ═══════════════════════════════════════════════════════════════════════
   const flexTrap = useMemo(() => {
     const active = pw.filter(p => !p.isOut && p.projectable && p.name !== trap);
     if (active.length === 0) return '';
     const hasOwn = active.some(p => (p.flexOwnPct || 0) > 0);
     if (!hasOwn) return '';
-    const vals = active.map(p => p.val || 0).filter(v => v > 0).sort((a, b) => a - b);
-    const medianVal = vals.length ? vals[Math.floor(vals.length / 2)] : 4.0;
-    const K = 25 / Math.max(medianVal, 1.0);
     const gated = active.filter(p => (p.flexOwnPct || 0) >= 20);
     const pool = gated.length > 0 ? gated : active;
     const sorted = [...pool].sort((a, b) => {
-      const aScore = (a.flexOwnPct || 0) - (a.val || 0) * K;
-      const bScore = (b.flexOwnPct || 0) - (b.val || 0) * K;
+      const aScore = (a.flexOwnPct || 0) * (a.val || 0);
+      const bScore = (b.flexOwnPct || 0) * (b.val || 0);
       return bScore - aScore;
     });
     return sorted[0]?.name || '';
@@ -3644,21 +3637,20 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
 
-    // TRAP = "Biggest Trap" — ownership vs value with auto-calibrated K.
-    // Mirrors NBA DK tab v2: trapScore = simOwn − (val × K), gate ≥25%.
+    // TRAP = "Biggest Trap" — ownership × value product (v3).
+    // Mirrors NBA DK tab v3: bustScore = simOwn × val, gate ≥25%.
+    // Philosophy: DK prices for a reason. Best-value chalk = too good to
+    // be true, leverage already dead, prime contrarian fade.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
     let trap = null;
     if (!hasOwn) {
       trap = byProj[0];
     } else {
-      const vals = withSal.map(p => p.val || 0).filter(v => v > 0).sort((a, b) => a - b);
-      const medianVal = vals.length ? vals[Math.floor(vals.length / 2)] : 4.0;
-      const K = 25 / Math.max(medianVal, 1.0);
       const gated = withSal.filter(p => (ownership[p.name] || 0) >= 25);
       const pool = gated.length > 0 ? gated : withSal;
       trap = [...pool].sort((a, b) => {
-        const aScore = (ownership[a.name] || 0) - (a.val || 0) * K;
-        const bScore = (ownership[b.name] || 0) - (b.val || 0) * K;
+        const aScore = (ownership[a.name] || 0) * (a.val || 0);
+        const bScore = (ownership[b.name] || 0) * (b.val || 0);
         return bScore - aScore;
       })[0];
     }
