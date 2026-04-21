@@ -1501,7 +1501,7 @@ export default function App() {
       }
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
-    <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} />
+    <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} onLogoClick={() => setTab('dk')} />
     <div className="tab-bar">{tabs.map(t => (
       <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
         {t.icon}
@@ -1540,10 +1540,18 @@ export default function App() {
   </div>);
 }
 
-function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateChange, manifestSlates = [] }) {
+function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateChange, manifestSlates = [], onLogoClick }) {
   const hasArchive = manifestSlates && manifestSlates.length > 0;
   return (<div className="topbar">
-    <div className="topbar-brand">
+    <div
+      className="topbar-brand"
+      onClick={onLogoClick}
+      style={onLogoClick ? { cursor: 'pointer' } : undefined}
+      role={onLogoClick ? 'button' : undefined}
+      tabIndex={onLogoClick ? 0 : undefined}
+      onKeyDown={onLogoClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onLogoClick(); } : undefined}
+      title={onLogoClick ? 'Home' : undefined}
+    >
       <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-label="OverOwned">
         <circle cx="50" cy="50" r="38" fill="none" stroke="#F5C518" strokeWidth="14"/>
         <path d="M 30 64 L 45 40 L 54 52 L 63 40 L 70 64 Z" fill="#F5C518"/>
@@ -4083,6 +4091,39 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       }
     }
 
+    // MID-SALARY CPT PIVOT FLOOR (v3.9) — when the secondary trap is a
+    // premium-salary chalk (> $10K), the CPT slot is heavily contested by
+    // expensive stars. This rule forces the top-2 value plays in the
+    // $4,000-$6,800 mid-salary band to appear as CPT in at least 5% of
+    // lineups each (at base strength 0.6 — scales linearly).
+    // Rationale: creates balanced CPT diversification across mid-salary
+    // pivots when premium chalk dominates the captain slot landscape.
+    //   • Salary band: $4,000 ≤ sal ≤ $6,800 (true mid-range CPT value)
+    //   • Ranked by val (proj / $K)
+    //   • cptMin: 5pp @ 0.6 → 8pp @ 1.0, 0pp when contrarian off
+    //   • Only applies when secondary trap exists AND secondary sal > $10K
+    if (secondaryTrap && (secondaryTrap.salary || 0) > 10000) {
+      const cptPivotMinPct = Math.round(contrarianStrength * (5 / 0.6));
+      const midSalValuePool = withSal
+        .filter(p =>
+          !caps[p.name] &&
+          (p.salary || 0) >= 4000 &&
+          (p.salary || 0) <= 6800 &&
+          (p.val || 0) > 0
+        )
+        .sort((a, b) => (b.val || 0) - (a.val || 0))
+        .slice(0, 2);
+      midSalValuePool.forEach((p, idx) => {
+        const fieldOwn = Math.round(ownership[p.name] || 0);
+        caps[p.name] = {
+          min: 0, max: 100,
+          cptMin: cptPivotMinPct,
+          _isMidSalCptPivot: true, _midSalCptPivotRank: idx + 1,
+          _fieldOwn: fieldOwn,
+        };
+      });
+    }
+
     // SLEEPER v3 — mirrors v3.3 Gem Pivot logic: owned-but-not-chalky plays
     // ranked by ceiling-value (ceil / $K). Effectively the "next best 2
     // pivots" after the Gem Pivot is pulled (already-capped check excludes
@@ -4443,6 +4484,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const sleeperEntries = Object.entries(contrarianCaps)
         .filter(([, c]) => c._isSleeper)
         .sort((a, b) => (a[1]._sleeperRank || 0) - (b[1]._sleeperRank || 0));
+      const midSalCptPivotEntries = Object.entries(contrarianCaps)
+        .filter(([, c]) => c._isMidSalCptPivot)
+        .sort((a, b) => (a[1]._midSalCptPivotRank || 0) - (b[1]._midSalCptPivotRank || 0));
       const extSleeperCount = Object.values(contrarianCaps).filter(c => c._isExtSleeper).length;
       const midChalkCount = Object.values(contrarianCaps).filter(c => c._isMidChalk).length;
       const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
@@ -4453,6 +4497,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
             ? <>CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].flexMax}%</span><span style={{ color: 'var(--amber)', fontSize: 10, marginLeft: 4 }}>★$10K+</span></>
             : <>max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></>
           }</span>}
+          {midSalCptPivotEntries.map(([name, c]) => (
+            <span key={name}><Icon name="trophy" size={12} color="var(--text-dim)"/> Mid-sal CPT pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · cptMin <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.cptMin}%</span></span>
+          ))}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
           {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
           {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedCptMin}%</span> CPT · +{gemPivotEntry[1]._pivotPoolNames?.length || 0} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotCptTarget}%</span></span>}
