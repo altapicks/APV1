@@ -265,6 +265,12 @@ function buildProjections(data) {
       else if (line.stat === 'Double Faults') projected = player.dfs;
       else if (line.stat === 'Sets Won') projected = player.sw;
       const ev = ppEV(projected, line.line);
+      // Attach PP Fantasy Score line + edge for PP Boost consumption in Builder.
+      // Edge = our DK proj − PP line (negative = PP pricing higher, "LESS" signal).
+      if (line.stat === 'Fantasy Score') {
+        player.ppLine = line.line;
+        player.ppEdge = Math.round((player.proj - line.line) * 100) / 100;
+      }
       ppRows.push({ player: line.player, stat: line.stat, line: line.line, projected: Math.round(projected * 100) / 100, ev, opponent: player.opponent, wp: player.wp, direction: ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-', mult: line.mult || '' });
     });
   }
@@ -378,6 +384,9 @@ function buildMMAProjections(data) {
         projected = player.ppProj;
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
+        // Attach FS line + edge for PP Boost consumption in Builder.
+        player.ppLine = line.line;
+        player.ppEdge = Math.round((player.proj - line.line) * 100) / 100;
       } else if (line.stat === 'Fight Time') {
         // Projected = MEDIAN fight time (where 50% of outcomes land below)
         // PP sets their lines at median, not mean — mean gets pulled up by decisions
@@ -1917,129 +1926,161 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     const vals = rp.filter(p => p.salary > 0).map(p => p.val || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp]);
-  // CONTRARIAN MODE
-  //  (1) TRAP — highest-owned MID/LOW-TIER play (stars excluded, they aren't traps)
-  //  (2a) ⭐ STUD BOOST — highest-owned top-projection play (leverage the good chalk)
-  //  (2b) GEM BOOST — below-avg-val underowned (DK-priced-down, field avoiding)
-  //  (3) UNIVERSAL LEVERAGE CAP — no player above field+20pp (user rule: never smart in DK)
-  //  (4) GLOBAL FLOOR — everyone has min exposure, prevents DK-salary tunneling
+  // OVEROWNED MODE (TENNIS v3.19) — fully rewritten to mirror DK tab.
+  // All signals (trap, gem, pivot) are computed using the exact same
+  // formulas as the DK tab so the "Hidden Gem" / "Biggest Trap" displayed
+  // in the DK tab ARE the players the Builder boosts / fades.
+  //
+  // Signals:
+  //   (1) TRAP = max(simOwn − wp × 100) with wp ≥ 30% gate
+  //       Cap:   max = fieldOwn − (strength × 35/0.6) pp
+  //              → at base 0.6 = −35pp, at 1.0 = −58pp, at 0 = no cap
+  //   (2) GEM PRIMARY = trap's opponent IF opponent wp ≥ 33.4%,
+  //                     ELSE salary-band winner (val × proj × lev × upside)
+  //       Boost: min = fieldOwn + (strength × 35/0.6) pp
+  //              → at base 0.6 = +35pp, at 1.0 = +58pp
+  //   (3) PIVOT = only when opponent qualifies for gem. Inherits the
+  //       same +35pp leverage floor as primary gem.
+  //   (4) PP BOOST = top 2 LESS edges (ppEdge ≤ -2), excluding primary
+  //       trap. Stacks +15pp on top of whatever min the player already
+  //       has (fresh if no prior signal). Cap-wins: clips to existing max.
+  //   (5) GLOBAL FLOOR — all uncapped players get min 1-8% (scaled) so
+  //       DK-salary tunneling is prevented.
+  //   (6) LEVERAGE CAP — anyone ≥15% field gets max = field+30pp cap.
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
     const caps = {};
 
-    // Stars (top 30% by projection) — used for stud selection, NOT for trap exclusion
-    const byProj = [...withSal].sort((a, b) => b.proj - a.proj);
-    const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
-    const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
-
-    // Leverage bounds — capped at 20pp per user rule
-    const boostFloor = Math.round(10 + contrarianStrength * 10);   // 13-20pp by strength
     const LEV_CAP = 30;
-
-    // (1) TRAP — highest-owned player (matches DK tab's "Biggest Trap" definition).
-    //     DK tab defines trap as simply highest ownership. Contrarian respects that —
-    //     if the field has converged on a player, fade them regardless of star status.
-    //     Cap: field_own - (strength × 40) so at max strength the trap gets -40pp fade.
-    const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const trap = hasOwn
-      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
-      : byProj[0];
-    if (trap) {
-      const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
-      caps[trap.name] = { max: maxCap, _isTrap: true };
-    }
-
-    // (2a) STUD — overowned star (field > fair_own + 5pp) with WORST value
-    //      This picks the chalkiest star that DK underpriced least — same "bad value"
-    //      principle applied to stars. If two stars are equally overowned but one has
-    //      worse pts/dollar, that's the one DK overpriced and the field is still piling into.
-    const overownedStars = withSal.filter(p => {
-      if (p.name === trap?.name) return false;
-      if (!topProjSet.has(p.name)) return false;
-      const fieldOwn = ownership[p.name] || 0;
-      const fairOwn = computeFairOwn(p.val || 0, avgVal);
-      return fieldOwn > fairOwn + 5 && fieldOwn >= 25;
-    });
-    const stud = overownedStars.sort((a, b) => (a.val || 0) - (b.val || 0))[0];
-    if (stud) {
-      const fieldOwn = Math.round(ownership[stud.name] || 0);
-      caps[stud.name] = {
-        min: Math.min(85, fieldOwn + boostFloor),
-        max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: 'stud'
-      };
-    }
-
-    // (2b) GEM — salary substitute for trap (-$1000 to +$300 band). Cascade:
-    //        (1) bad-val + underowned in band       [DK-priced-down + field missing = pure gem]
-    //        (2) good-val + underowned in band      [field ignoring an overlooked elite]
-    //        (3) any bad-val in band                [field-avoided at that price, even if chalky]
-    //        (4) lowest-owned in band               [anyone unappreciated at that price]
-    //        (5) widen band to -$1500/+$500 and retry lowest-owned
-    // Order rationale: true underownership (underowned relative to fair) beats pure bad-val
-    // signal. If the only bad-val play is itself overowned (like Moises at 38%), it's not
-    // really a "field-missed" play — boost a genuinely underowned alternative instead.
-    const trapSal = trap?.salary ?? 0;
-    const inBand = (p, lo, hi) => (p.salary - trapSal) >= lo && (p.salary - trapSal) <= hi;
-    const salaryEligible = trap ? withSal.filter(p => {
-      if (p.name === trap.name || p.name === stud?.name) return false;
-      return inBand(p, -1000, 300);
-    }) : [];
-    const sameBandBadVal = salaryEligible.filter(p => (p.val || 0) < avgVal);
-    // (1) Bad-val AND underowned: the ideal gem
-    const strictGem = sameBandBadVal
-      .filter(p => (ownership[p.name] || 0) < computeFairOwn(p.val || 0, avgVal))
-      .sort((a, b) => b.proj - a.proj)[0];
-    // (2) Good-val underowned: overlooked elite at same price point as trap
-    const goodValUnderowned = salaryEligible
-      .filter(p => (p.val || 0) >= avgVal && (ownership[p.name] || 0) < computeFairOwn(p.val || 0, avgVal) - 3)
-      .sort((a, b) => b.proj - a.proj)[0];
-    // (3) Any bad-val (even chalky) — last resort for DK-priced-down differentiation
-    const badValFallback = sameBandBadVal.sort((a, b) => {
-      const aGap = computeFairOwn(a.val || 0, avgVal) - (ownership[a.name] || 0);
-      const bGap = computeFairOwn(b.val || 0, avgVal) - (ownership[b.name] || 0);
-      if (Math.abs(bGap - aGap) > 1) return bGap - aGap;
-      return b.proj - a.proj;
-    })[0];
-    const lowOwnFallback = salaryEligible
-      .sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
-    const widerPool = (!strictGem && !goodValUnderowned && !badValFallback && !lowOwnFallback && trap)
-      ? withSal.filter(p => p.name !== trap.name && p.name !== stud?.name && inBand(p, -1500, 500))
-      : [];
-    const widerFallback = widerPool.sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
-    const gem = strictGem || goodValUnderowned || badValFallback || lowOwnFallback || widerFallback;
-    if (gem) {
-      const fieldOwn = Math.round(ownership[gem.name] || 0);
-      caps[gem.name] = {
-        min: Math.min(85, fieldOwn + boostFloor),
-        max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: 'gem'
-      };
-    }
-
-    // (3) + (4) LEVERAGE CAP + GLOBAL FLOOR
-    //     The +20pp cap is the user's "never smart in DK" rule, but it only applies to
-    //     players at material ownership — underowned floor plays (<20% field) aren't at
-    //     risk of being chalky, so capping them at field+20 just makes the problem
-    //     infeasible. Apply cap selectively: boosted players keep exact +20pp, floored
-    //     players only get the cap if their field ownership is already meaningful (≥15%).
+    const levPP = Math.round(contrarianStrength * (35 / 0.6));  // 35pp @ 0.6, 58pp @ 1.0
     const globalFloor = Math.round(1 + contrarianStrength * 7);
+
+    // (1) TRAP — mirror DK tab: simOwn − wp × 100, gate wp ≥ 30%.
+    const trapActive = withSal.filter(p => (p.wp || 0) >= 0.30);
+    const hasOwn = trapActive.some(p => (ownership[p.name] || 0) > 0);
+    let trap = null;
+    if (!hasOwn && trapActive.length > 0) {
+      trap = [...trapActive].sort((a, b) => (b.proj || 0) - (a.proj || 0))[0];
+    } else if (trapActive.length > 0) {
+      const scored = trapActive.map(p => ({
+        p, score: (ownership[p.name] || 0) - (p.wp || 0) * 100,
+      })).sort((a, b) => b.score - a.score);
+      trap = scored[0]?.p || null;
+    }
+    if (trap) {
+      const fieldOwn = ownership[trap.name] || 0;
+      caps[trap.name] = {
+        max: Math.max(0, Math.round(fieldOwn - levPP)),
+        _isTrap: true,
+        _fieldOwn: Math.round(fieldOwn),
+      };
+    }
+
+    // (2) + (3) GEM PRIMARY + OPTIONAL PIVOT — mirror DK tab's dual-track.
+    let gemPrimary = null;
+    let gemPivot   = null;
+    if (trap) {
+      const trapOwn = ownership[trap.name] || 0;
+      const opponent = withSal.find(p => p.name === trap.opponent);
+      const opponentQualifies = opponent && (opponent.wp || 0) >= 0.334;
+
+      // Salary-band winner (same scoring as DK tab)
+      const trapSal = trap.salary;
+      const scoreBand = (lo, hi) => withSal.filter(p => {
+        if (p.name === trap.name) return false;
+        if (opponentQualifies && opponent && p.name === opponent.name) return false;
+        const diff = p.salary - trapSal;
+        return diff >= lo && diff <= hi;
+      }).map(p => {
+        const leverage = Math.max(0, trapOwn - (ownership[p.name] || 0));
+        const levBoost = 1 + leverage * 0.012;
+        const upsideBoost = 1 + (p.pStraight || 0.3) * 0.3;
+        const score = (p.val || 0) * (p.proj || 0) * levBoost * upsideBoost;
+        return { p, score };
+      }).sort((a, b) => b.score - a.score);
+
+      let bandWinner = scoreBand(-1000, 300)[0]?.p;
+      if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0]?.p;
+      if (!bandWinner) {
+        // Leverage fallback: highest (wp − simOwn) gap
+        const lev = withSal.filter(p => {
+          if (p.name === trap.name) return false;
+          if (opponentQualifies && opponent && p.name === opponent.name) return false;
+          return (p.salary || 0) > 0;
+        }).map(p => ({ p, score: (p.wp || 0) * 100 - (ownership[p.name] || 0) }))
+          .sort((a, b) => b.score - a.score);
+        if (lev[0] && lev[0].score > 0) bandWinner = lev[0].p;
+      }
+
+      if (opponentQualifies) {
+        gemPrimary = opponent;
+        gemPivot   = bandWinner || null;
+      } else {
+        gemPrimary = bandWinner || null;
+        gemPivot   = null;
+      }
+    }
+
+    if (gemPrimary) {
+      const fieldOwn = Math.round(ownership[gemPrimary.name] || 0);
+      caps[gemPrimary.name] = {
+        min: Math.min(95, fieldOwn + levPP),
+        max: Math.min(100, fieldOwn + LEV_CAP + levPP),   // don't cap below the floor
+        _isGem: true, _kind: 'primary',
+        _fieldOwn: fieldOwn,
+      };
+    }
+    if (gemPivot && !caps[gemPivot.name]) {
+      const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
+      caps[gemPivot.name] = {
+        min: Math.min(95, fieldOwn + levPP),
+        max: Math.min(100, fieldOwn + LEV_CAP + levPP),
+        _isGem: true, _kind: 'pivot',
+        _fieldOwn: fieldOwn,
+      };
+    }
+
+    // (5) + (6) GLOBAL FLOOR + LEVERAGE CAP — everyone else
     withSal.forEach(p => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
-      if (caps[p.name]) {
-        // Trap/stud/gem already set — leave their max alone (stud/gem already exactly at +LEV_CAP)
-        return;
-      }
-      // Floored players: apply +20pp cap only if field is ≥15%, else just floor them
+      if (caps[p.name]) return;  // already set by trap/gem/pivot
       const maxCap = fieldOwn >= 15 ? Math.min(95, fieldOwn + LEV_CAP) : 100;
       caps[p.name] = { min: globalFloor, max: maxCap, _isFloor: true };
     });
 
+    // (4) PP BOOST — applied LAST so it stacks additively on top of any
+    // signal the player may have (including gem primary or pivot). Top 2
+    // LESS edges with ppEdge ≤ -2, excluding the primary trap.
+    // Cap-wins: if boosted min would exceed existing max, clip to max.
+    const ppFadeCandidates = withSal
+      .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => !trap || p.name !== trap.name)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+      .slice(0, 2);
+    ppFadeCandidates.forEach((fade, idx) => {
+      const existing = caps[fade.name] || {};
+      const fieldOwn = Math.round(ownership[fade.name] || 0);
+      const currMin = existing.min || 0;
+      const currMax = existing.max !== undefined ? existing.max : 100;
+      const newMin = Math.min(currMin + 15, currMax);   // +15pp, cap wins
+      caps[fade.name] = {
+        ...existing,
+        min: newMin,
+        max: existing.max !== undefined ? existing.max : Math.min(100, fieldOwn + LEV_CAP + 15),
+        _isPpBoost: true,
+        _ppBoostRank: idx + 1,
+        _ppBoostEdge: fade.ppEdge || 0,
+        _ppBoostLine: fade.ppLine || 0,
+        _ppBoostOrigProj: fade.proj || 0,
+        _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+        _ppBoostAddedMin: newMin - currMin,
+      };
+    });
+
     return caps;
-  }, [rp, ownership, contrarianOn, contrarianStrength, avgVal]);
+  }, [rp, ownership, contrarianOn, contrarianStrength]);
 
   // Projections untouched when contrarian is on (caps do the work now)
   const adjRp = rp;
@@ -2173,17 +2214,49 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
-      const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
-      const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost).sort((a, b) => (a[1]._rank || 0) - (b[1]._rank || 0));
-      const floorEntry = Object.entries(contrarianCaps).find(([, c]) => c._isFloor);
-      const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
+      // OverOwned Mode display (v3.19) — top 5 changes by |bound - fieldOwn|.
+      const labelFor = (c) => {
+        if (c._isTrap)   return { label: 'Trap',    icon: 'bomb',   color: 'var(--red)' };
+        if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
+        if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
+        if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
+        return null;
+      };
+      const describeChange = (c) => {
+        if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
+        return { sym: '', bound: 0 };
+      };
+      const ranked = [];
+      for (const [name, c] of Object.entries(contrarianCaps)) {
+        const lbl = labelFor(c);
+        if (!lbl) continue;
+        const desc = describeChange(c);
+        const field = ownership[name] || 0;
+        const delta = desc.bound != null ? Math.abs(desc.bound - field) : 0;
+        ranked.push({ name, lbl, desc, field, delta });
+      }
+      ranked.sort((a, b) => b.delta - a.delta);
+      const top5 = ranked.slice(0, 5);
+      const othersCount = ranked.length - top5.length;
       return (
-        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
-          {boostEntries.map(([name, c]) => (
-            <span key={name}>{c._type === 'stud' ? <><Icon name="trophy" size={12}/> Stud</> : <><Icon name="gem" size={12}/> Gem</>} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>Top 5 Exposure Changes</span>
+          {top5.map(({ name, lbl, desc, field }) => (
+            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Icon name={lbl.icon} size={12} color={lbl.color}/>
+              <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
+              <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
+              <span style={{ color: 'var(--text-dim)' }}>· field {field.toFixed(1)}% →</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{desc.sym}</span>
+            </span>
           ))}
-          {floorEntry && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
+          {othersCount > 0 && (
+            <span style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: 11 }}>
+              +{othersCount} more signals enforced
+            </span>
+          )}
         </div>
       );
     })()}
@@ -2835,89 +2908,108 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
     const vals = rp.filter(p => p.salary > 0).map(p => (mode === 'ceiling' ? p.cval : p.val) || 0);
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 7;
   }, [rp, mode]);
-  // CONTRARIAN MODE (MMA) — same design as tennis
+  // OVEROWNED MODE (MMA v3.19) — fully rewritten to mirror DK tab.
+  // Mirrors tennis exactly: trap = simOwn − wp × 100 with wp ≥ 30% gate,
+  // gem = opponent-if-wp≥33.4% else salary-band winner, PP boost stacks
+  // +15pp on top of existing min.
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
     const caps = {};
-    const valKey = mode === 'ceiling' ? 'cval' : 'val';
     const projKey = mode === 'ceiling' ? 'ceil' : 'proj';
+    const valKey  = mode === 'ceiling' ? 'cval' : 'val';
 
-    const byProj = [...withSal].sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0));
-    const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
-    const topProjSet = new Set(byProj.slice(0, topProjN).map(p => p.name));
-
-    const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
-
-    // TRAP — highest-owned player (matches DK tab). Stars can be trap too.
-    const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
-    const trap = hasOwn
-      ? [...withSal].sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0))[0]
-      : byProj[0];
-    if (trap) {
-      const trapFieldOwn = ownership[trap.name] || 0;
-      const maxCap = Math.max(5, Math.round(trapFieldOwn - contrarianStrength * 50));
-      caps[trap.name] = { max: maxCap, _isTrap: true };
-    }
-
-    // STUD — overowned star with worst value (most "DK-overpriced chalky star")
-    const overownedStars = withSal.filter(p => {
-      if (p.name === trap?.name) return false;
-      if (!topProjSet.has(p.name)) return false;
-      const fieldOwn = ownership[p.name] || 0;
-      const fairOwn = computeFairOwn(p[valKey] || 0, avgVal);
-      return fieldOwn > fairOwn + 5 && fieldOwn >= 25;
-    });
-    const stud = overownedStars.sort((a, b) => (a[valKey] || 0) - (b[valKey] || 0))[0];
-    if (stud) {
-      const fieldOwn = Math.round(ownership[stud.name] || 0);
-      caps[stud.name] = {
-        min: Math.min(85, fieldOwn + boostFloor),
-        max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: 'stud'
-      };
-    }
-
-    // GEM — salary substitute for trap (-$1000 to +$300 band)
-    const trapSal = trap?.salary ?? 0;
-    const inBand = (p, lo, hi) => (p.salary - trapSal) >= lo && (p.salary - trapSal) <= hi;
-    const salaryEligible = trap ? withSal.filter(p => {
-      if (p.name === trap.name || p.name === stud?.name) return false;
-      return inBand(p, -1000, 300);
-    }) : [];
-    const sameBandBadVal = salaryEligible.filter(p => (p[valKey] || 0) < avgVal);
-    const strictGem = sameBandBadVal
-      .filter(p => (ownership[p.name] || 0) < computeFairOwn(p[valKey] || 0, avgVal))
-      .sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
-    const goodValUnderowned = salaryEligible
-      .filter(p => (p[valKey] || 0) >= avgVal && (ownership[p.name] || 0) < computeFairOwn(p[valKey] || 0, avgVal) - 3)
-      .sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
-    const badValFallback = sameBandBadVal.sort((a, b) => {
-      const aGap = computeFairOwn(a[valKey] || 0, avgVal) - (ownership[a.name] || 0);
-      const bGap = computeFairOwn(b[valKey] || 0, avgVal) - (ownership[b.name] || 0);
-      if (Math.abs(bGap - aGap) > 1) return bGap - aGap;
-      return (b[projKey] || 0) - (a[projKey] || 0);
-    })[0];
-    const lowOwnFallback = salaryEligible
-      .sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
-    const widerPool = (!strictGem && !goodValUnderowned && !badValFallback && !lowOwnFallback && trap)
-      ? withSal.filter(p => p.name !== trap.name && p.name !== stud?.name && inBand(p, -1500, 500))
-      : [];
-    const widerFallback = widerPool.sort((a, b) => (ownership[a.name] || 0) - (ownership[b.name] || 0))[0];
-    const gem = strictGem || goodValUnderowned || badValFallback || lowOwnFallback || widerFallback;
-    if (gem) {
-      const fieldOwn = Math.round(ownership[gem.name] || 0);
-      caps[gem.name] = {
-        min: Math.min(85, fieldOwn + boostFloor),
-        max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: boostFloor, _type: 'gem'
-      };
-    }
-
-    // LEVERAGE CAP + GLOBAL FLOOR (selective — only cap meaningfully-owned players)
+    const levPP = Math.round(contrarianStrength * (35 / 0.6));  // 35pp @ 0.6, 58pp @ 1.0
     const globalFloor = Math.round(1 + contrarianStrength * 7);
+
+    // (1) TRAP — mirror DK tab: simOwn − wp × 100, gate wp ≥ 30%.
+    const trapActive = withSal.filter(p => (p.wp || 0) >= 0.30);
+    const hasOwn = trapActive.some(p => (ownership[p.name] || 0) > 0);
+    let trap = null;
+    if (!hasOwn && trapActive.length > 0) {
+      trap = [...trapActive].sort((a, b) => (b[projKey] || 0) - (a[projKey] || 0))[0];
+    } else if (trapActive.length > 0) {
+      const scored = trapActive.map(p => ({
+        p, score: (ownership[p.name] || 0) - (p.wp || 0) * 100,
+      })).sort((a, b) => b.score - a.score);
+      trap = scored[0]?.p || null;
+    }
+    if (trap) {
+      const fieldOwn = ownership[trap.name] || 0;
+      caps[trap.name] = {
+        max: Math.max(0, Math.round(fieldOwn - levPP)),
+        _isTrap: true,
+        _fieldOwn: Math.round(fieldOwn),
+      };
+    }
+
+    // (2) + (3) GEM PRIMARY + OPTIONAL PIVOT — mirror MMA DK tab.
+    let gemPrimary = null;
+    let gemPivot   = null;
+    if (trap) {
+      const trapOwn = ownership[trap.name] || 0;
+      const opponent = withSal.find(p => p.name === trap.opponent);
+      const opponentQualifies = opponent && (opponent.wp || 0) >= 0.334;
+
+      const trapSal = trap.salary;
+      const scoreBand = (lo, hi) => withSal.filter(p => {
+        if (p.name === trap.name) return false;
+        if (opponentQualifies && opponent && p.name === opponent.name) return false;
+        const diff = p.salary - trapSal;
+        return diff >= lo && diff <= hi;
+      }).map(p => {
+        const ceil = p[projKey] || 0;
+        const val  = p[valKey] || (p.salary > 0 ? ceil / (p.salary / 1000) : 0);
+        const leverage = Math.max(0, trapOwn - (ownership[p.name] || 0));
+        const levBoost = 1 + leverage * 0.012;
+        const upsideBoost = 1 + (p.finishProb || 0.2) * 0.3;
+        const score = val * ceil * levBoost * upsideBoost;
+        return { p, score };
+      }).sort((a, b) => b.score - a.score);
+
+      let bandWinner = scoreBand(-1000, 300)[0]?.p;
+      if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0]?.p;
+      if (!bandWinner) {
+        const lev = withSal.filter(p => {
+          if (p.name === trap.name) return false;
+          if (opponentQualifies && opponent && p.name === opponent.name) return false;
+          return (p.salary || 0) > 0;
+        }).map(p => ({ p, score: (p.wp || 0) * 100 - (ownership[p.name] || 0) }))
+          .sort((a, b) => b.score - a.score);
+        if (lev[0] && lev[0].score > 0) bandWinner = lev[0].p;
+      }
+
+      if (opponentQualifies) {
+        gemPrimary = opponent;
+        gemPivot   = bandWinner || null;
+      } else {
+        gemPrimary = bandWinner || null;
+        gemPivot   = null;
+      }
+    }
+
+    if (gemPrimary) {
+      const fieldOwn = Math.round(ownership[gemPrimary.name] || 0);
+      caps[gemPrimary.name] = {
+        min: Math.min(95, fieldOwn + levPP),
+        max: Math.min(100, fieldOwn + LEV_CAP + levPP),
+        _isGem: true, _kind: 'primary',
+        _fieldOwn: fieldOwn,
+      };
+    }
+    if (gemPivot && !caps[gemPivot.name]) {
+      const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
+      caps[gemPivot.name] = {
+        min: Math.min(95, fieldOwn + levPP),
+        max: Math.min(100, fieldOwn + LEV_CAP + levPP),
+        _isGem: true, _kind: 'pivot',
+        _fieldOwn: fieldOwn,
+      };
+    }
+
+    // GLOBAL FLOOR + LEVERAGE CAP — everyone else
     withSal.forEach(p => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
       if (caps[p.name]) return;
@@ -2925,8 +3017,35 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       caps[p.name] = { min: globalFloor, max: maxCap, _isFloor: true };
     });
 
+    // (4) PP BOOST — top 2 LESS edges ≤ -2, exclude primary trap, +15pp min
+    // stacked on existing. Cap-wins clips to existing max.
+    const ppFadeCandidates = withSal
+      .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => !trap || p.name !== trap.name)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+      .slice(0, 2);
+    ppFadeCandidates.forEach((fade, idx) => {
+      const existing = caps[fade.name] || {};
+      const fieldOwn = Math.round(ownership[fade.name] || 0);
+      const currMin = existing.min || 0;
+      const currMax = existing.max !== undefined ? existing.max : 100;
+      const newMin = Math.min(currMin + 15, currMax);
+      caps[fade.name] = {
+        ...existing,
+        min: newMin,
+        max: existing.max !== undefined ? existing.max : Math.min(100, fieldOwn + LEV_CAP + 15),
+        _isPpBoost: true,
+        _ppBoostRank: idx + 1,
+        _ppBoostEdge: fade.ppEdge || 0,
+        _ppBoostLine: fade.ppLine || 0,
+        _ppBoostOrigProj: fade.proj || 0,
+        _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+        _ppBoostAddedMin: newMin - currMin,
+      };
+    });
+
     return caps;
-  }, [rp, ownership, contrarianOn, contrarianStrength, mode, avgVal]);
+  }, [rp, ownership, contrarianOn, contrarianStrength, mode]);
 
   const adjRp = rp;
 
@@ -3015,17 +3134,49 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
-      const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
-      const boostEntries = Object.entries(contrarianCaps).filter(([, c]) => c._isBoost).sort((a, b) => (a[1]._rank || 0) - (b[1]._rank || 0));
-      const floorEntry = Object.entries(contrarianCaps).find(([, c]) => c._isFloor);
-      const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
+      // OverOwned Mode display (v3.19) — top 5 changes by |bound - fieldOwn|.
+      const labelFor = (c) => {
+        if (c._isTrap)   return { label: 'Trap',    icon: 'bomb',   color: 'var(--red)' };
+        if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
+        if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
+        if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
+        return null;
+      };
+      const describeChange = (c) => {
+        if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
+        return { sym: '', bound: 0 };
+      };
+      const ranked = [];
+      for (const [name, c] of Object.entries(contrarianCaps)) {
+        const lbl = labelFor(c);
+        if (!lbl) continue;
+        const desc = describeChange(c);
+        const field = ownership[name] || 0;
+        const delta = desc.bound != null ? Math.abs(desc.bound - field) : 0;
+        ranked.push({ name, lbl, desc, field, delta });
+      }
+      ranked.sort((a, b) => b.delta - a.delta);
+      const top5 = ranked.slice(0, 5);
+      const othersCount = ranked.length - top5.length;
       return (
-        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span></span>}
-          {boostEntries.map(([name, c]) => (
-            <span key={name}>{c._type === 'stud' ? <><Icon name="trophy" size={12}/> Stud</> : <><Icon name="gem" size={12}/> Gem</>} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% +<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._leverage}pp</span> → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}-{c.max}%</span></span>
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>Top 5 Exposure Changes</span>
+          {top5.map(({ name, lbl, desc, field }) => (
+            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Icon name={lbl.icon} size={12} color={lbl.color}/>
+              <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
+              <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
+              <span style={{ color: 'var(--text-dim)' }}>· field {field.toFixed(1)}% →</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{desc.sym}</span>
+            </span>
           ))}
-          {floorEntry && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} other{floorCount === 1 ? '' : 's'} · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{floorEntry[1].min}%</span> · chalk capped <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+30pp</span></span>}
+          {othersCount > 0 && (
+            <span style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: 11 }}>
+              +{othersCount} more signals enforced
+            </span>
+          )}
         </div>
       );
     })()}
@@ -4628,54 +4779,87 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         if (c._isCptPivot) return { label: 'CPT Pivot', icon: 'trophy', color: 'var(--green)' };
         return null;
       };
-      const describeChange = (c) => {
-        // Returns { bound: number, sym: '→ min X%' | '→ max X%' | '→ X-Y%' | '→ match X%', magnitude: number }
-        if (c._isWashTrap) return { sym: `match ${c.max}%`, mag: 0 };  // wash has 0 delta
+      const describeChange = (c, name) => {
+        // Returns { sym, bound, fieldRef }
+        // fieldRef: which ownership scope the bound is compared against
+        //   'total' = total simOwn (default)
+        //   'cpt'   = cptOwnership[name]
+        if (c._isWashTrap) return { sym: `match ${c.max}%`, bound: c.max, fieldRef: 'total' };
         if (c._isTrap) {
           const bound = c.flexMax != null ? c.flexMax : c.cptMax;
-          return { sym: `CPT max ${c.cptMax}% / FLEX ${c.flexMin}-${c.flexMax}%`, bound };
+          return { sym: `CPT max ${c.cptMax}% / FLEX ${c.flexMin}-${c.flexMax}%`, bound, fieldRef: 'total' };
         }
-        if (c._isTopValueCap) return { sym: `CPT max ${c.cptMax}% / FLEX max ${c.flexMax}%`, bound: c.flexMax };
+        if (c._isTopValueCap) return { sym: `CPT max ${c.cptMax}% / FLEX max ${c.flexMax}%`, bound: c.flexMax, fieldRef: 'total' };
         if (c._isSecondaryTrap) {
           return { sym: c._isPremium
             ? `CPT max ${c.cptMax}% / FLEX max ${c.flexMax}% ★$10K+`
             : `max ${c.cptMax}%`,
-            bound: c.flexMax != null ? c.flexMax : c.cptMax };
+            bound: c.flexMax != null ? c.flexMax : c.cptMax, fieldRef: 'total' };
         }
-        if (c._isMidSalCptPivot) return { sym: `CPT ${c.cptMin}% / FLEX ${c.flexMin}%`, bound: c.flexMin };
-        if (c._isGem && c._kind === 'primary') return { sym: `min ${c.min}%`, bound: c.min };
-        if (c._isGem && c._kind === 'pivot') return { sym: `FLEX ${c._displayedFlexMin}% / CPT ${c._displayedCptMin}%`, bound: c._displayedFlexMin };
-        if (c._isBoost && c._type === 'stud') return { sym: `min ${c.min}%`, bound: c.min };
-        if (c._isPpBoost) return { sym: `+${c._ppBoostAddedCptMin}% CPT / +${c._ppBoostAddedFlexMin}% FLEX (stacked)`, bound: c.flexMin };
-        if (c._isSleeper) return { sym: `min ${c.min}%`, bound: c.min };
-        if (c._isCptPivot) return { sym: `CPT min ${c.cptMin}%`, bound: c.cptMin };
-        return { sym: '', bound: 0 };
+        if (c._isMidSalCptPivot) return { sym: `CPT ${c.cptMin}% / FLEX ${c.flexMin}%`, bound: c.flexMin, fieldRef: 'total' };
+        if (c._isGem && c._kind === 'primary') return { sym: `min ${c.min}%`, bound: c.min, fieldRef: 'total' };
+        if (c._isGem && c._kind === 'pivot') return { sym: `FLEX ${c._displayedFlexMin}% / CPT ${c._displayedCptMin}%`, bound: c._displayedFlexMin, fieldRef: 'total' };
+        if (c._isBoost && c._type === 'stud') return { sym: `min ${c.min}%`, bound: c.min, fieldRef: 'total' };
+        if (c._isPpBoost) return { sym: `+${c._ppBoostAddedCptMin}% CPT / +${c._ppBoostAddedFlexMin}% FLEX (stacked)`, bound: c.flexMin, fieldRef: 'total' };
+        if (c._isSleeper) return { sym: `min ${c.min}%`, bound: c.min, fieldRef: 'total' };
+        // CPT Pivot rule operates on the CPT slot specifically — compare
+        // cptMin to cptOwnership (not total) so the delta reflects the
+        // actual CPT-slot change, not inflated by flex ownership.
+        if (c._isCptPivot) return { sym: `CPT min ${c.cptMin}%`, bound: c.cptMin, fieldRef: 'cpt' };
+        return { sym: '', bound: 0, fieldRef: 'total' };
       };
-      // Build list of (name, cap, labelInfo, desc, delta) and rank by |delta|
-      const ranked = [];
+      // Build list of (name, cap, labelInfo, desc, delta) — split into DK tab
+      // "headliners" (always shown) and auxiliaries (ranked by delta to fill
+      // any remaining slots). The headliners match exactly what the NBA DK
+      // tab displays: Primary Trap, Gem Primary, Gem Pivots 1 & 2, Secondary.
+      const headlinerEntries = [];
+      const auxEntries = [];
+      const isHeadliner = (c) =>
+        c._isTrap ||                                  // primary trap (incl. wash)
+        c._isSecondaryTrap ||                         // secondary trap
+        (c._isGem && c._kind === 'primary') ||        // gem primary
+        (c._isGem && c._kind === 'pivot');            // gem pivots 1 & 2
       for (const [name, c] of Object.entries(contrarianCaps)) {
         const lbl = labelFor(c);
         if (!lbl) continue;
-        const desc = describeChange(c);
-        const field = ownership[name] || 0;
-        const delta = desc.bound != null ? Math.abs(desc.bound - field) : 0;
-        ranked.push({ name, cap: c, lbl, desc, field, delta });
+        const desc = describeChange(c, name);
+        const fieldTotal = ownership[name] || 0;
+        const fieldCpt   = (cptOwnership || {})[name] || 0;
+        const fieldForDelta = desc.fieldRef === 'cpt' ? fieldCpt : fieldTotal;
+        const delta = desc.bound != null ? Math.abs(desc.bound - fieldForDelta) : 0;
+        const row = { name, cap: c, lbl, desc, field: fieldTotal, fieldRef: desc.fieldRef, delta };
+        (isHeadliner(c) ? headlinerEntries : auxEntries).push(row);
       }
-      ranked.sort((a, b) => b.delta - a.delta);
-      const top5 = ranked.slice(0, 5);
-      const othersCount = ranked.length - top5.length;
+      // Headliner order: trap → gem primary → gem pivot 1 → gem pivot 2 → secondary
+      const headlinerOrder = (r) => {
+        if (r.cap._isTrap && !r.cap._isSecondaryTrap) return 0;
+        if (r.cap._isGem && r.cap._kind === 'primary') return 1;
+        if (r.cap._isGem && r.cap._kind === 'pivot') return 2 + (r.cap._pivotRank || 1) - 1;
+        if (r.cap._isSecondaryTrap) return 4;
+        return 99;
+      };
+      headlinerEntries.sort((a, b) => headlinerOrder(a) - headlinerOrder(b));
+      auxEntries.sort((a, b) => b.delta - a.delta);
+      const top5 = [...headlinerEntries, ...auxEntries].slice(0, 5);
+      const othersCount = (headlinerEntries.length + auxEntries.length) - top5.length;
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>Top 5 Exposure Changes</span>
-          {top5.map(({ name, lbl, desc, field }) => (
-            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Icon name={lbl.icon} size={12} color={lbl.color}/>
-              <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
-              <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
-              <span style={{ color: 'var(--text-dim)' }}>· field {field.toFixed(1)}% →</span>
-              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{desc.sym}</span>
-            </span>
-          ))}
+          {top5.map(({ name, lbl, desc, field, fieldRef }) => {
+            // Display field ownership in the scope that matches the rule.
+            // CPT Pivot → show CPT-specific ownership. Everything else → total.
+            const displayField = fieldRef === 'cpt' ? ((cptOwnership || {})[name] || 0) : field;
+            const fieldLabel = fieldRef === 'cpt' ? 'cpt own' : 'field';
+            return (
+              <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Icon name={lbl.icon} size={12} color={lbl.color}/>
+                <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
+                <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
+                <span style={{ color: 'var(--text-dim)' }}>· {fieldLabel} {displayField.toFixed(1)}% →</span>
+                <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{desc.sym}</span>
+              </span>
+            );
+          })}
           {othersCount > 0 && (
             <span style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: 11 }}>
               +{othersCount} more signals enforced
