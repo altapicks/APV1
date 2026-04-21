@@ -3390,21 +3390,25 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       const isReplacerLabel = (p) => p.team === trapP.team && p.salary >= 3000;
       const primary = { name: byVal[0].name, kind: isReplacerLabel(byVal[0]) ? 'replacer' : 'value' };
 
-      // Pivot (NBA v3.2): leverage play — low-owned + highest ceiling.
+      // Pivot (NBA v3.3): owned-but-not-chalky leverage play, ranked by
+      // ceiling-value (ceil per $1K). Finds the best bang-for-buck ceiling
+      // among players the field is dabbling on but hasn't piled into.
       //   • not a trap (handled by `active` filter upstream)
       //   • not the primary gem
-      //   • simOwn < 16.4% (below fair ownership on a 6-slot showdown)
-      //   • salary ≥ $1500 (nominal floor; basically always met on DK)
-      //   • ranked by ceil desc
-      // If no player clears the ownership gate, no pivot is shown (cleaner
+      //   • 6% ≤ simOwn < 25% (on the field's radar but not chalk)
+      //   • salary ≥ $1500 (nominal floor)
+      //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
+      // If no player clears the ownership band, no pivot is shown (cleaner
       // than a silent fallback that obscures the intent).
       const pivotPool = active.filter(p =>
         p.name !== primary.name &&
-        (p.simOwn || 0) < 16.4 &&
+        (p.simOwn || 0) >= 6 &&
+        (p.simOwn || 0) < 25 &&
         (p.salary || 0) >= 1500 &&
         (p.ceil || 0) > 0
       );
-      const pivotByCeil = [...pivotPool].sort((a, b) => (b.ceil || 0) - (a.ceil || 0));
+      const ceilVal = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
+      const pivotByCeil = [...pivotPool].sort((a, b) => ceilVal(b) - ceilVal(a));
       const pivotP = pivotByCeil[0];
       const pivot = pivotP ? { name: pivotP.name, kind: isReplacerLabel(pivotP) ? 'replacer' : 'value' } : null;
       return { primary, pivot };
@@ -3438,17 +3442,20 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     const primaryKind = top.replacerScore > top.valueScore ? 'replacer' : 'value';
     const primary = { name: top.name, kind: primaryKind, score: top.overall };
 
-    // Pivot (NBA v3.2): leverage play — low-owned + highest ceiling.
-    //   Same rule as showdown path above. Classic uses `scored` array to
-    //   recover the replacer/value kind for labeling consistency.
+    // Pivot (NBA v3.3): owned-but-not-chalky leverage play, ranked by
+    //   ceiling-value (ceil per $1K). Same rule as showdown path above.
+    //   Classic uses `scored` array to recover the replacer/value kind
+    //   for labeling consistency.
     let pivot = null;
     const pivotPool = active.filter(p =>
       p.name !== primary.name &&
-      (p.simOwn || 0) < 16.4 &&
+      (p.simOwn || 0) >= 6 &&
+      (p.simOwn || 0) < 25 &&
       (p.salary || 0) >= 1500 &&
       (p.ceil || 0) > 0
     );
-    const pivotByCeil = [...pivotPool].sort((a, b) => (b.ceil || 0) - (a.ceil || 0));
+    const ceilValC = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
+    const pivotByCeil = [...pivotPool].sort((a, b) => ceilValC(b) - ceilValC(a));
     const pivotP = pivotByCeil[0];
     if (pivotP) {
       const pivotScored = scored.find(s => s.name === pivotP.name);
@@ -3921,21 +3928,23 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     }
 
-    // Pivot (NBA v3.2): leverage play — low-owned + highest ceiling.
-    //   Mirrors NBADKTab's pivot rule so DK tab display and Builder caps
-    //   target the same player.
+    // Pivot (NBA v3.3): owned-but-not-chalky leverage play, ranked by
+    //   ceiling-value (ceil per $1K). Mirrors NBADKTab's pivot rule so
+    //   DK tab display and Builder caps target the same player.
     //   • not a trap or stud (already excluded via gemPool)
     //   • not the primary gem
-    //   • simOwn < 16.4% (below fair ownership on a 6-slot showdown)
+    //   • 6% ≤ simOwn < 25% (on the field's radar but not chalk)
     //   • salary ≥ $1500 (nominal floor)
-    //   • ranked by ceil desc
+    //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
     const pivotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
-      (ownership[p.name] || 0) < 16.4 &&
+      (ownership[p.name] || 0) >= 6 &&
+      (ownership[p.name] || 0) < 25 &&
       (p.salary || 0) >= 1500 &&
       (p.ceil || 0) > 0
     );
-    const pivotByCeil = [...pivotPool].sort((a, b) => (b.ceil || 0) - (a.ceil || 0));
+    const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
+    const pivotByCeil = [...pivotPool].sort((a, b) => ceilValB(b) - ceilValB(a));
     const gemPivot = pivotByCeil[0];
     if (gemPivot) {
       const nextKind = (trap && gemPivot.team === trap.team && gemPivot.salary >= 3000) ? 'replacer' : 'value';
