@@ -1,0 +1,911 @@
+{
+  "date": "2026-04-21",
+  "slate_type": "showdown",
+  "notes": "POR@SAS showdown. DK lines devigged, SS fallback for bench. Total 220.5.",
+  "game": {
+    "away": "POR",
+    "home": "SAS",
+    "tip": "04/21/2026 08:10PM ET",
+    "spread_sas": -11.5,
+    "total": 220.5,
+    "implied_sas": 116.0,
+    "implied_por": 104.5,
+    "ml_sas": -700,
+    "ml_por": 500,
+    "pace_sas": 100.0,
+    "pace_por": 100.0,
+    "blowout_risk_sas": 0.23,
+    "blowout_risk_por": 0.07
+  },
+  "dk_players": [
+    {
+      "name": "Carter Bryant",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42702217,
+      "util_salary": 1400,
+      "cpt_id": 42702253,
+      "cpt_salary": 2100,
+      "salary": 1400,
+      "id": 42702217,
+      "avg_ppg": 9.46,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 7.0
+      },
+      "dk_props": {},
+      "turnovers": 0.32,
+      "manual_proj": 4.54
+    },
+    {
+      "name": "De'Aaron Fox",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42702202,
+      "util_salary": 8800,
+      "cpt_id": 42702238,
+      "cpt_salary": 13200,
+      "salary": 8800,
+      "id": 42702202,
+      "avg_ppg": 34.62,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 33.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 16.5,
+          "over": -127,
+          "under": -101
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 107,
+          "under": -141
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -118,
+          "under": -111
+        },
+        "assists": {
+          "line": 5.5,
+          "over": -135,
+          "under": 103
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 116,
+          "under": -155
+        }
+      },
+      "turnovers": 2.29,
+      "dd_odds": 840
+    },
+    {
+      "name": "Deni Avdija",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "PG/SF",
+      "positions": [
+        "PG",
+        "SF"
+      ],
+      "util_id": 42702200,
+      "util_salary": 11400,
+      "cpt_id": 42702236,
+      "cpt_salary": 17100,
+      "salary": 11400,
+      "id": 42702200,
+      "avg_ppg": 44.64,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 37.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 23.5,
+          "over": -114,
+          "under": -112
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -150,
+          "under": 114
+        },
+        "rebounds": {
+          "line": 7.5,
+          "over": 100,
+          "under": -131
+        },
+        "assists": {
+          "line": 6.5,
+          "over": 103,
+          "under": -135
+        }
+      },
+      "turnovers": 3.35,
+      "dd_odds": 176
+    },
+    {
+      "name": "Devin Vassell",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42702206,
+      "util_salary": 6200,
+      "cpt_id": 42702242,
+      "cpt_salary": 9300,
+      "salary": 6200,
+      "id": 42702206,
+      "avg_ppg": 25.92,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 33.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 12.5,
+          "over": -126,
+          "under": -101
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 127,
+          "under": -168
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 102,
+          "under": -134
+        },
+        "assists": {
+          "line": 2.5,
+          "over": 132,
+          "under": -174
+        }
+      },
+      "turnovers": 1.53
+    },
+    {
+      "name": "Donovan Clingan",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702204,
+      "util_salary": 8000,
+      "cpt_id": 42702240,
+      "cpt_salary": 12000,
+      "salary": 8000,
+      "id": 42702204,
+      "avg_ppg": 34.61,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 24.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 9.5,
+          "over": 102,
+          "under": -129
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -227,
+          "under": 170
+        },
+        "rebounds": {
+          "line": 9.5,
+          "over": 107,
+          "under": -141
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -123,
+          "under": -107
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 139,
+          "under": -185
+        }
+      },
+      "turnovers": 1.46,
+      "dd_odds": 258
+    },
+    {
+      "name": "Dylan Harper",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42702209,
+      "util_salary": 5000,
+      "cpt_id": 42702245,
+      "cpt_salary": 7500,
+      "salary": 5000,
+      "id": 42702209,
+      "avg_ppg": 23.76,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 23.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 9.5,
+          "over": 101,
+          "under": -129
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -139,
+          "under": 105
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -175,
+          "under": 133
+        }
+      },
+      "turnovers": 1.8
+    },
+    {
+      "name": "Harrison Barnes",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42702215,
+      "util_salary": 2600,
+      "cpt_id": 42702251,
+      "cpt_salary": 3900,
+      "salary": 2600,
+      "id": 42702215,
+      "avg_ppg": 18.24,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 16.2
+      },
+      "dk_props": {},
+      "turnovers": 0.46,
+      "manual_proj": 9.85
+    },
+    {
+      "name": "Jerami Grant",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42702210,
+      "util_salary": 4800,
+      "cpt_id": 42702246,
+      "cpt_salary": 7200,
+      "salary": 4800,
+      "id": 42702210,
+      "avg_ppg": 28.6,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 21.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -120,
+          "under": -106
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 140,
+          "under": -185
+        },
+        "rebounds": {
+          "line": 1.5,
+          "over": -162,
+          "under": 122
+        }
+      },
+      "turnovers": 0.99
+    },
+    {
+      "name": "Jrue Holiday",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42702203,
+      "util_salary": 8400,
+      "cpt_id": 42702239,
+      "cpt_salary": 12600,
+      "salary": 8400,
+      "id": 42702203,
+      "avg_ppg": 33.6,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 15.5,
+          "over": -116,
+          "under": -110
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 122,
+          "under": -161
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 110,
+          "under": -145
+        },
+        "assists": {
+          "line": 5.5,
+          "over": -127,
+          "under": -104
+        }
+      },
+      "turnovers": 1.84,
+      "dd_odds": 650
+    },
+    {
+      "name": "Julian Champagnie",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42702208,
+      "util_salary": 5400,
+      "cpt_id": 42702244,
+      "cpt_salary": 8100,
+      "salary": 5400,
+      "id": 42702208,
+      "avg_ppg": 23.83,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 26.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": -126,
+          "under": -101
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -191,
+          "under": 144
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -137,
+          "under": 104
+        },
+        "assists": {
+          "line": 1.5,
+          "over": 122,
+          "under": -161
+        }
+      },
+      "turnovers": 0.98,
+      "dd_odds": 2300
+    },
+    {
+      "name": "Keldon Johnson",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42702211,
+      "util_salary": 4400,
+      "cpt_id": 42702247,
+      "cpt_salary": 6600,
+      "salary": 4400,
+      "id": 42702211,
+      "avg_ppg": 23.3,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 21.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 9.5,
+          "over": -129,
+          "under": 101
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -207,
+          "under": 156
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 117,
+          "under": -155
+        }
+      },
+      "turnovers": 0.77,
+      "dd_odds": 2200
+    },
+    {
+      "name": "Kris Murray",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42702221,
+      "util_salary": 1000,
+      "cpt_id": 42702257,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42702221,
+      "avg_ppg": 14.57,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 5.5
+      },
+      "dk_props": {},
+      "turnovers": 0.21,
+      "manual_proj": 3.22
+    },
+    {
+      "name": "Luke Kornet",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702214,
+      "util_salary": 3000,
+      "cpt_id": 42702250,
+      "cpt_salary": 4500,
+      "salary": 3000,
+      "id": 42702214,
+      "avg_ppg": 19.7,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 15.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 3.5,
+          "over": -140,
+          "under": 110
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 119,
+          "under": -157
+        }
+      },
+      "turnovers": 0.26
+    },
+    {
+      "name": "Matisse Thybulle",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42702216,
+      "util_salary": 1800,
+      "cpt_id": 42702252,
+      "cpt_salary": 2700,
+      "salary": 1800,
+      "id": 42702216,
+      "avg_ppg": 14.44,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 18.6
+      },
+      "dk_props": {},
+      "turnovers": 0.49,
+      "manual_proj": 12.61
+    },
+    {
+      "name": "Robert Williams",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702213,
+      "util_salary": 3400,
+      "cpt_id": 42702249,
+      "cpt_salary": 5100,
+      "salary": 3400,
+      "id": 42702213,
+      "avg_ppg": 20.96,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 18.2
+      },
+      "dk_props": {},
+      "turnovers": 0.69,
+      "manual_proj": 18.01
+    },
+    {
+      "name": "Scoot Henderson",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42702207,
+      "util_salary": 5800,
+      "cpt_id": 42702243,
+      "cpt_salary": 8700,
+      "salary": 5800,
+      "id": 42702207,
+      "avg_ppg": 25.25,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 23.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -102,
+          "under": -124
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 121,
+          "under": -160
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": 128,
+          "under": -169
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -149,
+          "under": 113
+        }
+      },
+      "turnovers": 2.63,
+      "dd_odds": 2300
+    },
+    {
+      "name": "Shaedon Sharpe",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42702212,
+      "util_salary": 4000,
+      "cpt_id": 42702248,
+      "cpt_salary": 6000,
+      "salary": 4000,
+      "id": 42702212,
+      "avg_ppg": 32.16,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 22.9
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -128,
+          "under": 100
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 158,
+          "under": -210
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": 115,
+          "under": -151
+        }
+      },
+      "turnovers": 1.54
+    },
+    {
+      "name": "Stephon Castle",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42702201,
+      "util_salary": 9600,
+      "cpt_id": 42702237,
+      "cpt_salary": 14400,
+      "salary": 9600,
+      "id": 42702201,
+      "avg_ppg": 36.95,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.2
+      },
+      "dk_props": {
+        "points": {
+          "line": 17.5,
+          "over": -103,
+          "under": -124
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 130,
+          "under": -172
+        },
+        "rebounds": {
+          "line": 5.5,
+          "over": -104,
+          "under": -126
+        },
+        "assists": {
+          "line": 6.5,
+          "over": -149,
+          "under": 113
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 134,
+          "under": -178
+        }
+      },
+      "turnovers": 2.44,
+      "dd_odds": 230
+    },
+    {
+      "name": "Toumani Camara",
+      "team": "POR",
+      "opponent": "SAS",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42702205,
+      "util_salary": 6600,
+      "cpt_id": 42702241,
+      "cpt_salary": 9900,
+      "salary": 6600,
+      "id": 42702205,
+      "avg_ppg": 26.99,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -122,
+          "under": -104
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -197,
+          "under": 148
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -121,
+          "under": -109
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -167,
+          "under": 126
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 133,
+          "under": -178
+        }
+      },
+      "turnovers": 1.55,
+      "dd_odds": 2200
+    },
+    {
+      "name": "Victor Wembanyama",
+      "team": "SAS",
+      "opponent": "POR",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702199,
+      "util_salary": 13000,
+      "cpt_id": 42702235,
+      "cpt_salary": 19500,
+      "salary": 13000,
+      "id": 42702199,
+      "avg_ppg": 51.84,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 27.5,
+          "over": -114,
+          "under": -112
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 136,
+          "under": -181
+        },
+        "rebounds": {
+          "line": 11.5,
+          "over": -127,
+          "under": -103
+        },
+        "assists": {
+          "line": 3.5,
+          "over": 120,
+          "under": -159
+        },
+        "stls_blks": {
+          "line": 3.5,
+          "over": 107,
+          "under": -142
+        }
+      },
+      "turnovers": 3.77,
+      "dd_odds": -331
+    }
+  ],
+  "pp_lines": [
+    {
+      "player": "Victor Wembanyama",
+      "stat": "Fantasy Score",
+      "line": 57
+    },
+    {
+      "player": "Deni Avdija",
+      "stat": "Fantasy Score",
+      "line": 42.5
+    },
+    {
+      "player": "Stephon Castle",
+      "stat": "Fantasy Score",
+      "line": 37.5
+    },
+    {
+      "player": "De'Aaron Fox",
+      "stat": "Fantasy Score",
+      "line": 32.5
+    },
+    {
+      "player": "Jrue Holiday",
+      "stat": "Fantasy Score",
+      "line": 29.5
+    },
+    {
+      "player": "Donovan Clingan",
+      "stat": "Fantasy Score",
+      "line": 28
+    },
+    {
+      "player": "Devin Vassell",
+      "stat": "Fantasy Score",
+      "line": 24.5
+    },
+    {
+      "player": "Toumani Camara",
+      "stat": "Fantasy Score",
+      "line": 23.5
+    },
+    {
+      "player": "Scoot Henderson",
+      "stat": "Fantasy Score",
+      "line": 19.5
+    },
+    {
+      "player": "Dylan Harper",
+      "stat": "Fantasy Score",
+      "line": 19.5
+    },
+    {
+      "player": "Julian Champagnie",
+      "stat": "Fantasy Score",
+      "line": 19.5
+    }
+  ],
+  "last_updated": "4/21/2026-4:30 PM EST"
+}
