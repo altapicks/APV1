@@ -3840,13 +3840,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const stud = overownedStars.sort((a, b) => (a.val || 0) - (b.val || 0))[0];
     if (stud) {
       const fieldOwn = Math.round(ownership[stud.name] || 0);
-      // Match field ownership on the chalk-adjacent stud — avoids the prior
-      // overshoot where +16-22pp boost pushed stud min well above what Seth
-      // actually ran (Bane 24.5% field → Seth 30.9% vs old 48%).
+      // Stud leverage floor — scales linearly with contrarian strength:
+      //   0pp @ strength 0 (no contrarian = match field exactly)
+      //   +10pp @ strength 0.6 (base)
+      //   +16-17pp @ strength 1.0 (max)
+      // Stud is the chalk-adjacent high-projection player — we play them
+      // slightly above field to leverage their certainty while still
+      // differentiating enough to matter.
+      const studLevPP = Math.round(contrarianStrength * (10 / 0.6));
       caps[stud.name] = {
-        min: fieldOwn,
+        min: Math.min(95, fieldOwn + studLevPP),
         max: Math.min(95, fieldOwn + LEV_CAP),
-        _isBoost: true, _leverage: 0, _type: 'stud'
+        _isBoost: true, _leverage: studLevPP, _type: 'stud'
       };
     }
 
@@ -3964,6 +3969,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
     const pivotByCeil = [...pivotPool].sort((a, b) => ceilValB(b) - ceilValB(a));
     const gemPivot = pivotByCeil[0];
+    // SLOT-TARGET POOL (v3.7) — wider 6-35% simOwn band used only for
+    // slot-based exposure targeting (the "+N pool" in the ribbon). Adding
+    // slightly chalkier mid-ownership players (25-35%) lets the optimizer
+    // spend remaining salary on more-ceiling plays when the budget allows.
+    // Display pick unchanged — still top ceilVal in 6-25%.
+    const pivotSlotPool = gemPool.filter(p =>
+      (!gemPrimary || p.name !== gemPrimary.name) &&
+      (ownership[p.name] || 0) >= 6 &&
+      (ownership[p.name] || 0) < 35 &&
+      (p.salary || 0) >= 1500 &&
+      (p.ceil || 0) > 0
+    );
     if (gemPivot) {
       const nextKind = (trap && gemPivot.team === trap.team && gemPivot.salary >= 3000) ? 'replacer' : 'value';
       if (!caps[gemPivot.name]) {
@@ -3984,7 +4001,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         const poolCptTarget    = Math.round(contrarianStrength * (9  / 0.6));
         // Pool names EXCLUDE the displayed pivot — the pool target is for
         // "other pool members", counted separately from the displayed floor.
-        const poolNamesExDisplayed = pivotPool
+        const poolNamesExDisplayed = pivotSlotPool
           .filter(p => p.name !== gemPivot.name)
           .map(p => p.name);
         caps[gemPivot.name] = {
@@ -4063,8 +4080,12 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
 
     sleeperCandidates.forEach((p, idx) => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
+      // Sleeper leverage floor — scales linearly with contrarian strength:
+      //   0pp @ strength 0, +10pp @ 0.6 (base), +16-17pp @ 1.0 (max).
+      // Matches the stud scaling — ensures both groups flex with the meter.
+      const slpLevPP = Math.round(contrarianStrength * (10 / 0.6));
       caps[p.name] = {
-        min: Math.min(95, fieldOwn + 15),                     // +15pp leverage floor
+        min: Math.min(95, fieldOwn + slpLevPP),
         max: 100,
         _isSleeper: true, _sleeperRank: idx + 1,
         _fieldOwn: fieldOwn,
