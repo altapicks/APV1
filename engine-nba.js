@@ -554,6 +554,9 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
   //   flexLocked:   Set<string>  — must appear in a UTIL slot of every lineup
   //   cptExcluded:  Set<string>  — may appear as UTIL but never as CPT
   //   flexExcluded: Set<string>  — may appear as CPT but never as UTIL
+  //   pivotPool:    Set<string>  — gem pivot pool (6-25% simOwn band) for slot-based exposure
+  //   pivotFlexTarget: number    — fraction of lineups that should contain ≥1 pool player in FLEX (0..1)
+  //   pivotCptTarget:  number    — fraction of lineups that should have a pool player as CPT (0..1)
   // }
   const lockedSet       = opts.locked        instanceof Set ? opts.locked        : new Set(opts.locked        || []);
   const excludedSet     = opts.excluded      instanceof Set ? opts.excluded      : new Set(opts.excluded      || []);
@@ -561,6 +564,11 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
   const flexLockedSet   = opts.flexLocked    instanceof Set ? opts.flexLocked    : new Set(opts.flexLocked    || []);
   const cptExcludedSet  = opts.cptExcluded   instanceof Set ? opts.cptExcluded   : new Set(opts.cptExcluded   || []);
   const flexExcludedSet = opts.flexExcluded  instanceof Set ? opts.flexExcluded  : new Set(opts.flexExcluded  || []);
+  const pivotPoolSet    = opts.pivotPool     instanceof Set ? opts.pivotPool     : new Set(opts.pivotPool     || []);
+  const pivotFlexFrac   = Math.max(0, Math.min(1, opts.pivotFlexTarget || 0));
+  const pivotCptFrac    = Math.max(0, Math.min(1, opts.pivotCptTarget  || 0));
+  const pivotFlexMin    = Math.round(pivotFlexFrac * nLineups);
+  const pivotCptMin     = Math.round(pivotCptFrac  * nLineups);
 
   const valid = players.filter(p =>
     p.projection > 0 &&
@@ -691,6 +699,13 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
   const counts = new Array(valid.length).fill(0);
   const cptCounts = new Array(valid.length).fill(0);
   const flexCounts = new Array(valid.length).fill(0);
+  // Pivot pool tracking — how many selected lineups contain ≥1 pool player
+  // in the specified slot. Used to enforce slot-based exposure targets
+  // instead of forcing a single named player (see pivotPool opts above).
+  let poolFlexCount = 0;
+  let poolCptCount  = 0;
+  const pivotPoolIdx = new Set();
+  valid.forEach((p, i) => { if (pivotPoolSet.has(p.name)) pivotPoolIdx.add(i); });
   const selected = [];
   const usedKeys = new Set();
 
@@ -717,6 +732,9 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
     lu.players.forEach(pid => counts[pid]++);
     cptCounts[lu.cpt]++;
     lu.utils.forEach(pid => flexCounts[pid]++);
+    // Track pivot pool exposure — at most +1 per lineup per dimension
+    if (pivotPoolIdx.has(lu.cpt)) poolCptCount++;
+    if (lu.utils.some(pid => pivotPoolIdx.has(pid))) poolFlexCount++;
   }
 
   // Phase 1: min-exposure fill (covers total, cpt, and flex mins)
@@ -726,6 +744,9 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
       if (cptCounts[i]  < caps[i].cptMin)  return true;
       if (flexCounts[i] < caps[i].flexMin) return true;
     }
+    // Pivot pool slot targets
+    if (poolFlexCount < pivotFlexMin) return true;
+    if (poolCptCount  < pivotCptMin)  return true;
     return false;
   }
   while (hasUnmetMins() && selected.length < nLineups) {
@@ -741,6 +762,17 @@ export function optimizeShowdown(players, nLineups = 150, salaryCap = 50000, min
         const fc = caps[pid];
         if (counts[pid]     < fc.min)     score += (fc.min     - counts[pid])     / nLineups;
         if (flexCounts[pid] < fc.flexMin) score += (fc.flexMin - flexCounts[pid]) / nLineups;
+      }
+      // Pivot pool slot rewards — prefer lineups that add pool-slot exposure
+      // when under target. Projection tiebreaker (below) naturally favors the
+      // highest-ceiling pool member affordable within the lineup's salary.
+      const cptInPool = pivotPoolIdx.has(lu.cpt);
+      const anyUtilInPool = lu.utils.some(pid => pivotPoolIdx.has(pid));
+      if (cptInPool && poolCptCount < pivotCptMin) {
+        score += (pivotCptMin - poolCptCount) / nLineups;
+      }
+      if (anyUtilInPool && poolFlexCount < pivotFlexMin) {
+        score += (pivotFlexMin - poolFlexCount) / nLineups;
       }
       if (score === 0) continue;
       if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && lu.proj > bestProj)) {
