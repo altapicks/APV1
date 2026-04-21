@@ -3404,7 +3404,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         p.name !== primary.name &&
         (p.simOwn || 0) >= 6 &&
         (p.simOwn || 0) < 25 &&
-        (p.salary || 0) >= 1500 &&
+        (p.salary || 0) >= 2000 &&
         (p.ceil || 0) > 0
       );
       const ceilVal = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
@@ -3451,7 +3451,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       p.name !== primary.name &&
       (p.simOwn || 0) >= 6 &&
       (p.simOwn || 0) < 25 &&
-      (p.salary || 0) >= 1500 &&
+      (p.salary || 0) >= 2000 &&
       (p.ceil || 0) > 0
     );
     const ceilValC = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
@@ -3962,52 +3962,72 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     }
 
-    // Pivot (NBA v3.3): owned-but-not-chalky leverage play, ranked by
+    // Pre-compute SECONDARY TRAP CANDIDATE (identification only — caps are
+    // applied further down in the existing block). We need the name early
+    // so Gem Pivot can exclude it from both its display and slot pools.
+    // Mirrors the later secondary trap logic exactly, just without side
+    // effects.
+    let secondaryTrapCandidateName = null;
+    if (trap) {
+      const preSet = new Set([trap.name, stud?.name, gemPrimary?.name].filter(Boolean));
+      const prePool = withSal.filter(p =>
+        !preSet.has(p.name) &&
+        (ownership[p.name] || 0) >= 25 &&
+        (p.val || 0) > 0
+      );
+      const preRanked = [...prePool].sort((a, b) =>
+        ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
+      );
+      secondaryTrapCandidateName = preRanked[0]?.name || null;
+    }
+
+    // Pivot (NBA v3.13): owned-but-not-chalky leverage play, ranked by
     //   ceiling-value (ceil per $1K). Mirrors NBADKTab's pivot rule so
     //   DK tab display and Builder caps target the same player.
-    //   • not a trap or stud (already excluded via gemPool)
-    //   • not the primary gem
+    //   • not a trap (primary OR secondary) or stud or primary gem
     //   • 6% ≤ simOwn < 25% (on the field's radar but not chalk)
-    //   • salary ≥ $1500 (nominal floor)
+    //   • salary ≥ $2000 (raised from $1500 — excludes deep punts)
     //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
     const pivotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
+      p.name !== secondaryTrapCandidateName &&
       (ownership[p.name] || 0) >= 6 &&
       (ownership[p.name] || 0) < 25 &&
-      (p.salary || 0) >= 1500 &&
+      (p.salary || 0) >= 2000 &&
       (p.ceil || 0) > 0
     );
     const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
     const pivotByCeil = [...pivotPool].sort((a, b) => ceilValB(b) - ceilValB(a));
     const gemPivot = pivotByCeil[0];
-    // SLOT-TARGET POOL (v3.7) — wider 6-35% simOwn band used only for
-    // slot-based exposure targeting (the "+N pool" in the ribbon). Adding
-    // slightly chalkier mid-ownership players (25-35%) lets the optimizer
-    // spend remaining salary on more-ceiling plays when the budget allows.
-    // Display pick unchanged — still top ceilVal in 6-25%.
+    // SLOT-TARGET POOL (v3.7/v3.13) — wider 6-35% simOwn band used only for
+    // slot-based exposure targeting (the "+N pool" in the ribbon). Same
+    // exclusions as display pool (traps + primary gem) + $2K salary floor.
     const pivotSlotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
+      p.name !== secondaryTrapCandidateName &&
       (ownership[p.name] || 0) >= 6 &&
       (ownership[p.name] || 0) < 35 &&
-      (p.salary || 0) >= 1500 &&
+      (p.salary || 0) >= 2000 &&
       (p.ceil || 0) > 0
     );
     if (gemPivot) {
       const nextKind = (trap && gemPivot.team === trap.team && gemPivot.salary >= 3000) ? 'replacer' : 'value';
       if (!caps[gemPivot.name]) {
         const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
-        // GEM PIVOT (v3.5) — split exposure between displayed pivot and rest of pool:
-        //   Displayed pivot (top ceilVal — e.g. Jaylin Williams):
-        //     individual floor flexMin 15% / cptMin 1% (guarantees visibility)
-        //   Rest of pool (all 6-25% simOwn members, minus displayed):
-        //     pool target 35% FLEX / 9% CPT (slot-based exposure — any of them)
-        //   Combined total: 50% pool-FLEX, 10% pool-CPT (matches old 40/10 CPT
-        //     with a small bump on FLEX for extra leverage).
+        // GEM PIVOT DISPLAY FLOOR (v3.13) — split exposure between
+        // displayed pivot and rest of pool:
+        //   Displayed pivot (top ceilVal in 6-25% band):
+        //     flexMin = fieldOwn + 10pp leverage @ base 0.6 (capped at 95)
+        //     cptMin  = 2% @ base 0.6 (small captain floor for visibility)
+        //   Rest of pool (6-35% slot pool, minus displayed):
+        //     35% FLEX / 9% CPT slot target (unchanged)
         // Scaling: proportional from 0 → base 0.6 → max 1.0
-        //   displayed: 15/1 @ 0.6 → 25/2 @ 1.0
-        //   pool:      35/9 @ 0.6 → 58/15 @ 1.0
-        const displayedFlexMin = Math.round(contrarianStrength * (15 / 0.6));
-        const displayedCptMin  = Math.round(contrarianStrength * (1  / 0.6));
+        //   displayed flex lev:  0pp @ 0, +10pp @ 0.6, +17pp @ 1.0
+        //   displayed cpt:       0%  @ 0, 2% @ 0.6, 3% @ 1.0
+        //   pool:                0/0 @ 0, 35/9 @ 0.6, 58/15 @ 1.0
+        const displayedFlexLevPP = Math.round(contrarianStrength * (10 / 0.6));
+        const displayedFlexMin = Math.min(95, fieldOwn + displayedFlexLevPP);
+        const displayedCptMin  = Math.round(contrarianStrength * (2  / 0.6));
         const poolFlexTarget   = Math.round(contrarianStrength * (35 / 0.6));
         const poolCptTarget    = Math.round(contrarianStrength * (9  / 0.6));
         // Pool names EXCLUDE the displayed pivot — the pool target is for
@@ -4026,6 +4046,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           _pivotCptTarget:  poolCptTarget,
           _displayedFlexMin: displayedFlexMin,
           _displayedCptMin:  displayedCptMin,
+          _displayedFlexLev: displayedFlexLevPP,
         };
       }
     }
