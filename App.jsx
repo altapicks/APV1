@@ -2199,15 +2199,19 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         };
       }
 
-      // #2: Mid-Tier Pivot — stack +10pp × strengthFactor on existing min
+      // #2: Mid-Tier Pivot — min = simOwn + (10pp × strengthFactor).
+      // Fix from v3.21 initial: previously stacked on currMin (which was
+      // usually Global Floor's 5%), producing min 15 instead of 46.
+      // New logic: baseline is simOwn itself. If the player already has a
+      // higher min from another signal (PP Boost, etc.), we keep the higher.
       if (midTierPivot) {
         const fieldOwn = Math.round(ownership[midTierPivot.name] || 0);
         const boostPP = Math.round(10 * strengthFactor);
         const existing = caps[midTierPivot.name] || {};
         const currMin = existing.min || 0;
         const currMax = existing.max !== undefined ? existing.max : 100;
-        // Pivot boost stacks on existing min (including PP Boost). Clip to max.
-        const boostedMin = Math.min(95, currMin + boostPP);
+        const simOwnBoostedMin = Math.min(95, fieldOwn + boostPP);
+        const boostedMin = Math.max(currMin, simOwnBoostedMin);
         const newMin = Math.min(boostedMin, currMax);  // cap-wins
         caps[midTierPivot.name] = {
           ...existing,
@@ -2217,6 +2221,36 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
           _midTierPivotAddedMin: newMin - currMin,
         };
       }
+    }
+
+    // (6) STRICT LEVERAGE CAP (v3.21) — tennis 10+ match slates only.
+    // Any player WITHOUT an active signal gets capped at simOwn + 10pp max.
+    // Prevents the cheap high-val tier (Montgomery, Begu, etc.) from running
+    // to 50%+ exposure just because they fit salary geometry. Signal players
+    // are excluded — their caps come from their own rule.
+    //
+    // "Signal" = any _is* flag set. Checked dynamically so future signals
+    // are auto-included without code changes.
+    if (mc >= 10) {
+      withSal.forEach(p => {
+        const fieldOwn = Math.round(ownership[p.name] || 0);
+        const existing = caps[p.name] || {};
+        // Skip if player has any active signal (trap, gem, pivot, pivot-opp,
+        // pp-boost, mid-tier-fade, mid-tier-pivot, etc.)
+        const hasSignal = existing._isTrap || existing._isGem || existing._isPivotOpponent
+                        || existing._isPpBoost || existing._isMidTierFade || existing._isMidTierPivot;
+        if (hasSignal) return;
+        const strictMax = Math.min(95, fieldOwn + 10);
+        const currMax = existing.max !== undefined ? existing.max : 100;
+        const newMax = Math.min(currMax, strictMax);
+        // Preserve existing min (Global Floor's 5%)
+        caps[p.name] = {
+          ...existing,
+          max: newMax,
+          _isStrictCap: true,
+          _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+        };
+      });
     }
 
     return caps;
