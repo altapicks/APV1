@@ -3344,12 +3344,12 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
   // ═══════════════════════════════════════════════════════════════════════
   const gem = useMemo(() => {
     const trapP = pw.find(p => p.name === trap);
-    if (!trapP) return { primary: null, pivot: null };
+    if (!trapP) return { primary: null, pivots: [] };
     // Exclude only Primary Trap from gem consideration. Secondary Trap is
     // now computed AFTER gems (continues down the Primary Trap list past
     // whoever is already selected as Primary/Gem Primary/Gem Pivot).
     const active = pw.filter(p => p.projectable && !p.isOut && p.name !== trap);
-    if (active.length === 0) return { primary: null, pivot: null };
+    if (active.length === 0) return { primary: null, pivots: [] };
 
     // Default to showdown — when classic slates are built this flips based
     // on props / slate metadata.
@@ -3386,7 +3386,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     if (isShowdown) {
       const pool = active.filter(p => (p.val || 0) > 0 && p.salary > 6000);
       const byVal = [...pool].sort((a, b) => (b.val || 0) - (a.val || 0));
-      if (byVal.length === 0) return { primary: null, pivot: null };
+      if (byVal.length === 0) return { primary: null, pivots: [] };
       const isReplacerLabel = (p) => p.team === trapP.team && p.salary >= 3000;
       const primary = { name: byVal[0].name, kind: isReplacerLabel(byVal[0]) ? 'replacer' : 'value' };
 
@@ -3403,15 +3403,17 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       const pivotPool = active.filter(p =>
         p.name !== primary.name &&
         (p.simOwn || 0) >= 6 &&
-        (p.simOwn || 0) < 33 &&
+        (p.simOwn || 0) < 34 &&
         (p.salary || 0) >= 2700 &&
         (p.ceil || 0) > 0
       );
       const ceilVal = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
       const pivotByCeil = [...pivotPool].sort((a, b) => ceilVal(b) - ceilVal(a));
-      const pivotP = pivotByCeil[0];
-      const pivot = pivotP ? { name: pivotP.name, kind: isReplacerLabel(pivotP) ? 'replacer' : 'value' } : null;
-      return { primary, pivot };
+      const pivots = pivotByCeil.slice(0, 2).map(pivotP => ({
+        name: pivotP.name,
+        kind: isReplacerLabel(pivotP) ? 'replacer' : 'value'
+      }));
+      return { primary, pivots };
     }
 
     const scored = active.map(p => {
@@ -3438,7 +3440,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
 
     const byOverall = [...scored].sort((a, b) => b.overall - a.overall);
     const top = byOverall[0];
-    if (!top || top.overall <= 0) return { primary: null, pivot: null };
+    if (!top || top.overall <= 0) return { primary: null, pivots: [] };
     const primaryKind = top.replacerScore > top.valueScore ? 'replacer' : 'value';
     const primary = { name: top.name, kind: primaryKind, score: top.overall };
 
@@ -3446,40 +3448,40 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     //   ceiling-value (ceil per $1K). Same rule as showdown path above.
     //   Classic uses `scored` array to recover the replacer/value kind
     //   for labeling consistency.
-    let pivot = null;
     const pivotPool = active.filter(p =>
       p.name !== primary.name &&
       (p.simOwn || 0) >= 6 &&
-      (p.simOwn || 0) < 33 &&
+      (p.simOwn || 0) < 34 &&
       (p.salary || 0) >= 2700 &&
       (p.ceil || 0) > 0
     );
     const ceilValC = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
     const pivotByCeil = [...pivotPool].sort((a, b) => ceilValC(b) - ceilValC(a));
-    const pivotP = pivotByCeil[0];
-    if (pivotP) {
+    const pivots = pivotByCeil.slice(0, 2).map(pivotP => {
       const pivotScored = scored.find(s => s.name === pivotP.name);
       const nextKind = pivotScored && pivotScored.replacerScore > pivotScored.valueScore ? 'replacer' : 'value';
-      pivot = { name: pivotP.name, kind: nextKind };
-    }
-    return { primary, pivot };
+      return { name: pivotP.name, kind: nextKind };
+    });
+    return { primary, pivots };
   }, [pw, trap]);
   const gemName = gem.primary?.name || '';
   const gemKind = gem.primary?.kind || '';
-  const pivotName = gem.pivot?.name || '';
-  const pivotKind = gem.pivot?.kind || '';
+  const pivotName = gem.pivots?.[0]?.name || '';
+  const pivotKind = gem.pivots?.[0]?.kind || '';
+  const pivot2Name = gem.pivots?.[1]?.name || '';
+  const pivot2Kind = gem.pivots?.[1]?.kind || '';
 
   // Secondary Trap — computed AFTER gem so we can skip players already
   // selected as Gem Primary / Gem Pivot (and the Primary Trap itself).
-  // v3.3: simOwn ≥ 25% + max(simOwn × val). No salary gate — chalk at
+  // v3.15: simOwn ≥ 30% + max(simOwn × val). No salary gate — chalk at
   // any price can surface (e.g., sub-$6K mid-salary punts the field is
   // piling onto also qualify).
   const secondaryTrap = useMemo(() => {
-    const excluded = new Set([trap, gem.primary?.name, gem.pivot?.name].filter(Boolean));
+    const excluded = new Set([trap, gem.primary?.name, gem.pivots?.[0]?.name, gem.pivots?.[1]?.name].filter(Boolean));
     const pool = pw.filter(p =>
       !p.isOut && p.projectable &&
       !excluded.has(p.name) &&
-      (p.simOwn || 0) >= 25 &&
+      (p.simOwn || 0) >= 30 &&
       (p.val || 0) > 0
     );
     if (pool.length === 0) return '';
@@ -3505,6 +3507,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         {pivotName && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
             or pivot: <span style={{ color: 'var(--text-muted)' }}>{pivotName}</span>
+            {pivot2Name && <> / <span style={{ color: 'var(--text-muted)' }}>{pivot2Name}</span></>}
           </div>
         )}
       </div>
@@ -3514,7 +3517,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         <div className="metric-sub">Who the field needs most</div>
         {secondaryTrap && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
-            or: <span style={{ color: 'var(--text-muted)' }}>{secondaryTrap}</span> <span style={{ fontSize: 10 }}>(sim ≥25%, sal &gt;$6K)</span>
+            or: <span style={{ color: 'var(--text-muted)' }}>{secondaryTrap}</span> <span style={{ fontSize: 10 }}>(sim ≥30%)</span>
           </div>
         )}
       </div>
@@ -3602,7 +3605,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), ic = t3c.includes(p.name);
       const ig = p.name === gemName;
-      const ip = p.name === pivotName && pivotName !== '';
+      const ip = (p.name === pivotName && pivotName !== '') || (p.name === pivot2Name && pivot2Name !== '');
       const it = p.name === trap;
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
@@ -3972,7 +3975,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const preSet = new Set([trap.name, stud?.name, gemPrimary?.name].filter(Boolean));
       const prePool = withSal.filter(p =>
         !preSet.has(p.name) &&
-        (ownership[p.name] || 0) >= 25 &&
+        (ownership[p.name] || 0) >= 30 &&
         (p.val || 0) > 0
       );
       const preRanked = [...prePool].sort((a, b) =>
@@ -3981,30 +3984,29 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       secondaryTrapCandidateName = preRanked[0]?.name || null;
     }
 
-    // Pivot (NBA v3.14): owned-but-not-chalky leverage play, ranked by
+    // Pivot (NBA v3.15): owned-but-not-chalky leverage plays, ranked by
     //   ceiling-value (ceil per $1K). Mirrors NBADKTab's pivot rule so
-    //   DK tab display and Builder caps target the same player.
+    //   DK tab display and Builder caps target the same players.
     //   • not a trap (primary OR secondary) or stud or primary gem
-    //   • 6% ≤ simOwn < 33% (expanded upper bound to catch chalkier pivots
-    //     like Robert Williams that the field is on but aren't the single
-    //     biggest trap target)
-    //   • salary ≥ $2,700 (raised floor — excludes punts like Kris Murray
-    //     that dominate ceilVal through salary-denominator gaming)
+    //   • 6% ≤ simOwn < 34% (expanded upper bound — catches chalkier
+    //     pivots the field is on but aren't the single biggest trap)
+    //   • salary ≥ $2,700
     //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
+    //   • TOP 2 picked — both get the same individual floor
     const pivotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
       p.name !== secondaryTrapCandidateName &&
       (ownership[p.name] || 0) >= 6 &&
-      (ownership[p.name] || 0) < 33 &&
+      (ownership[p.name] || 0) < 34 &&
       (p.salary || 0) >= 2700 &&
       (p.ceil || 0) > 0
     );
     const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
     const pivotByCeil = [...pivotPool].sort((a, b) => ceilValB(b) - ceilValB(a));
-    const gemPivot = pivotByCeil[0];
-    // SLOT-TARGET POOL (v3.7/v3.14) — wider 6-35% simOwn band used only for
+    const gemPivots = pivotByCeil.slice(0, 2);
+    // SLOT-TARGET POOL (v3.7/v3.15) — wider 6-35% simOwn band used only for
     // slot-based exposure targeting (the "+N pool" in the ribbon). Same
-    // exclusions as display pool (traps + primary gem) + $2,700 salary floor.
+    // exclusions + $2,700 salary floor.
     const pivotSlotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
       p.name !== secondaryTrapCandidateName &&
@@ -4013,45 +4015,44 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       (p.salary || 0) >= 2700 &&
       (p.ceil || 0) > 0
     );
-    if (gemPivot) {
-      const nextKind = (trap && gemPivot.team === trap.team && gemPivot.salary >= 3000) ? 'replacer' : 'value';
-      if (!caps[gemPivot.name]) {
-        const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
-        // GEM PIVOT DISPLAY FLOOR (v3.13) — split exposure between
-        // displayed pivot and rest of pool:
-        //   Displayed pivot (top ceilVal in 6-25% band):
-        //     flexMin = fieldOwn + 10pp leverage @ base 0.6 (capped at 95)
-        //     cptMin  = 2% @ base 0.6 (small captain floor for visibility)
-        //   Rest of pool (6-35% slot pool, minus displayed):
-        //     35% FLEX / 9% CPT slot target (unchanged)
-        // Scaling: proportional from 0 → base 0.6 → max 1.0
-        //   displayed flex lev:  0pp @ 0, +10pp @ 0.6, +17pp @ 1.0
-        //   displayed cpt:       0%  @ 0, 2% @ 0.6, 3% @ 1.0
-        //   pool:                0/0 @ 0, 35/9 @ 0.6, 58/15 @ 1.0
+    if (gemPivots.length > 0) {
+      // GEM PIVOT DISPLAY FLOOR (v3.15) — top-2 pivots each get the same
+      // individual caps:
+      //   flexMin = fieldOwn + 10pp leverage @ base 0.6 (capped at 95)
+      //   cptMin  = 2% @ base 0.6
+      // Pool target (35% FLEX / 9% CPT at base, unchanged) lives on the
+      // FIRST pivot entry; pool names exclude BOTH displayed pivots.
+      const displayedNames = new Set(gemPivots.map(p => p.name));
+      const poolNamesExDisplayed = pivotSlotPool
+        .filter(p => !displayedNames.has(p.name))
+        .map(p => p.name);
+      const poolFlexTarget = Math.round(contrarianStrength * (35 / 0.6));
+      const poolCptTarget  = Math.round(contrarianStrength * (9  / 0.6));
+      gemPivots.forEach((gp, idx) => {
+        if (caps[gp.name]) return;
+        const fieldOwn = Math.round(ownership[gp.name] || 0);
+        const nextKind = (trap && gp.team === trap.team && gp.salary >= 3000) ? 'replacer' : 'value';
         const displayedFlexLevPP = Math.round(contrarianStrength * (10 / 0.6));
         const displayedFlexMin = Math.min(95, fieldOwn + displayedFlexLevPP);
         const displayedCptMin  = Math.round(contrarianStrength * (2  / 0.6));
-        const poolFlexTarget   = Math.round(contrarianStrength * (35 / 0.6));
-        const poolCptTarget    = Math.round(contrarianStrength * (9  / 0.6));
-        // Pool names EXCLUDE the displayed pivot — the pool target is for
-        // "other pool members", counted separately from the displayed floor.
-        const poolNamesExDisplayed = pivotSlotPool
-          .filter(p => p.name !== gemPivot.name)
-          .map(p => p.name);
-        caps[gemPivot.name] = {
+        const isFirst = idx === 0;
+        caps[gp.name] = {
           min: 0, max: 100,
           flexMin: displayedFlexMin,
           cptMin:  displayedCptMin,
-          _isGem: true, _kind: 'pivot', _gemType: nextKind,
+          _isGem: true, _kind: 'pivot', _gemType: nextKind, _pivotRank: idx + 1,
           _fieldOwn: fieldOwn,
-          _pivotPoolNames: poolNamesExDisplayed,
-          _pivotFlexTarget: poolFlexTarget,
-          _pivotCptTarget:  poolCptTarget,
           _displayedFlexMin: displayedFlexMin,
           _displayedCptMin:  displayedCptMin,
           _displayedFlexLev: displayedFlexLevPP,
+          // Pool metadata only on the first entry — optimizer picks it via find()
+          ...(isFirst ? {
+            _pivotPoolNames: poolNamesExDisplayed,
+            _pivotFlexTarget: poolFlexTarget,
+            _pivotCptTarget:  poolCptTarget,
+          } : {}),
         };
-      }
+      });
     }
 
     // SECONDARY TRAP (v3.8) — computed after gems so it can skip anyone
@@ -4077,7 +4078,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const stExcluded = new Set([trap.name, stud?.name, gemPrimaryName, gemPivotName].filter(Boolean));
       const stPool = withSal.filter(p =>
         !stExcluded.has(p.name) &&
-        (ownership[p.name] || 0) >= 25 &&
+        (ownership[p.name] || 0) >= 30 &&
         (p.val || 0) > 0
       );
       const stRanked = [...stPool].sort((a, b) =>
@@ -4508,7 +4509,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const secondaryTrapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isSecondaryTrap);
       const studEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost && c._type === 'stud');
       const gemPrimaryEntry = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'primary');
-      const gemPivotEntry   = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'pivot');
+      const gemPivotEntries = Object.entries(contrarianCaps)
+        .filter(([, c]) => c._isGem && c._kind === 'pivot')
+        .sort((a, b) => (a[1]._pivotRank || 0) - (b[1]._pivotRank || 0));
       const sleeperEntries = Object.entries(contrarianCaps)
         .filter(([, c]) => c._isSleeper)
         .sort((a, b) => (a[1]._sleeperRank || 0) - (b[1]._sleeperRank || 0));
@@ -4530,7 +4533,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           ))}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
           {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
-          {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedCptMin}%</span> CPT · +{gemPivotEntry[1]._pivotPoolNames?.length || 0} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotCptTarget}%</span></span>}
+          {gemPivotEntries.map(([name, c], idx) => (
+            <span key={name}><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot{gemPivotEntries.length > 1 ? ` ${idx + 1}` : ''} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._displayedCptMin}%</span> CPT{c._pivotPoolNames && <> · +{c._pivotPoolNames.length} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._pivotCptTarget}%</span></>}</span>
+          ))}
           {sleeperEntries.map(([name, c]) => (
             <span key={name}><Icon name="sleeper" size={12}/> Sleeper <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
           ))}
