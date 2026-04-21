@@ -186,6 +186,11 @@ function useSlateData(sport, slateDate) {
   const [error, setError] = useState(null);
   const hasLoadedRef = useRef(false);
   useEffect(() => {
+    // Cancel token — if sport/slateDate changes mid-fetch, the cleanup
+    // below flips `cancelled` to true and the in-flight callback no-ops.
+    // Guards against stale fetches clobbering current state when the user
+    // switches sports faster than a fetch can resolve.
+    let cancelled = false;
     setData(null); setError(null);
     const startTime = Date.now();
     // First load: full splash (5000ms). Tennis/NBA switch: 2000ms so the
@@ -200,7 +205,7 @@ function useSlateData(sport, slateDate) {
     const finalize = (cb) => {
       const elapsed = Date.now() - startTime;
       const delay = Math.max(0, MIN_LOAD_MS - elapsed);
-      setTimeout(cb, delay);
+      setTimeout(() => { if (!cancelled) cb(); }, delay);
     };
     // Live = current slate.json (root). Archive = /slates/{sport}/{date}.json
     const liveUrl = sport === 'mma' ? './slate-mma.json'
@@ -211,6 +216,7 @@ function useSlateData(sport, slateDate) {
       .then(r => { if (!r.ok) throw new Error('No slate'); return r.json(); })
       .then(d => finalize(() => { hasLoadedRef.current = true; setData(d); }))
       .catch(e => finalize(() => setError(e.message)));
+    return () => { cancelled = true; };
   }, [sport, slateDate]);
   return { data, error };
 }
@@ -1013,14 +1019,22 @@ export default function App() {
   }, []);
   if (showSignIn) return <SignInPrompt />;
 
-  const [sport, setSport] = useState('tennis');
+  const [sport, setSportRaw] = useState('tennis');
   const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD
+  // Atomic sport switch — resets slateDate to 'live' in the SAME render as
+  // the sport change. Without this, useSlateData would fire one extra fetch
+  // with the old archive date against the new sport (e.g., NBA 2025-11-15 →
+  // /slates/tennis/2025-11-15.json) which fails and leaves the error state
+  // stuck even after the live fetch resolves. React 18 batches both setters
+  // so the first render already has slateDate='live'.
+  const setSport = useCallback((nextSport) => {
+    setSportRaw(nextSport);
+    setSlateDate('live');
+  }, []);
   const { data, error } = useSlateData(sport, slateDate);
   const manifestSlates = useSlateManifest(sport);
   const [tab, setTab] = useState('dk');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  // Reset to live when sport changes so user isn't stuck on a date that may not exist in new sport
-  useEffect(() => { setSlateDate('live'); }, [sport]);
   // Reset to DK tab when sport changes — non-DK tabs can show confusing
   // error/empty states when the new sport's slate isn't loaded yet (or
   // doesn't exist for today). DK tab handles the empty state cleanly.
