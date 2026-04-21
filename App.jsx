@@ -4091,19 +4091,22 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       }
     }
 
-    // MID-SALARY CPT PIVOT FLOOR (v3.9) — when the secondary trap is a
-    // premium-salary chalk (> $10K), the CPT slot is heavily contested by
+    // MID-SALARY CPT+FLEX PIVOT FLOOR (v3.12) — when the secondary trap is
+    // a premium-salary chalk (> $10K), the CPT slot is heavily contested by
     // expensive stars. This rule forces the top-2 value plays in the
-    // $4,000-$6,800 mid-salary band to appear as CPT in at least 12% of
-    // lineups each (at base strength 0.6 — scales linearly).
-    // Rationale: creates balanced CPT diversification across mid-salary
-    // pivots when premium chalk dominates the captain slot landscape.
+    // $4,000-$6,800 mid-salary band to appear as BOTH:
+    //   • CPT in at least 12% of lineups (at base 0.6)
+    //   • FLEX in at least 10% of lineups (at base 0.6)
+    // Rationale: creates balanced mid-salary diversification at both
+    // the captain AND utility slots when premium chalk dominates.
     //   • Salary band: $4,000 ≤ sal ≤ $6,800 (true mid-range CPT value)
     //   • Ranked by val (proj / $K)
-    //   • cptMin: 12pp @ 0.6 → 20pp @ 1.0, 0pp when contrarian off
+    //   • cptMin:  12pp @ 0.6 → 20pp @ 1.0, 0pp when contrarian off
+    //   • flexMin: 10pp @ 0.6 → 17pp @ 1.0, 0pp when contrarian off
     //   • Only applies when secondary trap exists AND secondary sal > $10K
     if (secondaryTrap && (secondaryTrap.salary || 0) > 10000) {
-      const cptPivotMinPct = Math.round(contrarianStrength * (12 / 0.6));
+      const cptPivotMinPct  = Math.round(contrarianStrength * (12 / 0.6));
+      const flexPivotMinPct = Math.round(contrarianStrength * (10 / 0.6));
       const midSalValuePool = withSal
         .filter(p =>
           !caps[p.name] &&
@@ -4118,6 +4121,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         caps[p.name] = {
           min: 0, max: 100,
           cptMin: cptPivotMinPct,
+          flexMin: flexPivotMinPct,
           _isMidSalCptPivot: true, _midSalCptPivotRank: idx + 1,
           _fieldOwn: fieldOwn,
         };
@@ -4498,7 +4502,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
             : <>max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></>
           }</span>}
           {midSalCptPivotEntries.map(([name, c]) => (
-            <span key={name}><Icon name="trophy" size={12} color="var(--text-dim)"/> Mid-sal CPT pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · cptMin <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.cptMin}%</span></span>
+            <span key={name}><Icon name="trophy" size={12} color="var(--text-dim)"/> Mid-sal pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · CPT <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.cptMin}%</span> / FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.flexMin}%</span></span>
           ))}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
           {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
