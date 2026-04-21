@@ -2448,7 +2448,94 @@ function TrackRecordTab({ sport }) {
 
 function LeverageTab({ players: rp }) {
   const [cd, setCd] = useState(null); const [ul, setUl] = useState(null); const [err, setErr] = useState('');
-  const handleContest = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = evt => { try { const lines = evt.target.result.split('\n'); const own = {}; let ec = 0; for (const line of lines) { if (line.includes(',') && rp.some(p => line.includes(p.name))) { ec++; for (const p of rp) { if (line.includes(p.name)) own[p.name] = (own[p.name] || 0) + 1; } } } if (ec > 0) { const op = {}; for (const [n, c] of Object.entries(own)) op[n] = Math.round(c / ec * 1000) / 10; setCd(op); setErr(''); } else setErr('No player data found in CSV'); } catch (e) { setErr(e.message); } }; r.readAsText(f); };
+  // Contest CSV parser — two paths:
+  //
+  //   Path 1 (preferred): DK standard contest export format. Columns 8-10
+  //     contain Player / Roster Position / %Drafted. Each player appears
+  //     twice on showdown (once CPT, once UTIL); we sum the two for total
+  //     ownership. Works for all sports (tennis, MMA, NBA — any DK export
+  //     that includes the player breakdown section).
+  //
+  //   Path 2 (fallback): legacy substring-count on lineup lines. Kept for
+  //     backwards compat with older / non-standard CSVs that don't have
+  //     the %Drafted breakdown section.
+  //
+  // The file has a BOM character and \r\n line endings in DK's export, so
+  // we normalize both before parsing.
+  const handleContest = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = evt => {
+      try {
+        const raw = evt.target.result.replace(/^\uFEFF/, '');
+        const lines = raw.split(/\r?\n/);
+        // Minimal RFC4180 CSV line parser — handles quoted fields / commas in quotes
+        const parseCsvLine = (line) => {
+          const cols = [];
+          let cur = '', inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') {
+              if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+              else inQuotes = !inQuotes;
+            } else if (c === ',' && !inQuotes) {
+              cols.push(cur); cur = '';
+            } else {
+              cur += c;
+            }
+          }
+          cols.push(cur);
+          return cols;
+        };
+        // ─── PATH 1: DK %Drafted column (preferred) ────────────────────
+        const own = {};
+        let parsedPlayerRows = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line || !line.includes(',')) continue;
+          const cols = parseCsvLine(line);
+          if (cols.length < 10) continue;
+          const playerName = (cols[7] || '').trim();
+          const pctStr = (cols[9] || '').trim();
+          if (!playerName || !pctStr) continue;
+          const pct = parseFloat(pctStr.replace('%', ''));
+          if (!Number.isFinite(pct)) continue;
+          // Sum CPT% + UTIL% for total ownership (player can't be both
+          // in the same lineup, so slot%'s are additive).
+          own[playerName] = Math.round(((own[playerName] || 0) + pct) * 100) / 100;
+          parsedPlayerRows++;
+        }
+        if (parsedPlayerRows > 0) {
+          setCd(own);
+          setErr('');
+          return;
+        }
+        // ─── PATH 2: substring count fallback ──────────────────────────
+        const ownFallback = {};
+        let ec = 0;
+        for (const line of lines) {
+          if (line.includes(',') && rp.some(p => line.includes(p.name))) {
+            ec++;
+            for (const p of rp) {
+              if (line.includes(p.name)) ownFallback[p.name] = (ownFallback[p.name] || 0) + 1;
+            }
+          }
+        }
+        if (ec > 0) {
+          const op = {};
+          for (const [n, c] of Object.entries(ownFallback)) op[n] = Math.round(c / ec * 1000) / 10;
+          setCd(op);
+          setErr('');
+        } else {
+          setErr('No player data found in CSV');
+        }
+      } catch (e) {
+        setErr(e.message);
+      }
+    };
+    r.readAsText(f);
+  };
   const handleUser = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = evt => { try { const lines = evt.target.result.split('\n'); const cnt = {}; let lc = 0; for (const line of lines) { if (!line.trim() || line.startsWith('P,') || line.startsWith('Rank')) continue; const hasP = rp.some(p => line.includes(p.name) || line.includes(String(p.id))); if (hasP) { lc++; for (const p of rp) { if (line.includes(p.name) || line.includes(String(p.id))) cnt[p.name] = (cnt[p.name] || 0) + 1; } } } if (lc > 0) { const ep = {}; for (const [n, c] of Object.entries(cnt)) ep[n] = Math.round(c / lc * 1000) / 10; setUl({ counts: ep, total: lc }); } } catch (e) { setErr(e.message); } }; r.readAsText(f); };
   const ld = useMemo(() => { if (!cd || !ul) return []; return rp.filter(p => p.salary > 0).map(p => ({ name: p.name, salary: p.salary, proj: p.proj, val: p.val, userExp: ul.counts[p.name] || 0, fieldOwn: cd[p.name] || 0, leverage: Math.round(((ul.counts[p.name] || 0) - (cd[p.name] || 0)) * 10) / 10, opponent: p.opponent })).sort((a, b) => b.leverage - a.leverage); }, [cd, ul, rp]);
   return (<>
@@ -3181,14 +3268,21 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
   // have "good value". Good-value chalk is exactly where the field converges,
   // which is precisely what we're trying to differentiate from.
   // ═══════════════════════════════════════════════════════════════════════
-  // NBA TRAP ALGORITHM v3 — "Biggest Trap" via ownership × value product.
+  // NBA TRAP ALGORITHM v3.1 — "Biggest Trap" via ownership × value product.
   //
   //     bustScore = simOwn × val
+  //     Hard filter: salary > $6,000 (primary only, not flex trap)
   //
   // Philosophy shift from v2: DK prices players for a reason. When a player
   // looks like elite value AND the field is already piled on, that's not
   // an edge — it's a tournament trap. Best-value chalk provides zero
   // leverage in a GPP; everyone has them, so you can't differentiate.
+  //
+  // $6K salary floor: a sub-$6K punt being "best-value chalk" isn't
+  // actionable as a primary fade — you can't pivot off a punt, and their
+  // projections can't carry a 1.5× CPT multiplier. Primary trap is
+  // restricted to captain-worthy salaries. The flexTrap below has no
+  // salary floor since UTIL punts absolutely matter for FLEX construction.
   //
   // Gate: simOwn ≥ 25% (must be actual chalk — a 10%-owned 7.0 val isn't
   //       a "trap," it's an edge play the field missed).
@@ -3197,7 +3291,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
   // (same product ranking) so we always return someone.
   // ═══════════════════════════════════════════════════════════════════════
   const trap = useMemo(() => {
-    const active = pw.filter(p => !p.isOut && p.projectable);
+    const active = pw.filter(p => !p.isOut && p.projectable && (p.salary || 0) > 6000);
     if (active.length === 0) return '';
     const hasOwn = active.some(p => p.simOwn > 0);
     if (!hasOwn) {
@@ -3637,8 +3731,10 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const boostFloor = Math.round(10 + contrarianStrength * 10);
     const LEV_CAP = 30;
 
-    // TRAP = "Biggest Trap" — ownership × value product (v3).
-    // Mirrors NBA DK tab v3: bustScore = simOwn × val, gate ≥25%.
+    // TRAP = "Biggest Trap" — ownership × value product (v3.1).
+    // Mirrors NBA DK tab: bustScore = simOwn × val, gate ≥25%,
+    // plus $6K salary floor on primary (punts excluded from being
+    // the primary fade target — see NBADKTab comment for rationale).
     // Philosophy: DK prices for a reason. Best-value chalk = too good to
     // be true, leverage already dead, prime contrarian fade.
     const hasOwn = withSal.some(p => (ownership[p.name] || 0) > 0);
@@ -3646,8 +3742,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     if (!hasOwn) {
       trap = byProj[0];
     } else {
-      const gated = withSal.filter(p => (ownership[p.name] || 0) >= 25);
-      const pool = gated.length > 0 ? gated : withSal;
+      const salaryPool = withSal.filter(p => (p.salary || 0) > 6000);
+      const gated = salaryPool.filter(p => (ownership[p.name] || 0) >= 25);
+      const pool = gated.length > 0 ? gated : salaryPool;
       trap = [...pool].sort((a, b) => {
         const aScore = (ownership[a.name] || 0) * (a.val || 0);
         const bScore = (ownership[b.name] || 0) * (b.val || 0);
