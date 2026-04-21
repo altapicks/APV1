@@ -3953,53 +3953,47 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       }
     }
 
-    // SLEEPER — top 2 low-owned value plays. Formula empirically tuned against
-    // Seth's 3 winning contest lineups: projected ≥ 12 DK FS + sim ownership
-    // ≤ 25% + rank by val × ceil (val-weighted ceiling). Retrohit rate
-    // 3/6 picks across 3 slates (PHX: Jaylin Williams + Ajay Mitchell;
-    // ORL: Wendell Carter Jr). Distinct from gem: sleeper is low-owned
-    // independent of trap relationship, captures plays the field is sleeping
-    // on. At base strength 0.6: 25% floor; scales linearly.
+    // SLEEPER v2 — leverage-based contrarian floor anchored on actual field
+    // ownership. Rules:
+    //   • Top 2: simOwn < 33%, ranked by ceiling (highest first), floor =
+    //     simOwn + 15pp (minimum 15-point leverage gap from the field)
+    //   • Extended pool: simOwn < 33% AND proj > 5, floor = simOwn + 3pp
+    //     (minimum 3-point leverage gap from the field)
+    // Static thresholds (no contrarian-strength scaling) — explicit leverage
+    // delta is the whole point of the formula. Top 2 has no projection floor
+    // since ceiling rank naturally excludes punts. Replaces v1's val × ceil
+    // ranking with pure ceiling, and replaces stepped-strength floors with
+    // direct field-leverage gaps.
     const sleeperCandidates = withSal.filter(p => {
-      if (caps[p.name]) return false;                   // don't double up trap/stud/gem
+      if (caps[p.name]) return false;                    // don't double up trap/stud/gem
       if (trap && p.name === trap.name) return false;
-      if ((p.proj || 0) < 12) return false;
-      if ((ownership[p.name] || 0) > 25) return false;   // "projected under 25% owned"
+      if ((ownership[p.name] || 0) >= 33) return false;  // simOwn < 33%
       return true;
-    }).sort((a, b) => {
-      const aScore = (a.val || 0) * (a.ceil || a.proj || 0);
-      const bScore = (b.val || 0) * (b.ceil || b.proj || 0);
-      return bScore - aScore;
-    }).slice(0, 2);
+    }).sort((a, b) => (b.ceil || b.proj || 0) - (a.ceil || a.proj || 0))
+      .slice(0, 2);
 
-    const sleeperMin = Math.max(3, Math.round(10 + contrarianStrength * 33));  // 30 @ 0.6, 43 @ 1.0
     sleeperCandidates.forEach((p, idx) => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
       caps[p.name] = {
-        min: sleeperMin,
+        min: Math.min(95, fieldOwn + 15),                // +15pp leverage floor
         max: 100,
         _isSleeper: true, _sleeperRank: idx + 1,
         _fieldOwn: fieldOwn,
       };
     });
 
-    // EXTENDED SLEEPER POOL — every other player passing a wider filter
-    // (proj ≥ 12 + simOwn ≤ 30) gets a small floor at fieldOwn + 5pp
-    // (scales with strength). This ensures Scoot/Kornet/Goga-type plays
-    // — ranked below top 2 on val × ceil — still show up in at least a
-    // couple of lineups so the user always has exposure to potential
-    // low-owned winners. The wider 30% sim cap accommodates sim noise
-    // (e.g., Goga Bitadze sim 26.8% but actual field 23.0%).
-    const extSleeperBoost = 5 * (contrarianStrength / 0.6);  // 5pp @ 0.6, 8.3pp @ 1.0
+    // EXTENDED SLEEPER POOL — every other player < 33% simOwn with proj > 5
+    // gets a +3pp leverage floor. This ensures every viable low-owned play
+    // (Scoot/Kornet/Goga-type pieces below the top-2 ceiling cut) shows up
+    // in some lineups for diversification.
     withSal.forEach(p => {
-      if (caps[p.name]) return;                              // already capped
+      if (caps[p.name]) return;                          // already capped
       if (trap && p.name === trap.name) return;
-      if ((p.proj || 0) < 12) return;
-      if ((ownership[p.name] || 0) > 30) return;
+      if ((p.proj || 0) <= 5) return;                    // proj > 5
+      if ((ownership[p.name] || 0) >= 33) return;        // simOwn < 33%
       const fieldOwn = Math.round(ownership[p.name] || 0);
-      const extMin = Math.min(35, Math.max(3, Math.round(fieldOwn + extSleeperBoost)));
       caps[p.name] = {
-        min: extMin,
+        min: Math.min(95, fieldOwn + 3),                 // +3pp leverage floor
         max: 100,
         _isExtSleeper: true,
         _fieldOwn: fieldOwn,
