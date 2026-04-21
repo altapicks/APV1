@@ -2187,6 +2187,44 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       });
     }
 
+    // (4c) PP FADE OPPONENT CAP (v3.22) — every tennis slate.
+    // The opponents of the top 3 PP fades are "secondary traps" by proxy:
+    // if our conviction plays hit, their opponents bust. Cap those opponents
+    // at simOwn × (1 − multiplier) where multiplier = 0.40 at base 0.6
+    // (→ 0.67 at 1.0, 0 at 0). Less aggressive than the gem pivot opponent
+    // fade (0.50) since these are indirect signals.
+    //
+    // Rule gates:
+    //   • exclude fades whose opponents already have a signal (trap/gem/
+    //     pivot/pivot-opponent/pp-boost) — protect existing caps
+    //   • apply only if the opponent exists on the slate
+    {
+      const fadeOppMultiplier = Math.min(1, contrarianStrength * (0.40 / 0.6));
+      const topPpFades = withSal
+        .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+        .filter(p => !trap || p.name !== trap.name)
+        .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+        .slice(0, 3);
+      topPpFades.forEach(fade => {
+        const opponent = withSal.find(p => p.name === fade.opponent);
+        if (!opponent) return;
+        const existing = caps[opponent.name] || {};
+        // Skip if opponent already has any active signal (protect existing cap)
+        const hasSignal = existing._isTrap || existing._isGem || existing._isPivotOpponent
+                        || existing._isPpBoost || existing._isExtPpFade;
+        if (hasSignal) return;
+        const oppFieldOwn = ownership[opponent.name] || 0;
+        const oppMax = Math.max(0, Math.round(oppFieldOwn * (1 - fadeOppMultiplier)));
+        const currMax = existing.max !== undefined ? existing.max : 100;
+        caps[opponent.name] = {
+          ...existing,
+          max: Math.min(currMax, oppMax),  // cap-wins
+          _isPpFadeOpponent: true,
+          _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(oppFieldOwn),
+        };
+      });
+    }
+
     // (5) MID-TIER FADE + PIVOT (v3.21) — big-slate structural diversity rule.
     // Only fires on slates with 10+ matches (enough variance for the gamble).
     //   Fade pool:  salary ≤ $9,900, highest simOwn
@@ -2280,7 +2318,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         // pp-boost, mid-tier-fade, mid-tier-pivot, etc.)
         const hasSignal = existing._isTrap || existing._isGem || existing._isPivotOpponent
                         || existing._isPpBoost || existing._isMidTierFade || existing._isMidTierPivot
-                        || existing._isExtPpFade;
+                        || existing._isExtPpFade || existing._isPpFadeOpponent;
         if (hasSignal) return;
         const strictMax = Math.min(95, fieldOwn + 10);
         const currMax = existing.max !== undefined ? existing.max : 100;
