@@ -2097,6 +2097,25 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         _isGem: true, _kind: 'pivot',
         _fieldOwn: fieldOwn,
       };
+
+    // PIVOT-OPPONENT FADE (v3.20) — the player opposite the gem pivot in their
+    // match is a secondary trap: if the pivot hits, their opponent busts. Cap
+    // at simOwn × (1 − multiplier) where multiplier = 0.50 at base strength
+    // 0.6 (→ 0.83 at 1.0, 0 at 0). Safe to apply unconditionally — user
+    // confirmed pivot's opponent is never already a trap or boosted gem.
+    if (gemPivot) {
+      const pivotOpponent = withSal.find(p => p.name === gemPivot.opponent);
+      if (pivotOpponent && !caps[pivotOpponent.name]) {
+        const oppFieldOwn = ownership[pivotOpponent.name] || 0;
+        const fadeMultiplier = Math.min(1, contrarianStrength * (0.50 / 0.6));
+        const oppMax = Math.max(0, Math.round(oppFieldOwn * (1 - fadeMultiplier)));
+        caps[pivotOpponent.name] = {
+          min: 0, max: oppMax,
+          _isPivotOpponent: true,
+          _fieldOwn: Math.round(oppFieldOwn),
+        };
+      }
+    }
     }
 
     // (5) + (6) GLOBAL FLOOR + LEVERAGE CAP — everyone else
@@ -2276,12 +2295,14 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isTrap)   return { label: 'Trap',    icon: 'bomb',   color: 'var(--red)' };
         if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
         if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
+        if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
         return null;
       };
       const describeChange = (c) => {
         if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isPivotOpponent) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
         return { sym: '', bound: 0 };
       };
@@ -3097,6 +3118,25 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         _isGem: true, _kind: 'pivot',
         _fieldOwn: fieldOwn,
       };
+
+    // PIVOT-OPPONENT FADE (v3.20) — the player opposite the gem pivot in their
+    // match is a secondary trap: if the pivot hits, their opponent busts. Cap
+    // at simOwn × (1 − multiplier) where multiplier = 0.50 at base strength
+    // 0.6 (→ 0.83 at 1.0, 0 at 0). Safe to apply unconditionally — user
+    // confirmed pivot's opponent is never already a trap or boosted gem.
+    if (gemPivot) {
+      const pivotOpponent = withSal.find(p => p.name === gemPivot.opponent);
+      if (pivotOpponent && !caps[pivotOpponent.name]) {
+        const oppFieldOwn = ownership[pivotOpponent.name] || 0;
+        const fadeMultiplier = Math.min(1, contrarianStrength * (0.50 / 0.6));
+        const oppMax = Math.max(0, Math.round(oppFieldOwn * (1 - fadeMultiplier)));
+        caps[pivotOpponent.name] = {
+          min: 0, max: oppMax,
+          _isPivotOpponent: true,
+          _fieldOwn: Math.round(oppFieldOwn),
+        };
+      }
+    }
     }
 
     // GLOBAL FLOOR + LEVERAGE CAP — everyone else
@@ -3229,12 +3269,14 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         if (c._isTrap)   return { label: 'Trap',    icon: 'bomb',   color: 'var(--red)' };
         if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
         if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
+        if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
         return null;
       };
       const describeChange = (c) => {
         if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isPivotOpponent) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
         return { sym: '', bound: 0 };
       };
