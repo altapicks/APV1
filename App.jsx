@@ -2417,7 +2417,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
         <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
         <td className="num muted">{fmt(p.simOwn, 1)}%</td>
         <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
-        {!res.isShowdown && <td style={{ textAlign: 'center' }}><button style={btnStyle(filtered)} onClick={() => toggleFilter(p.name)} title={filtered ? 'Remove filter' : `Show only lineups containing ${p.name}`}>⌕</button></td>}
+        {!res.isShowdown && <td style={{ textAlign: 'center' }}><button style={btnStyle(filtered)} onClick={() => toggleFilter(p.name)} title={filtered ? 'Remove filter' : `Show only lineups containing ${p.name}`}>F</button></td>}
       </tr>;
     })}</tbody></table></div>
 
@@ -3414,7 +3414,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
         <td><span className="exp-bar-bg"><span className="exp-bar" style={{ width: Math.min(p.pct, 100) + '%' }} /></span>{fmt(p.pct, 1)}%</td>
         <td className="num muted">{fmt(p.simOwn, 1)}%</td>
         <td className="num"><span style={{ color: p.lev > 0 ? 'var(--green)' : p.lev < 0 ? 'var(--red)' : 'var(--text-dim)', fontWeight: Math.abs(p.lev) > 10 ? 700 : 400 }}>{p.lev > 0 ? '+' : ''}{fmt(p.lev, 1)}%</span></td>
-        <td style={{ textAlign: 'center' }}><button style={btnStyle(filtered)} onClick={() => toggleFilter(p.name)} title={filtered ? 'Remove filter' : `Show only lineups containing ${p.name}`}>⌕</button></td>
+        <td style={{ textAlign: 'center' }}><button style={btnStyle(filtered)} onClick={() => toggleFilter(p.name)} title={filtered ? 'Remove filter' : `Show only lineups containing ${p.name}`}>F</button></td>
       </tr>;
     })}</tbody></table></div>
 
@@ -5413,7 +5413,7 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
               <button style={btnStyle(filteredFlex, 'var(--primary)')} onClick={() => toggleFilter(p.name, 'flex')} title={filteredFlex ? 'Remove FLEX filter' : `Filter lineups with ${p.name} in FLEX`}>F</button>
             </span>
           ) : (
-            <button style={btnStyle(filteredAny, 'var(--primary)')} onClick={() => toggleFilter(p.name, 'any')} title={filteredAny ? 'Remove filter' : `Show only lineups containing ${p.name}`}>⌕</button>
+            <button style={btnStyle(filteredAny, 'var(--primary)')} onClick={() => toggleFilter(p.name, 'any')} title={filteredAny ? 'Remove filter' : `Show only lineups containing ${p.name}`}>F</button>
           )}
         </td>
       </tr>;
