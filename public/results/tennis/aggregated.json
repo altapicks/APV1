@@ -1,17 +1,18 @@
 {
   "sport": "tennis",
   "data_status": "loaded",
-  "slates_tracked": 3,
+  "slates_tracked": 4,
   "slate_dates": [
     "2026-04-17",
     "2026-04-18",
-    "2026-04-19"
+    "2026-04-19",
+    "2026-04-21"
   ],
-  "last_updated": "2026-04-19",
-  "slate_avg_fpts": 45.48,
+  "last_updated": "2026-04-21",
+  "slate_avg_fpts": 45.22,
   "featured_insight": {
-    "headline": "Trap+Gem 3/3 strong; PP Fade now 0/9 and widening \u2014 recalibrate immediately",
-    "detail": "DK-side signals continue to perform: Rublev trap hit on 4/19 at \u221276.93 FPTS counter-edge, Fils primary gem tripled Rublev's output (+54.6 FPTS swing). Trap + main gem both 100% across 3 slates. PP Fade, on the other hand, is now 0/9 with 5 reverses and 4 pushes \u2014 all 3 picks today (Fils, Shelton, Rybakina) cratered by 3.5+ points over their lines. Engine is consistently under-projecting Fantasy Score by 4\u201311 points in favorite-side matchups. Do NOT elevate PP Fade signals until projection constants are retuned."
+    "headline": "Trap + Gem now 4/4 on WTA Madrid (Zakharova busted, Osorio hit winner); PP Fade plummets to 0/12",
+    "detail": "4/21 Madrid R1 continues the pattern: Zakharova trap 3.25 FPTS (winning lineup avg 80.31), Osorio gem 83.15 FPTS \u2014 in the winner. That's 4 straight slates where trap busted and gem hit. PP Fade, meanwhile, went 0/3 AGAIN with catastrophic reverses: Osorio (+6.0 vs line), Stearns (+5.5), Bouzas Maneiro (+10.5). Now 8/12 reverses across 4 slates \u2014 the engine systemically under-projects PP Fantasy Score when a favorite goes 2-0 in straight sets. The lines are pricing in straight-sets dominance that our set-count/game-count constants miss."
   },
   "categories": [
     {
@@ -20,9 +21,9 @@
       "description": "Chalk we flagged to fade",
       "icon": "warning",
       "type": "bust_rate",
-      "n": 3,
+      "n": 4,
       "bust_rate": 1.0,
-      "counter_edge": -50.64,
+      "counter_edge": -57.25,
       "edge_units": "DK FPTS vs winning lineup avg",
       "signal": "strong"
     },
@@ -32,9 +33,9 @@
       "description": "Low-owned pivot off the trap",
       "icon": "gem",
       "type": "hit_rate",
-      "n": 3,
+      "n": 4,
       "hit_rate": 1.0,
-      "avg_edge": 41.93,
+      "avg_edge": 51.42,
       "edge_units": "DK FPTS over paired trap",
       "signal": "strong"
     },
@@ -44,14 +45,14 @@
       "description": "Top 3 MORE plays by projection vs line",
       "icon": "flame",
       "type": "hit_rate",
-      "n": 6,
-      "hit_rate": 0.5,
-      "reverse_rate": 0.5,
-      "push_rate": 0.0,
+      "n": 7,
+      "hit_rate": 0.429,
+      "reverse_rate": 0.429,
+      "push_rate": 0.143,
       "avg_edge": 2.92,
       "edge_units": "PP FS vs line",
       "signal": "neutral",
-      "note": "Aggregate still N=6 from 4/17\u20134/18. 4/19 Edge picks were all Breaks and ungradeable due to CSV limits. Hit rate holding at 50% but sample remains small."
+      "note": "4/21 added 1 MORE pick (Osorio Breaks, push: proj 6 vs actual 5 BPW). Sample still small (N=7); PP Break Points Won mapping remains imperfect."
     },
     {
       "key": "pp_fade",
@@ -59,14 +60,14 @@
       "description": "Top 3 LESS plays by projection vs line",
       "icon": "trending-down",
       "type": "hit_rate",
-      "n": 9,
+      "n": 12,
       "hit_rate": 0.0,
-      "reverse_rate": 0.556,
-      "push_rate": 0.444,
+      "reverse_rate": 0.667,
+      "push_rate": 0.333,
       "avg_edge": 2.78,
       "edge_units": "PP FS vs line",
       "signal": "weak",
-      "note": "Engine projections sitting systematically 4-10 FPTS below PP lines. 4/19 went 0/3 with all 3 reversing by 3.5+ points. Third slate in a row with 0 hits. RECALIBRATE projections before elevating this signal. Likely culprits: set-count and game-count projection constants under-counting favorite-side domination."
+      "note": "4/21 went 0/3 AGAIN, all 3 reverses (Osorio +6.0, Stearns +5.5, Bouzas Maneiro +10.5 vs lines). Now 8/12 reverses. Pattern is clearly systemic \u2014 engine under-projects PP FS for favorite-side players. DO NOT use PP Fade signal until projection constants are retuned."
     },
     {
       "key": "top_straight_sets",
@@ -74,9 +75,9 @@
       "description": "Top 3 by 2-0 implied probability",
       "icon": "bolt",
       "type": "hit_rate",
-      "n": 9,
-      "hit_rate": 0.556,
-      "avg_edge": 13.82,
+      "n": 12,
+      "hit_rate": 0.584,
+      "avg_edge": 13.43,
       "edge_units": "DK FPTS vs slate avg",
       "signal": "neutral"
     },
@@ -86,15 +87,153 @@
       "description": "Top 3 pts-per-$1K plays",
       "icon": "target",
       "type": "hit_rate",
-      "n": 9,
+      "n": 12,
       "hit_rate": 0.333,
-      "avg_edge": -0.9,
+      "avg_edge": -2.89,
       "edge_units": "DK FPTS vs slate avg",
       "signal": "neutral",
       "note": "Top-value hits holding at 1/3 rate \u2014 picks are correctly identifying value but field is consistently ignoring them, or they're genuinely high-variance plays. Worth studying."
     }
   ],
   "per_slate_detail": [
+    {
+      "date": "2026-04-21",
+      "first_place_points": 481.85,
+      "winning_lineup_avg": 80.31,
+      "first_place_lineup": [
+        "Peyton Stearns",
+        "Camila Osorio",
+        "Julia Grabher",
+        "Jessica Bouzas Maneiro",
+        "Laura Siegemund",
+        "Petra Marcinko"
+      ],
+      "category_results": {
+        "top_value": {
+          "n": 3,
+          "hit_names": [
+            "Anna Bondar"
+          ],
+          "miss_names": [
+            "Lois Boisson",
+            "Paula Badosa"
+          ],
+          "hits": 1,
+          "misses": 2
+        },
+        "top_straight_sets": {
+          "n": 3,
+          "hit_names": [
+            "Kaitlin Quevedo",
+            "Anna Bondar"
+          ],
+          "miss_names": [
+            "Paula Badosa"
+          ],
+          "hits": 2,
+          "misses": 1
+        },
+        "hidden_gem": {
+          "n": 1,
+          "tagged": "Camila Osorio",
+          "gem_fpts": 83.15,
+          "trap_fpts": 3.25,
+          "hit_names": [
+            "Camila Osorio"
+          ],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "Opponent-of-trap gem \u2014 outscored Zakharova by 79.9 FPTS and landed in winning lineup."
+        },
+        "biggest_trap": {
+          "n": 1,
+          "tagged": "Anastasia Zakharova",
+          "trap_fpts": 3.25,
+          "winning_lineup_avg": 80.31,
+          "hit_names": [
+            "Anastasia Zakharova"
+          ],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "Zakharova busted (3.25 FPTS vs winning avg 80.3) \u2014 NOT in winning lineup. Fade-the-chalk worked again."
+        },
+        "pp_edge": {
+          "n": 1,
+          "picks": [
+            {
+              "player": "Camila Osorio",
+              "stat": "Breaks",
+              "line": 5.5,
+              "proj": 6,
+              "actual": 5,
+              "grade": "push"
+            }
+          ],
+          "hits": 0,
+          "reverses": 0,
+          "pushes": 1,
+          "note": "Only 1 MORE pick this slate (Osorio Breaks). Came within 0.5 BPW of line."
+        },
+        "pp_fade": {
+          "n": 3,
+          "picks": [
+            {
+              "player": "Camila Osorio",
+              "line": 18,
+              "proj": 12.43,
+              "actual": 24,
+              "grade": "reverse"
+            },
+            {
+              "player": "Peyton Stearns",
+              "line": 18.5,
+              "proj": 13.69,
+              "actual": 24,
+              "grade": "reverse"
+            },
+            {
+              "player": "Jessica Bouzas Maneiro",
+              "line": 15.5,
+              "proj": 10.92,
+              "actual": 26,
+              "grade": "reverse"
+            }
+          ],
+          "hits": 0,
+          "reverses": 3,
+          "pushes": 0,
+          "note": "All 3 reversed by 5.5-10.5 PP FPTS. Continuing trend of engine under-projecting straight-sets dominance."
+        }
+      },
+      "tagged": {
+        "top_value": [
+          "Anna Bondar",
+          "Lois Boisson",
+          "Paula Badosa"
+        ],
+        "top_straight_sets": [
+          "Paula Badosa",
+          "Kaitlin Quevedo",
+          "Anna Bondar"
+        ],
+        "hidden_gem": [
+          "Camila Osorio"
+        ],
+        "biggest_trap": [
+          "Anastasia Zakharova"
+        ],
+        "pp_edge": [
+          "Camila Osorio"
+        ],
+        "pp_fade": [
+          "Camila Osorio",
+          "Peyton Stearns",
+          "Jessica Bouzas Maneiro"
+        ]
+      }
+    },
     {
       "date": "2026-04-17",
       "first_place_points": 444.05,
