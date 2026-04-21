@@ -3838,11 +3838,13 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
 
     // SECONDARY TRAP (builder) — mirrors NBADKTab's secondaryTrap:
     // pure highest-val player on the slate, any salary, excluding primary.
-    // Capped with leverage-based fade (no flexMin — these are punt plays
-    // that don't need forced exposure):
-    //   • Base contrarian strength 0.6: cptMax = flexMax = simOwn − 45pp
-    //   • Scales linearly: secondaryLev = round(strength × 75)
-    //     → 0pp @ strength 0, 45pp @ 0.6, 75pp @ 1.0
+    // Capped with multiplicative leverage fade (no flexMin — these are
+    // punt plays that don't need forced exposure):
+    //   • Base contrarian strength 0.6: cap = simOwn × (1 − 0.45) = simOwn × 0.55
+    //     e.g. 36% owned → ~20% cap, 20% owned → ~11% cap
+    //   • Scales linearly: secondaryLevFrac = strength × 0.75
+    //     → 0 @ strength 0, 0.45 @ 0.6, 0.75 @ 1.0
+    //     → multiplier ranges from 1.0 (no fade) down to 0.25 (heavy fade)
     let secondaryTrap = null;
     if (trap) {
       const byVal = [...withSal]
@@ -3852,8 +3854,8 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     }
     if (secondaryTrap) {
       const stFieldOwn = ownership[secondaryTrap.name] || 0;
-      const secondaryLev = Math.round(contrarianStrength * 75);   // 45pp @ 0.6, 75pp @ 1.0
-      const stMax = Math.max(0, Math.round(stFieldOwn - secondaryLev));
+      const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));   // 0.45 @ 0.6, 0.75 @ 1.0
+      const stMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
       caps[secondaryTrap.name] = {
         cptMax: stMax,
         flexMax: stMax,
