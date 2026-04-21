@@ -1553,7 +1553,7 @@ export default function App() {
       {sport === 'tennis' && (<>
         {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
         {tab === 'pp' && <PPTab rows={ppRows} />}
-        {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} />}
+        {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} mc={data.matches?.length || 0} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
@@ -1936,7 +1936,7 @@ function PPTab({ rows }) {
 // ═══════════════════════════════════════════════════════════════════════
 // TENNIS BUILDER — surgical additive change for contrarian mode
 // ═══════════════════════════════════════════════════════════════════════
-function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
+function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0 }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
@@ -2155,8 +2155,72 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       };
     });
 
+    // (5) MID-TIER FADE + PIVOT (v3.21) — big-slate structural diversity rule.
+    // Only fires on slates with 10+ matches (enough variance for the gamble).
+    // Finds the #1 and #2 highest-owned non-premium players (salary ≤ $9,900)
+    // that aren't already claimed by trap/gem/pivot/pivot-opponent signals.
+    //   #1 (Mid-Tier Fade):  max = round(simOwn × (1 - 0.50 × strengthFactor))
+    //                        at base 0.6, simOwn × 0.50 cap (e.g., 45% → 22%)
+    //   #2 (Mid-Tier Pivot): min = round(simOwn + 10pp × strengthFactor)
+    //                        at base 0.6, +10pp boost (e.g., 36% → 46%)
+    // STACKING: Pivot boost adds on top of any existing min (including PP Boost).
+    // strengthFactor: 0 when off, 1.0 at base 0.6, up to ~1.67 at max 1.0.
+    // Excluded from selection: primary trap, gem primary, gem pivot, pivot-opponent.
+    if (mc >= 10) {
+      const strengthFactor = contrarianStrength / 0.6;
+      const midTierPool = withSal
+        .filter(p => (p.salary || 0) <= 9900)
+        .filter(p => {
+          const c = caps[p.name];
+          // Exclude players already claimed by primary signal types
+          if (!c) return true;
+          if (c._isTrap) return false;
+          if (c._isGem) return false;           // primary + pivot
+          if (c._isPivotOpponent) return false;
+          return true;
+        })
+        .sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0));
+
+      const midTierFade = midTierPool[0];
+      const midTierPivot = midTierPool[1];
+
+      // #1: Mid-Tier Fade — cap at simOwn × (1 - 0.50 × strengthFactor)
+      if (midTierFade) {
+        const fieldOwn = Math.round(ownership[midTierFade.name] || 0);
+        const fadeMultiplier = Math.min(1, 0.50 * strengthFactor);
+        const newMax = Math.max(0, Math.round(fieldOwn * (1 - fadeMultiplier)));
+        const existing = caps[midTierFade.name] || {};
+        const currMax = existing.max !== undefined ? existing.max : 100;
+        caps[midTierFade.name] = {
+          ...existing,
+          max: Math.min(currMax, newMax),  // cap-wins: take more restrictive
+          _isMidTierFade: true,
+          _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+        };
+      }
+
+      // #2: Mid-Tier Pivot — stack +10pp × strengthFactor on existing min
+      if (midTierPivot) {
+        const fieldOwn = Math.round(ownership[midTierPivot.name] || 0);
+        const boostPP = Math.round(10 * strengthFactor);
+        const existing = caps[midTierPivot.name] || {};
+        const currMin = existing.min || 0;
+        const currMax = existing.max !== undefined ? existing.max : 100;
+        // Pivot boost stacks on existing min (including PP Boost). Clip to max.
+        const boostedMin = Math.min(95, currMin + boostPP);
+        const newMin = Math.min(boostedMin, currMax);  // cap-wins
+        caps[midTierPivot.name] = {
+          ...existing,
+          min: newMin,
+          _isMidTierPivot: true,
+          _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+          _midTierPivotAddedMin: newMin - currMin,
+        };
+      }
+    }
+
     return caps;
-  }, [rp, ownership, contrarianOn, contrarianStrength]);
+  }, [rp, ownership, contrarianOn, contrarianStrength, mc]);
 
   // Projections untouched when contrarian is on (caps do the work now)
   const adjRp = rp;
@@ -2296,6 +2360,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
         if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
         if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidTierPivot)  return { label: 'Mid-Tier Pivot', icon: 'gem', color: 'var(--green)' };
         if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
         return null;
       };
@@ -2303,6 +2369,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
         if (c._isPivotOpponent) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isMidTierPivot)  return { sym: `min ${c.min}% (+${c._midTierPivotAddedMin}pp stacked)`, bound: c.min };
         if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
         return { sym: '', bound: 0 };
       };
@@ -3270,6 +3338,8 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
         if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
         if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidTierPivot)  return { label: 'Mid-Tier Pivot', icon: 'gem', color: 'var(--green)' };
         if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
         return null;
       };
@@ -3277,6 +3347,8 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
         if (c._isPivotOpponent) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isMidTierPivot)  return { sym: `min ${c.min}% (+${c._midTierPivotAddedMin}pp stacked)`, bound: c.min };
         if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
         return { sym: '', bound: 0 };
       };
