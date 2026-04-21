@@ -1,900 +1,700 @@
 {
-  "version": "3.2",
-  "last_updated": "2026-04-21T01:59:03.078000Z",
+  "sport": "nba",
+  "data_status": "active",
+  "slates_tracked": 3,
+  "slate_dates": [
+    "2026-04-19-phx-okc",
+    "2026-04-19-orl-det",
+    "2026-04-19-por-sas"
+  ],
+  "last_updated": "2026-04-19",
   "tracking_rules": {
     "formula_version": "v3.2",
-    "effective_date": "2026-04-20",
-    "primary_trap": "max(simOwn \u00d7 val) where simOwn \u2265 25% and salary > $6000",
+    "primary_trap": "max(simOwn \u00d7 val), simOwn \u2265 25%, salary > $6000",
     "secondary_trap": "max(val), any salary, excluding primary_trap",
-    "gem_primary": "max(val) where salary > $6000, excluding primary + secondary traps",
-    "gem_pivot": "max(ceil) where simOwn < 16.4% and salary \u2265 $1500, excluding traps + gem_primary",
-    "pp_main": "Grade PP calls with |edge| \u2265 2.0 (LESS or MORE)",
-    "pp_spotlight": "Biggest LESS per slate (by edge magnitude)",
-    "notes": [
-      "Primary trap gate uses simulated ownership (simOwn), not actual contest ownership",
-      "Fade grade = HIT if player NOT in winning lineup; play grade = HIT if IN winning lineup",
-      "PP HIT if play direction matches actual_pp vs line; DK FS from DK contest CSVs as ground truth"
-    ]
-  },
-  "record": {
-    "primary_trap": {
-      "hits": 0,
-      "total": 3,
-      "pct": 0.0
-    },
-    "secondary_trap": {
-      "hits": 3,
-      "total": 3,
-      "pct": 100.0
-    },
-    "gem_primary": {
-      "hits": 3,
-      "total": 3,
-      "pct": 100.0
-    },
-    "gem_pivot": {
-      "hits": 0,
-      "total": 3,
-      "pct": 0.0
-    },
-    "pp": {
-      "hits": 7,
-      "total": 17,
-      "pct": 41.2
-    }
+    "gem_primary": "max(val), salary > $6000, excluding both traps",
+    "gem_pivot": "max(ceil), simOwn < 16.4%, salary \u2265 $1500, excluding both traps + gem_primary",
+    "pp_main": "PP calls with |edge| \u2265 2.0 (LESS or MORE)",
+    "pp_spotlight": "Biggest LESS per slate (highest-magnitude LESS)"
   },
   "featured_insight": {
-    "headline": "v3.2 Gem Primary goes 3/3 on NBA Playoff showdowns",
-    "subhead": "New max-val-in-$6K-pool rule nails Chet Holmgren, Tobias Harris, and Deni Avdija \u2014 all three land in winning lineups.",
-    "body": "Across three NBA Game-3 through Game-6 showdown slates on 4/19, OverOwned's new v3.2 Gem Primary formula flagged Chet Holmgren (PHX@OKC), Tobias Harris (ORL@DET), and Deni Avdija (POR@SAS) as the highest-value plays in the $6K+ pool. All three landed in bgreseth's winning lineups \u2014 Chet as CPT (49.88 pts), Tobias as UTIL (34.0 pts), and Avdija as CPT (83.25 pts). Secondary Trap also went 3/3 correctly fading punt-tier max-val plays (Maluach, da Silva, Murray). Primary Trap went 0/3 \u2014 all three dominant stars (SGA, Cade, Wemby) ended up in winners, a structural pattern on star-dominated showdown slates.",
-    "slates_referenced": [
-      "phx-okc",
-      "orl-det",
-      "por-sas"
-    ],
-    "generated_at": "2026-04-21T01:59:03.077686Z"
+    "headline": "v3.2 Gem Primary goes 3/3 across PHX/ORL/POR showdowns",
+    "detail": "The new v3.2 Gem Primary rule (highest val in the >$6K pool, excluding both traps) flagged Chet Holmgren, Tobias Harris, and Deni Avdija \u2014 all three landed in bgreseth's winning lineups. Secondary Trap also quietly perfect at 3/3 (Maluach, da Silva, Murray all correctly faded). Primary Trap 0/3 \u2014 mega-chalk stars (SGA, Cade, Wemby) all paid off, suggesting the simOwn \u00d7 val formula struggles on star-dominated showdowns. Gem Pivot 0/3 on debut \u2014 Dort/Jenkins/Bryant all missed; the low-own + highest-ceil rule may need calibration.",
+    "icon": "gem"
   },
-  "slates": [
+  "categories": [
     {
-      "slate": "phx-okc",
-      "date": "2026-04-19",
-      "matchup": "PHX @ OKC",
-      "series": "NBA Playoffs \u2014 Round 1 Game 6 (series PHX 2, OKC 3)",
-      "final_score": "PHX 84 \u2014 OKC 119",
-      "contest": {
-        "id": "189756267",
-        "name": "$50K Evening Dash ($20 entry, 117 max)",
-        "entries": 117,
-        "entry_fee": 20,
-        "prize_pool": 50000
-      },
-      "winning_entry": {
+      "key": "biggest_trap_primary",
+      "label": "Biggest Trap (primary)",
+      "description": "v3.2: max(simOwn \u00d7 val), simOwn \u2265 25%, salary > $6K \u2014 fade target",
+      "icon": "warning",
+      "type": "bust_rate",
+      "n": 3,
+      "bust_rate": 0.0,
+      "avg_edge": 0,
+      "edge_units": "0/3 \u2014 mega-chalk (SGA, Cade, Wemby) all landed in winners; formula may be structurally misaligned for star-dominated showdowns",
+      "signal": "fade (early)"
+    },
+    {
+      "key": "biggest_trap_secondary",
+      "label": "Secondary Trap",
+      "description": "v3.2: max(val), any salary \u2014 pure value-punt fade",
+      "icon": "warning",
+      "type": "bust_rate",
+      "n": 3,
+      "bust_rate": 1.0,
+      "avg_edge": 0,
+      "edge_units": "3/3 \u2014 Maluach, da Silva, Murray all correctly faded; pure-val punt logic working",
+      "signal": "follow (early)"
+    },
+    {
+      "key": "hidden_gem_primary",
+      "label": "Hidden Gem (primary)",
+      "description": "v3.2: max(val), salary > $6K, excludes both traps",
+      "icon": "gem",
+      "type": "hit_rate",
+      "n": 3,
+      "hit_rate": 1.0,
+      "avg_edge": 0,
+      "edge_units": "3/3 \u2014 Chet (CPT), Tobias Harris (UTIL), Avdija (CPT) all in winning lineups",
+      "signal": "follow (early)"
+    },
+    {
+      "key": "hidden_gem_pivot",
+      "label": "Hidden Gem (pivot)",
+      "description": "v3.2: max(ceil), simOwn < 16.4%, salary \u2265 $1500",
+      "icon": "gem",
+      "type": "hit_rate",
+      "n": 3,
+      "hit_rate": 0.0,
+      "avg_edge": 0,
+      "edge_units": "0/3 \u2014 Dort, Jenkins, Bryant all missed; new low-own + highest-ceil rule cold out of the gate",
+      "signal": "weak (early)"
+    },
+    {
+      "key": "pp_top_calls",
+      "label": "PP Top Edges (|edge| \u2265 2)",
+      "description": "PP calls graded at |edge| threshold 2.0 \u2014 LESS and MORE combined",
+      "icon": "trending-down",
+      "type": "hit_rate",
+      "n": 17,
+      "hit_rate": 0.412,
+      "avg_edge": 0,
+      "edge_units": "7/17 \u2014 split, underperformance on biggest-edge LESS calls (Suggs/WCJ/Black/Ajay popped over)",
+      "signal": "early"
+    },
+    {
+      "key": "pp_biggest_less",
+      "label": "Biggest LESS (per slate)",
+      "description": "Spotlight: single highest-edge LESS per slate",
+      "icon": "target",
+      "type": "hit_rate",
+      "display": "small_text",
+      "n": 3,
+      "hit_rate": 0.333,
+      "avg_edge": 0,
+      "edge_units": "1/3 \u2014 Wemby hit (46.5 vs 62.5); Carter Jr. and Wallace missed big",
+      "signal": "early"
+    }
+  ],
+  "per_slate_detail": [
+    {
+      "date": "2026-04-19-phx-okc",
+      "label": "4/19 PHX @ OKC (showdown)",
+      "event": "Suns 84 @ Thunder 119",
+      "winning_lineup": {
         "username": "bgreseth (71/117)",
-        "points": 213.125,
-        "lineup_str": "CPT Chet Holmgren UTIL Shai Gilgeous-Alexander UTIL Jalen Williams UTIL Dillon Brooks UTIL Ajay Mitchell UTIL Jaylin Williams"
+        "prize": 3028.58,
+        "contest": "showdown",
+        "total_dk": 213.125,
+        "players": [
+          {
+            "player": "Chet Holmgren",
+            "role": "CPT",
+            "salary": 13200,
+            "cpt_draft_pct": 21.01,
+            "total_draft_pct": 69.09,
+            "dk_pts": 49.88,
+            "stat_line": "7 REB, 2 3PM, 2 STL, 2 BLK, 1 TO, 16 PTS"
+          },
+          {
+            "player": "Shai Gilgeous-Alexander",
+            "role": "UTIL",
+            "salary": 11600,
+            "cpt_draft_pct": 35.8,
+            "total_draft_pct": 89.47,
+            "dk_pts": 44.5,
+            "stat_line": "4 REB, 7 AST, 2 STL, 25 PTS"
+          },
+          {
+            "player": "Jalen Williams",
+            "role": "UTIL",
+            "salary": 9400,
+            "cpt_draft_pct": 5.87,
+            "total_draft_pct": 43.0,
+            "dk_pts": 44.25,
+            "stat_line": "7 REB, 2 3PM, 5 AST, 2 STL, 1 BLK, 2 TO, 22 PTS"
+          },
+          {
+            "player": "Dillon Brooks",
+            "role": "UTIL",
+            "salary": 7400,
+            "cpt_draft_pct": 1.92,
+            "total_draft_pct": 26.51,
+            "dk_pts": 30.25,
+            "stat_line": "7 REB, 3 3PM, 2 AST, 2 TO, 18 PTS"
+          },
+          {
+            "player": "Ajay Mitchell",
+            "role": "UTIL",
+            "salary": 5200,
+            "cpt_draft_pct": 1.61,
+            "total_draft_pct": 22.95,
+            "dk_pts": 23.75,
+            "stat_line": "5 REB, 3 3PM, 2 STL, 1 BLK, 10 PTS"
+          },
+          {
+            "player": "Jaylin Williams",
+            "role": "UTIL",
+            "salary": 3200,
+            "cpt_draft_pct": 0.17,
+            "total_draft_pct": 9.2,
+            "dk_pts": 20.5,
+            "stat_line": "4 REB, 1 3PM, 2 AST, 4 STL, 2 TO, 5 PTS"
+          }
+        ]
       },
-      "winning_lineup": [
-        {
-          "role": "CPT",
-          "name": "Chet Holmgren",
-          "salary": 13200,
-          "cpt_own_pct": 21.01,
-          "util_own_pct": 48.08,
-          "total_own_pct": 69.09,
-          "stats": [
-            16,
-            2,
-            7,
-            0,
-            1,
-            2,
-            2
-          ],
-          "dk_raw": 33.25,
-          "dk_scored": 49.88
-        },
-        {
-          "role": "UTIL",
-          "name": "Shai Gilgeous-Alexander",
-          "salary": 11600,
-          "cpt_own_pct": 35.8,
-          "util_own_pct": 53.67,
-          "total_own_pct": 89.47,
-          "stats": [
-            25,
-            0,
-            4,
-            7,
-            0,
-            2,
-            0
-          ],
-          "dk_raw": 44.5,
-          "dk_scored": 44.5
-        },
-        {
-          "role": "UTIL",
-          "name": "Jalen Williams",
-          "salary": 9400,
-          "cpt_own_pct": 5.87,
-          "util_own_pct": 37.13,
-          "total_own_pct": 43.0,
-          "stats": [
-            22,
-            2,
-            7,
-            5,
-            2,
-            2,
-            1
-          ],
-          "dk_raw": 44.25,
-          "dk_scored": 44.25
-        },
-        {
-          "role": "UTIL",
-          "name": "Dillon Brooks",
-          "salary": 7400,
-          "cpt_own_pct": 1.92,
-          "util_own_pct": 24.59,
-          "total_own_pct": 26.51,
-          "stats": [
-            18,
-            3,
-            7,
-            2,
-            2,
-            0,
-            0
-          ],
-          "dk_raw": 30.25,
-          "dk_scored": 30.25
-        },
-        {
-          "role": "UTIL",
-          "name": "Ajay Mitchell",
-          "salary": 5200,
-          "cpt_own_pct": 1.61,
-          "util_own_pct": 21.34,
-          "total_own_pct": 22.95,
-          "stats": [
-            10,
-            3,
-            5,
-            0,
-            0,
-            2,
-            1
-          ],
-          "dk_raw": 23.75,
-          "dk_scored": 23.75
-        },
-        {
-          "role": "UTIL",
-          "name": "Jaylin Williams",
-          "salary": 3200,
-          "cpt_own_pct": 0.17,
-          "util_own_pct": 9.03,
-          "total_own_pct": 9.2,
-          "stats": [
-            5,
-            1,
-            4,
-            2,
-            2,
-            4,
-            0
-          ],
-          "dk_raw": 20.5,
-          "dk_scored": 20.5
-        }
-      ],
-      "v32_picks": {
-        "primary_trap": {
+      "trap": {
+        "primary": {
           "player": "Shai Gilgeous-Alexander",
-          "team": "OKC",
           "salary": 11600,
-          "sim_own_pct": 74.87,
-          "cpt_own_pct": 35.8,
-          "util_own_pct": 53.67,
+          "sim_own": 74.87,
           "proj_dk": 48.47,
-          "ceil_dk": 60.65,
           "val": 4.18,
-          "formula_score": 312.83,
           "actual_dk": 44.5,
           "actual_pp": 46.3,
           "in_winner": true,
-          "winner_role": "UTIL",
-          "result": "MISS"
+          "result": "MISS",
+          "result_note": "SGA (74.9% \u00d7 4.18) \u2014 landed in winner at 44.5 DK UTIL"
         },
-        "secondary_trap": {
+        "secondary": {
           "player": "Khaman Maluach",
-          "team": "PHX",
           "salary": 1000,
-          "sim_own_pct": 15.27,
-          "cpt_own_pct": 0.06,
-          "util_own_pct": 3.39,
+          "sim_own": 15.27,
           "proj_dk": 6.72,
-          "ceil_dk": 8.4,
           "val": 6.72,
-          "formula_score": 6.72,
           "actual_dk": 3.25,
           "actual_pp": 4.6,
           "in_winner": false,
-          "winner_role": null,
           "result": "HIT"
-        },
-        "gem_primary": {
+        }
+      },
+      "gem": {
+        "primary": {
           "player": "Chet Holmgren",
-          "team": "OKC",
           "salary": 8800,
-          "sim_own_pct": 50.93,
-          "cpt_own_pct": 21.01,
-          "util_own_pct": 48.08,
+          "sim_own": 50.93,
           "proj_dk": 35.77,
           "ceil_dk": 44.92,
           "val": 4.06,
-          "formula_score": 4.06,
           "actual_dk": 33.25,
           "actual_pp": 35.9,
           "in_winner": true,
-          "winner_role": "CPT",
-          "result": "HIT"
+          "result": "HIT",
+          "result_note": "Chet Holmgren (val 4.06, $8800) \u2014 CPT in winner, 49.88 DK"
         },
-        "gem_pivot": {
+        "pivot": {
           "player": "Luguentz Dort",
-          "team": "OKC",
           "salary": 3400,
-          "sim_own_pct": 16.2,
-          "cpt_own_pct": 1.36,
-          "util_own_pct": 30.66,
+          "sim_own": 16.2,
           "proj_dk": 14.52,
           "ceil_dk": 18.12,
           "val": 4.27,
-          "formula_score": 18.12,
           "actual_dk": 16.5,
           "actual_pp": 17.1,
           "in_winner": false,
-          "winner_role": null,
           "result": "MISS"
         }
       },
-      "pp_calls": [
-        {
-          "player": "Jalen Green",
-          "play": "MORE",
-          "pp_line": 29.5,
-          "proj_pp": 32.11,
-          "edge": 2.61,
-          "actual_pp": 29.0,
-          "actual_dk": 28.25,
-          "in_winner": false,
-          "result": "MISS"
-        },
+      "pp_top_calls": [
         {
           "player": "Devin Booker",
-          "play": "LESS",
-          "pp_line": 37.5,
-          "proj_pp": 35.22,
+          "line": 37.5,
+          "proj": 35.22,
           "edge": -2.28,
+          "play": "LESS",
           "actual_pp": 31.8,
           "actual_dk": 33.0,
+          "result": "HIT",
           "in_winner": false,
-          "result": "HIT"
+          "rank": 1
         },
         {
           "player": "Ajay Mitchell",
-          "play": "LESS",
-          "pp_line": 21.0,
-          "proj_pp": 17.66,
+          "line": 21.0,
+          "proj": 17.66,
           "edge": -3.34,
+          "play": "LESS",
           "actual_pp": 25.0,
           "actual_dk": 23.75,
+          "result": "MISS",
           "in_winner": true,
-          "result": "MISS"
+          "rank": 2
         },
         {
           "player": "Cason Wallace",
-          "play": "LESS",
-          "pp_line": 15.5,
-          "proj_pp": 10.76,
+          "line": 15.5,
+          "proj": 10.76,
           "edge": -4.74,
+          "play": "LESS",
           "actual_pp": 20.8,
           "actual_dk": 18.0,
+          "result": "MISS",
           "in_winner": false,
-          "result": "MISS"
+          "rank": 3,
+          "is_biggest_less": true
         }
       ],
-      "pp_spotlight": {
+      "pp_extreme_more_calls": [
+        {
+          "player": "Jalen Green",
+          "line": 29.5,
+          "proj": 32.11,
+          "edge": 2.61,
+          "play": "MORE",
+          "actual_pp": 29.0,
+          "actual_dk": 28.25,
+          "result": "MISS",
+          "in_winner": false
+        }
+      ],
+      "biggest_less": {
         "player": "Cason Wallace",
-        "play": "LESS",
-        "pp_line": 15.5,
-        "proj_pp": 10.76,
+        "line": 15.5,
         "edge": -4.74,
         "actual_pp": 20.8,
         "actual_dk": 18.0,
-        "in_winner": false,
         "result": "MISS"
       }
     },
     {
-      "slate": "orl-det",
-      "date": "2026-04-19",
-      "matchup": "ORL @ DET",
-      "series": "NBA Playoffs \u2014 Round 1 Game 3 (series ORL 2, DET 0)",
-      "final_score": "ORL 112 \u2014 DET 101",
-      "contest": {
-        "id": "189760612",
-        "name": "$10K Main Showdown ($5 entry, 94 max)",
-        "entries": 94,
-        "entry_fee": 5,
-        "prize_pool": 10000
-      },
-      "winning_entry": {
+      "date": "2026-04-19-orl-det",
+      "label": "4/19 ORL @ DET (showdown)",
+      "event": "Magic 112 @ Pistons 101",
+      "winning_lineup": {
         "username": "bgreseth (38/94)",
-        "points": 237.375,
-        "lineup_str": "CPT Cade Cunningham UTIL Desmond Bane UTIL Franz Wagner UTIL Wendell Carter Jr. UTIL Tobias Harris UTIL Goga Bitadze"
+        "prize": 7500,
+        "contest": "showdown",
+        "total_dk": 237.375,
+        "players": [
+          {
+            "player": "Cade Cunningham",
+            "role": "CPT",
+            "salary": 17100,
+            "cpt_draft_pct": 32.8,
+            "total_draft_pct": 88.55,
+            "dk_pts": 76.88,
+            "stat_line": "5 REB, 3 3PM, 4 AST, 3 TO, 39 PTS"
+          },
+          {
+            "player": "Desmond Bane",
+            "role": "UTIL",
+            "salary": 9200,
+            "cpt_draft_pct": 3.63,
+            "total_draft_pct": 24.51,
+            "dk_pts": 35.5,
+            "stat_line": "6 REB, 1 3PM, 5 AST, 2 STL, 2 TO, 17 PTS"
+          },
+          {
+            "player": "Franz Wagner",
+            "role": "UTIL",
+            "salary": 7600,
+            "cpt_draft_pct": 6.22,
+            "total_draft_pct": 38.99,
+            "dk_pts": 34.25,
+            "stat_line": "5 REB, 1 3PM, 4 AST, 2 STL, 3 TO, 19 PTS"
+          },
+          {
+            "player": "Wendell Carter Jr.",
+            "role": "UTIL",
+            "salary": 6800,
+            "cpt_draft_pct": 0.96,
+            "total_draft_pct": 17.35,
+            "dk_pts": 39.75,
+            "stat_line": "7 REB, 1 3PM, 5 AST, 2 STL, 1 BLK, 17 PTS"
+          },
+          {
+            "player": "Tobias Harris",
+            "role": "UTIL",
+            "salary": 6200,
+            "cpt_draft_pct": 8.35,
+            "total_draft_pct": 55.53,
+            "dk_pts": 34.0,
+            "stat_line": "6 REB, 1 3PM, 3 AST, 1 STL, 2 BLK, 3 TO, 17 PTS"
+          },
+          {
+            "player": "Goga Bitadze",
+            "role": "UTIL",
+            "salary": 2800,
+            "cpt_draft_pct": 0.73,
+            "total_draft_pct": 23.01,
+            "dk_pts": 17.0,
+            "stat_line": "6 REB, 1 AST, 2 BLK, 4 PTS"
+          }
+        ]
       },
-      "winning_lineup": [
-        {
-          "role": "CPT",
-          "name": "Cade Cunningham",
-          "salary": 17100,
-          "cpt_own_pct": 32.8,
-          "util_own_pct": 55.75,
-          "total_own_pct": 88.55,
-          "stats": [
-            39,
-            3,
-            5,
-            4,
-            3,
-            0,
-            0
-          ],
-          "dk_raw": 51.25,
-          "dk_scored": 76.88
-        },
-        {
-          "role": "UTIL",
-          "name": "Desmond Bane",
-          "salary": 9200,
-          "cpt_own_pct": 3.63,
-          "util_own_pct": 20.88,
-          "total_own_pct": 24.51,
-          "stats": [
-            17,
-            1,
-            6,
-            5,
-            2,
-            2,
-            0
-          ],
-          "dk_raw": 35.5,
-          "dk_scored": 35.5
-        },
-        {
-          "role": "UTIL",
-          "name": "Franz Wagner",
-          "salary": 7600,
-          "cpt_own_pct": 6.22,
-          "util_own_pct": 32.77,
-          "total_own_pct": 38.99,
-          "stats": [
-            19,
-            1,
-            5,
-            4,
-            3,
-            2,
-            0
-          ],
-          "dk_raw": 34.25,
-          "dk_scored": 34.25
-        },
-        {
-          "role": "UTIL",
-          "name": "Wendell Carter Jr.",
-          "salary": 6800,
-          "cpt_own_pct": 0.96,
-          "util_own_pct": 16.39,
-          "total_own_pct": 17.35,
-          "stats": [
-            17,
-            1,
-            7,
-            5,
-            0,
-            2,
-            1
-          ],
-          "dk_raw": 39.75,
-          "dk_scored": 39.75
-        },
-        {
-          "role": "UTIL",
-          "name": "Tobias Harris",
-          "salary": 6200,
-          "cpt_own_pct": 8.35,
-          "util_own_pct": 47.18,
-          "total_own_pct": 55.53,
-          "stats": [
-            17,
-            1,
-            6,
-            3,
-            3,
-            1,
-            2
-          ],
-          "dk_raw": 34.0,
-          "dk_scored": 34.0
-        },
-        {
-          "role": "UTIL",
-          "name": "Goga Bitadze",
-          "salary": 2800,
-          "cpt_own_pct": 0.73,
-          "util_own_pct": 22.28,
-          "total_own_pct": 23.01,
-          "stats": [
-            4,
-            0,
-            6,
-            1,
-            0,
-            0,
-            2
-          ],
-          "dk_raw": 17.0,
-          "dk_scored": 17.0
-        }
-      ],
-      "v32_picks": {
-        "primary_trap": {
+      "trap": {
+        "primary": {
           "player": "Cade Cunningham",
-          "team": "DET",
           "salary": 11400,
-          "sim_own_pct": 77,
-          "cpt_own_pct": 32.8,
-          "util_own_pct": 55.75,
+          "sim_own": 77,
           "proj_dk": 51.06,
-          "ceil_dk": 64.22,
           "val": 4.48,
-          "formula_score": 344.88,
           "actual_dk": 51.25,
           "actual_pp": 49.5,
           "in_winner": true,
-          "winner_role": "CPT",
-          "result": "MISS"
+          "result": "MISS",
+          "result_note": "Cade (77.0% \u00d7 4.48) \u2014 landed in winner at 76.88 DK CPT"
         },
-        "secondary_trap": {
+        "secondary": {
           "player": "Tristan da Silva",
-          "team": "ORL",
           "salary": 2200,
-          "sim_own_pct": 36.47,
-          "cpt_own_pct": 0.54,
-          "util_own_pct": 17.47,
+          "sim_own": 36.47,
           "proj_dk": 11.27,
-          "ceil_dk": 14.09,
           "val": 5.12,
-          "formula_score": 5.12,
           "actual_dk": 12.0,
           "actual_pp": 11.3,
           "in_winner": false,
-          "winner_role": null,
           "result": "HIT"
-        },
-        "gem_primary": {
+        }
+      },
+      "gem": {
+        "primary": {
           "player": "Tobias Harris",
-          "team": "DET",
           "salary": 6200,
-          "sim_own_pct": 45.47,
-          "cpt_own_pct": 8.35,
-          "util_own_pct": 47.18,
+          "sim_own": 45.47,
           "proj_dk": 26.62,
           "ceil_dk": 33.14,
           "val": 4.29,
-          "formula_score": 4.29,
           "actual_dk": 34.0,
           "actual_pp": 36.2,
           "in_winner": true,
-          "winner_role": "UTIL",
-          "result": "HIT"
+          "result": "HIT",
+          "result_note": "Tobias Harris (val 4.29, $6200) \u2014 UTIL in winner, 34.0 DK"
         },
-        "gem_pivot": {
+        "pivot": {
           "player": "Daniss Jenkins",
-          "team": "DET",
           "salary": 4600,
-          "sim_own_pct": 15.87,
-          "cpt_own_pct": 0.19,
-          "util_own_pct": 5.45,
+          "sim_own": 15.87,
           "proj_dk": 13.18,
           "ceil_dk": 16.49,
           "val": 2.87,
-          "formula_score": 16.49,
           "actual_dk": 14.0,
           "actual_pp": 15.9,
           "in_winner": false,
-          "winner_role": null,
           "result": "MISS"
         }
       },
-      "pp_calls": [
+      "pp_top_calls": [
         {
           "player": "Duncan Robinson",
-          "play": "LESS",
-          "pp_line": 19.0,
-          "proj_pp": 16.9,
+          "line": 19.0,
+          "proj": 16.9,
           "edge": -2.1,
+          "play": "LESS",
           "actual_pp": 15.0,
           "actual_dk": 16.0,
+          "result": "HIT",
           "in_winner": false,
-          "result": "HIT"
+          "rank": 1
         },
         {
           "player": "Franz Wagner",
-          "play": "LESS",
-          "pp_line": 29.5,
-          "proj_pp": 27.01,
+          "line": 29.5,
+          "proj": 27.01,
           "edge": -2.49,
+          "play": "LESS",
           "actual_pp": 35.5,
           "actual_dk": 34.25,
+          "result": "MISS",
           "in_winner": true,
-          "result": "MISS"
+          "rank": 2
         },
         {
           "player": "Ausar Thompson",
-          "play": "LESS",
-          "pp_line": 27.5,
-          "proj_pp": 24.69,
+          "line": 27.5,
+          "proj": 24.69,
           "edge": -2.81,
+          "play": "LESS",
           "actual_pp": 25.9,
           "actual_dk": 23.25,
+          "result": "HIT",
           "in_winner": false,
-          "result": "HIT"
+          "rank": 3
         },
         {
           "player": "Jalen Duren",
-          "play": "LESS",
-          "pp_line": 41.0,
-          "proj_pp": 37.91,
+          "line": 41.0,
+          "proj": 37.91,
           "edge": -3.09,
+          "play": "LESS",
           "actual_pp": 19.4,
           "actual_dk": 18.75,
+          "result": "HIT",
           "in_winner": false,
-          "result": "HIT"
+          "rank": 4
         },
         {
           "player": "Cade Cunningham",
-          "play": "LESS",
-          "pp_line": 51.5,
-          "proj_pp": 48.33,
+          "line": 51.5,
+          "proj": 48.33,
           "edge": -3.17,
+          "play": "LESS",
           "actual_pp": 49.5,
           "actual_dk": 51.25,
+          "result": "HIT",
           "in_winner": true,
-          "result": "HIT"
+          "rank": 5
         },
         {
           "player": "Anthony Black",
-          "play": "LESS",
-          "pp_line": 20.5,
-          "proj_pp": 16.61,
+          "line": 20.5,
+          "proj": 16.61,
           "edge": -3.89,
+          "play": "LESS",
           "actual_pp": 25.1,
           "actual_dk": 21.75,
+          "result": "MISS",
           "in_winner": false,
-          "result": "MISS"
+          "rank": 6
         },
         {
           "player": "Jalen Suggs",
-          "play": "LESS",
-          "pp_line": 32.0,
-          "proj_pp": 27.68,
+          "line": 32.0,
+          "proj": 27.68,
           "edge": -4.32,
+          "play": "LESS",
           "actual_pp": 38.3,
           "actual_dk": 36.0,
+          "result": "MISS",
           "in_winner": false,
-          "result": "MISS"
+          "rank": 7
         },
         {
           "player": "Wendell Carter Jr.",
-          "play": "LESS",
-          "pp_line": 25.0,
-          "proj_pp": 20.36,
+          "line": 25.0,
+          "proj": 20.36,
           "edge": -4.64,
+          "play": "LESS",
           "actual_pp": 41.9,
           "actual_dk": 39.75,
+          "result": "MISS",
           "in_winner": true,
-          "result": "MISS"
+          "rank": 8,
+          "is_biggest_less": true
         }
       ],
-      "pp_spotlight": {
+      "pp_extreme_more_calls": [],
+      "biggest_less": {
         "player": "Wendell Carter Jr.",
-        "play": "LESS",
-        "pp_line": 25.0,
-        "proj_pp": 20.36,
+        "line": 25.0,
         "edge": -4.64,
         "actual_pp": 41.9,
         "actual_dk": 39.75,
-        "in_winner": true,
         "result": "MISS"
       }
     },
     {
-      "slate": "por-sas",
-      "date": "2026-04-19",
-      "matchup": "POR @ SAS",
-      "series": "NBA Playoffs \u2014 Round 1 Game 4 (series POR 1, SAS 3)",
-      "final_score": "POR 98 \u2014 SAS 111",
-      "contest": {
-        "id": "189763847",
-        "name": "$15K Showdown ($10 entry, 150 max)",
-        "entries": 150,
-        "entry_fee": 10,
-        "prize_pool": 15000
-      },
-      "winning_entry": {
+      "date": "2026-04-19-por-sas",
+      "label": "4/19 POR @ SAS (showdown)",
+      "event": "Blazers 98 @ Spurs 111",
+      "winning_lineup": {
         "username": "bgreseth (103/150)",
-        "points": 242.5,
-        "lineup_str": "CPT Deni Avdija UTIL Victor Wembanyama UTIL De'Aaron Fox UTIL Scoot Henderson UTIL Robert Williams UTIL Luke Kornet"
+        "prize": 17400,
+        "contest": "showdown",
+        "total_dk": 242.5,
+        "players": [
+          {
+            "player": "Deni Avdija",
+            "role": "CPT",
+            "salary": 16200,
+            "cpt_draft_pct": 10.45,
+            "total_draft_pct": 59.7,
+            "dk_pts": 83.25,
+            "stat_line": "10 REB, 2 3PM, 5 AST, 1 STL, 1 BLK, 2 TO, 30 PTS"
+          },
+          {
+            "player": "Victor Wembanyama",
+            "role": "UTIL",
+            "salary": 12200,
+            "cpt_draft_pct": 53.34,
+            "total_draft_pct": 93.29,
+            "dk_pts": 47.25,
+            "stat_line": "5 REB, 5 3PM, 1 AST, 2 BLK, 4 TO, 35 PTS"
+          },
+          {
+            "player": "De'Aaron Fox",
+            "role": "UTIL",
+            "salary": 8600,
+            "cpt_draft_pct": 6.43,
+            "total_draft_pct": 42.24,
+            "dk_pts": 38.25,
+            "stat_line": "5 REB, 2 3PM, 8 AST, 1 STL, 17 PTS"
+          },
+          {
+            "player": "Scoot Henderson",
+            "role": "UTIL",
+            "salary": 5600,
+            "cpt_draft_pct": 0.86,
+            "total_draft_pct": 17.28,
+            "dk_pts": 27.75,
+            "stat_line": "3 REB, 2 3PM, 3 AST, 1 STL, 3 TO, 18 PTS"
+          },
+          {
+            "player": "Robert Williams",
+            "role": "UTIL",
+            "salary": 4000,
+            "cpt_draft_pct": 0.99,
+            "total_draft_pct": 28.53,
+            "dk_pts": 25.0,
+            "stat_line": "6 REB, 1 3PM, 4 AST, 11 PTS"
+          },
+          {
+            "player": "Luke Kornet",
+            "role": "UTIL",
+            "salary": 3400,
+            "cpt_draft_pct": 0.17,
+            "total_draft_pct": 10.72,
+            "dk_pts": 21.0,
+            "stat_line": "6 REB, 1 AST, 1 STL, 10 PTS"
+          }
+        ]
       },
-      "winning_lineup": [
-        {
-          "role": "CPT",
-          "name": "Deni Avdija",
-          "salary": 16200,
-          "cpt_own_pct": 10.45,
-          "util_own_pct": 49.25,
-          "total_own_pct": 59.7,
-          "stats": [
-            30,
-            2,
-            10,
-            5,
-            2,
-            1,
-            1
-          ],
-          "dk_raw": 55.5,
-          "dk_scored": 83.25
-        },
-        {
-          "role": "UTIL",
-          "name": "Victor Wembanyama",
-          "salary": 12200,
-          "cpt_own_pct": 53.34,
-          "util_own_pct": 39.95,
-          "total_own_pct": 93.29,
-          "stats": [
-            35,
-            5,
-            5,
-            1,
-            4,
-            0,
-            2
-          ],
-          "dk_raw": 47.25,
-          "dk_scored": 47.25
-        },
-        {
-          "role": "UTIL",
-          "name": "De'Aaron Fox",
-          "salary": 8600,
-          "cpt_own_pct": 6.43,
-          "util_own_pct": 35.81,
-          "total_own_pct": 42.24,
-          "stats": [
-            17,
-            2,
-            5,
-            8,
-            0,
-            1,
-            0
-          ],
-          "dk_raw": 38.25,
-          "dk_scored": 38.25
-        },
-        {
-          "role": "UTIL",
-          "name": "Scoot Henderson",
-          "salary": 5600,
-          "cpt_own_pct": 0.86,
-          "util_own_pct": 16.42,
-          "total_own_pct": 17.28,
-          "stats": [
-            18,
-            2,
-            3,
-            3,
-            3,
-            1,
-            0
-          ],
-          "dk_raw": 27.75,
-          "dk_scored": 27.75
-        },
-        {
-          "role": "UTIL",
-          "name": "Robert Williams",
-          "salary": 4000,
-          "cpt_own_pct": 0.99,
-          "util_own_pct": 27.54,
-          "total_own_pct": 28.53,
-          "stats": [
-            11,
-            1,
-            6,
-            4,
-            0,
-            0,
-            0
-          ],
-          "dk_raw": 25.0,
-          "dk_scored": 25.0
-        },
-        {
-          "role": "UTIL",
-          "name": "Luke Kornet",
-          "salary": 3400,
-          "cpt_own_pct": 0.17,
-          "util_own_pct": 10.55,
-          "total_own_pct": 10.72,
-          "stats": [
-            10,
-            0,
-            6,
-            1,
-            0,
-            1,
-            0
-          ],
-          "dk_raw": 21.0,
-          "dk_scored": 21.0
-        }
-      ],
-      "v32_picks": {
-        "primary_trap": {
+      "trap": {
+        "primary": {
           "player": "Victor Wembanyama",
-          "team": "SAS",
           "salary": 12200,
-          "sim_own_pct": 83,
-          "cpt_own_pct": 53.34,
-          "util_own_pct": 39.95,
+          "sim_own": 83,
           "proj_dk": 59.2,
-          "ceil_dk": 74.23,
           "val": 4.85,
-          "formula_score": 402.75,
           "actual_dk": 47.25,
           "actual_pp": 46.5,
           "in_winner": true,
-          "winner_role": "UTIL",
-          "result": "MISS"
+          "result": "MISS",
+          "result_note": "Wemby (83.0% \u00d7 4.85) \u2014 landed in winner at 47.25 DK UTIL"
         },
-        "secondary_trap": {
+        "secondary": {
           "player": "Kris Murray",
-          "team": "POR",
           "salary": 1600,
-          "sim_own_pct": 28.8,
-          "cpt_own_pct": 0.13,
-          "util_own_pct": 9.05,
+          "sim_own": 28.8,
           "proj_dk": 7.95,
-          "ceil_dk": 9.85,
           "val": 4.97,
-          "formula_score": 4.97,
           "actual_dk": 0.0,
           "actual_pp": 0.0,
           "in_winner": false,
-          "winner_role": null,
           "result": "HIT"
-        },
-        "gem_primary": {
+        }
+      },
+      "gem": {
+        "primary": {
           "player": "Deni Avdija",
-          "team": "POR",
           "salary": 10800,
-          "sim_own_pct": 53.4,
-          "cpt_own_pct": 10.45,
-          "util_own_pct": 49.25,
+          "sim_own": 53.4,
           "proj_dk": 42.15,
           "ceil_dk": 53.01,
           "val": 3.9,
-          "formula_score": 3.9,
           "actual_dk": 55.5,
           "actual_pp": 54.5,
           "in_winner": true,
-          "winner_role": "CPT",
-          "result": "HIT"
+          "result": "HIT",
+          "result_note": "Deni Avdija (val 3.90, $10800) \u2014 CPT in winner, 83.25 DK"
         },
-        "gem_pivot": {
+        "pivot": {
           "player": "Carter Bryant",
-          "team": "SAS",
           "salary": 2000,
-          "sim_own_pct": 6.67,
-          "cpt_own_pct": 0.18,
-          "util_own_pct": 3.51,
+          "sim_own": 6.67,
           "proj_dk": 4.96,
           "ceil_dk": 6.19,
           "val": 2.48,
-          "formula_score": 6.19,
           "actual_dk": 2.5,
           "actual_pp": 5.4,
           "in_winner": false,
-          "winner_role": null,
           "result": "MISS"
         }
       },
-      "pp_calls": [
+      "pp_top_calls": [
         {
           "player": "Donovan Clingan",
-          "play": "LESS",
-          "pp_line": 31.5,
-          "proj_pp": 29.35,
+          "line": 31.5,
+          "proj": 29.35,
           "edge": -2.15,
+          "play": "LESS",
           "actual_pp": 13.9,
           "actual_dk": 14.25,
+          "result": "HIT",
           "in_winner": false,
-          "result": "HIT"
+          "rank": 1
         },
         {
           "player": "Julian Champagnie",
-          "play": "LESS",
-          "pp_line": 20.5,
-          "proj_pp": 18.17,
+          "line": 20.5,
+          "proj": 18.17,
           "edge": -2.33,
+          "play": "LESS",
           "actual_pp": 26.5,
           "actual_dk": 23.75,
+          "result": "MISS",
           "in_winner": false,
-          "result": "MISS"
+          "rank": 2
         },
         {
           "player": "Deni Avdija",
-          "play": "LESS",
-          "pp_line": 42.0,
-          "proj_pp": 39.28,
+          "line": 42.0,
+          "proj": 39.28,
           "edge": -2.72,
+          "play": "LESS",
           "actual_pp": 54.5,
           "actual_dk": 55.5,
+          "result": "MISS",
           "in_winner": true,
-          "result": "MISS"
+          "rank": 3
         },
         {
           "player": "Devin Vassell",
-          "play": "LESS",
-          "pp_line": 23.0,
-          "proj_pp": 20.18,
+          "line": 23.0,
+          "proj": 20.18,
           "edge": -2.82,
+          "play": "LESS",
           "actual_pp": 27.1,
           "actual_dk": 27.25,
+          "result": "MISS",
           "in_winner": false,
-          "result": "MISS"
+          "rank": 4
         },
         {
           "player": "Victor Wembanyama",
-          "play": "LESS",
-          "pp_line": 62.5,
-          "proj_pp": 59.08,
+          "line": 62.5,
+          "proj": 59.08,
           "edge": -3.42,
+          "play": "LESS",
           "actual_pp": 46.5,
           "actual_dk": 47.25,
+          "result": "HIT",
           "in_winner": true,
-          "result": "HIT"
+          "rank": 5,
+          "is_biggest_less": true
         }
       ],
-      "pp_spotlight": {
+      "pp_extreme_more_calls": [],
+      "biggest_less": {
         "player": "Victor Wembanyama",
-        "play": "LESS",
-        "pp_line": 62.5,
-        "proj_pp": 59.08,
+        "line": 62.5,
         "edge": -3.42,
         "actual_pp": 46.5,
         "actual_dk": 47.25,
-        "in_winner": true,
         "result": "HIT"
       }
     }
-  ]
+  ],
+  "_notes": "NBA v3.2 regrade \u2014 all 3 slates (PHX/OKC, ORL/DET, POR/SAS) from 4/19, all won by bgreseth. DK FS from CSVs as ground truth; PP FS computed from box-score stats. Primary + secondary trap structure mirrors gem primary + pivot."
 }
