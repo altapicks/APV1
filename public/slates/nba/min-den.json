@@ -1,0 +1,2665 @@
+{
+  "date": "2026-04-20",
+  "slate_type": "showdown",
+  "notes": "MIN @ DEN showdown. PP lines primary, SS for minutes/turnovers/bench. Vegas: DEN -7.5, total 231.5 (highest of the night).",
+  "game": {
+    "away": "MIN",
+    "home": "DEN",
+    "tip": "04/20/2026 10:30PM ET",
+    "spread_den": -7.5,
+    "total": 231.5,
+    "implied_den": 119.5,
+    "implied_min": 112.0,
+    "ml_den": -298,
+    "ml_min": 240,
+    "pace_den": 99.5,
+    "pace_min": 100.0,
+    "blowout_risk_den": 0.22,
+    "blowout_risk_min": 0.06
+  },
+  "dk_players": [
+    {
+      "name": "Nikola Jokic",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693881,
+      "util_salary": 14000,
+      "cpt_id": 42693917,
+      "cpt_salary": 21000,
+      "salary": 14000,
+      "id": 42693881,
+      "avg_ppg": 65.16,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 38.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 28.5,
+          "over": -116,
+          "under": -110
+        },
+        "rebounds": {
+          "line": 13.5,
+          "over": -114,
+          "under": -115
+        },
+        "assists": {
+          "line": 10.5,
+          "over": 110,
+          "under": -145
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -182,
+          "under": 137
+        },
+        "stls_blks": {
+          "line": 2.5,
+          "over": 121,
+          "under": -161
+        }
+      },
+      "turnovers": 3.88,
+      "dd_odds": -1380,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 28.5,
+        "rebounds": 13.5,
+        "assists": 10.5,
+        "threes": 1.5,
+        "stls_blks": 2.5
+      },
+      "season_avg": {
+        "ppg": 31.1,
+        "rpg": 14.6,
+        "apg": 9.4,
+        "3pmpg": 1.7,
+        "stlpg": 1.6,
+        "blkpg": 0.9
+      }
+    },
+    {
+      "name": "Jamal Murray",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693882,
+      "util_salary": 10200,
+      "cpt_id": 42693918,
+      "cpt_salary": 15300,
+      "salary": 10200,
+      "id": 42693882,
+      "avg_ppg": 44.2,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 37.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 26.5,
+          "over": -110,
+          "under": -116
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -128,
+          "under": -102
+        },
+        "assists": {
+          "line": 8.5,
+          "over": -108,
+          "under": -122
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -150,
+          "under": 114
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -117,
+          "under": -113
+        }
+      },
+      "turnovers": 2.57,
+      "dd_odds": 423,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 26.5,
+        "rebounds": 4.5,
+        "assists": 8.5,
+        "threes": 2.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 25.3,
+        "rpg": 4.1,
+        "apg": 7.0,
+        "3pmpg": 3.3,
+        "stlpg": 1.3,
+        "blkpg": 0.6
+      }
+    },
+    {
+      "name": "Anthony Edwards",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42693883,
+      "util_salary": 9800,
+      "cpt_id": 42693919,
+      "cpt_salary": 14700,
+      "salary": 9800,
+      "id": 42693883,
+      "avg_ppg": 44.38,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 36.9
+      },
+      "dk_props": {
+        "points": {
+          "line": 26.5,
+          "over": -111,
+          "under": -115
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -160,
+          "under": 121
+        },
+        "assists": {
+          "line": 4.5,
+          "over": -147,
+          "under": 112
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -163,
+          "under": 123
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -150,
+          "under": 113
+        }
+      },
+      "turnovers": 3.05,
+      "dd_odds": 810,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 26.5,
+        "rebounds": 4.5,
+        "assists": 4.5,
+        "threes": 2.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 27.2,
+        "rpg": 5.1,
+        "apg": 5.7,
+        "3pmpg": 3.3,
+        "stlpg": 1.3,
+        "blkpg": 0.8
+      }
+    },
+    {
+      "name": "Julius Randle",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42693884,
+      "util_salary": 8600,
+      "cpt_id": 42693920,
+      "cpt_salary": 12900,
+      "salary": 8600,
+      "id": 42693884,
+      "avg_ppg": 39.27,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 33.3
+      },
+      "dk_props": {
+        "points": {
+          "line": 18.5,
+          "over": -109,
+          "under": -117
+        },
+        "rebounds": {
+          "line": 6.5,
+          "over": -115,
+          "under": -114
+        },
+        "assists": {
+          "line": 4.5,
+          "over": 102,
+          "under": -135
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 152,
+          "under": -202
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 175,
+          "under": -237
+        }
+      },
+      "turnovers": 2.79,
+      "dd_odds": 391,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 18.5,
+        "rebounds": 6.5,
+        "assists": 4.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 18.1,
+        "rpg": 6.5,
+        "apg": 4.7,
+        "3pmpg": 1.6,
+        "stlpg": 1.0,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Rudy Gobert",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693885,
+      "util_salary": 7400,
+      "cpt_id": 42693921,
+      "cpt_salary": 11100,
+      "salary": 7400,
+      "id": 42693885,
+      "avg_ppg": 32.54,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 11.5,
+          "over": -106,
+          "under": -120
+        },
+        "rebounds": {
+          "line": 11.5,
+          "over": -128,
+          "under": -103
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -121,
+          "under": -109
+        },
+        "threes": {
+          "line": 0.0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 2.5,
+          "over": 137,
+          "under": -183
+        }
+      },
+      "turnovers": 1.56,
+      "dd_odds": -117,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 11.5,
+        "rebounds": 11.5,
+        "assists": 1.5,
+        "threes": 0.0,
+        "stls_blks": 2.5
+      },
+      "season_avg": {
+        "ppg": 11.4,
+        "rpg": 12.8,
+        "apg": 1.6,
+        "3pmpg": 0.0,
+        "stlpg": 1.0,
+        "blkpg": 1.6
+      }
+    },
+    {
+      "name": "Aaron Gordon",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42693886,
+      "util_salary": 6800,
+      "cpt_id": 42693922,
+      "cpt_salary": 10200,
+      "salary": 6800,
+      "id": 42693886,
+      "avg_ppg": 29.68,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 31.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 16.5,
+          "over": -114,
+          "under": -112
+        },
+        "rebounds": {
+          "line": 6.5,
+          "over": 104,
+          "under": -137
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -126,
+          "under": -104
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -127,
+          "under": -104
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 158,
+          "under": -213
+        }
+      },
+      "turnovers": 1.52,
+      "dd_odds": 610,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 16.5,
+        "rebounds": 6.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 16.8,
+        "rpg": 6.4,
+        "apg": 2.6,
+        "3pmpg": 1.4,
+        "stlpg": 0.8,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Jaden McDaniels",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42693887,
+      "util_salary": 6600,
+      "cpt_id": 42693923,
+      "cpt_salary": 9900,
+      "salary": 6600,
+      "id": 42693887,
+      "avg_ppg": 28.3,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 33.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 14.5,
+          "over": -125,
+          "under": -102
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": 101,
+          "under": -133
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -118,
+          "under": -112
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 138,
+          "under": -183
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": -166,
+          "under": 125
+        }
+      },
+      "turnovers": 1.29,
+      "dd_odds": 2400,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 14.5,
+        "rebounds": 4.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 14.3,
+        "rpg": 4.2,
+        "apg": 1.7,
+        "3pmpg": 1.7,
+        "stlpg": 1.0,
+        "blkpg": 0.8
+      }
+    },
+    {
+      "name": "Ayo Dosunmu",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42693888,
+      "util_salary": 6200,
+      "cpt_id": 42693924,
+      "cpt_salary": 9300,
+      "salary": 6200,
+      "id": 42693888,
+      "avg_ppg": 26.88,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 26.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 12.5,
+          "over": -106,
+          "under": -120
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -173,
+          "under": 131
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -160,
+          "under": 121
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -103,
+          "under": -128
+        },
+        "stls_blks": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 1.28,
+      "dd_odds": 3000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 12.5,
+        "rebounds": 2.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.1
+      },
+      "season_avg": {
+        "ppg": 12.5,
+        "rpg": 2.4,
+        "apg": 3.0,
+        "3pmpg": 1.5,
+        "stlpg": 0.8,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Donte DiVincenzo",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693889,
+      "util_salary": 6000,
+      "cpt_id": 42693925,
+      "cpt_salary": 9000,
+      "salary": 6000,
+      "id": 42693889,
+      "avg_ppg": 27.18,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 29.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -109,
+          "under": -117
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 113,
+          "under": -149
+        },
+        "assists": {
+          "line": 2.5,
+          "over": -167,
+          "under": 127
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 108,
+          "under": -142
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 111,
+          "under": -147
+        }
+      },
+      "turnovers": 1.96,
+      "dd_odds": 5300,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 10.5,
+        "rebounds": 3.5,
+        "assists": 2.5,
+        "threes": 2.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 11.5,
+        "rpg": 3.2,
+        "apg": 3.2,
+        "3pmpg": 2.7,
+        "stlpg": 1.6,
+        "blkpg": 0.4
+      }
+    },
+    {
+      "name": "Naz Reid",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42693890,
+      "util_salary": 5600,
+      "cpt_id": 42693926,
+      "cpt_salary": 8400,
+      "salary": 5600,
+      "id": 42693890,
+      "avg_ppg": 28.79,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 23.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": -106,
+          "under": -120
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -138,
+          "under": 105
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -104,
+          "under": -126
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -104,
+          "under": -127
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 119,
+          "under": -158
+        }
+      },
+      "turnovers": 1.22,
+      "dd_odds": 1480,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 10.5,
+        "rebounds": 4.5,
+        "assists": 1.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 11.1,
+        "rpg": 5.4,
+        "apg": 1.5,
+        "3pmpg": 1.6,
+        "stlpg": 0.8,
+        "blkpg": 0.8
+      }
+    },
+    {
+      "name": "Cameron Johnson",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42693891,
+      "util_salary": 5400,
+      "cpt_id": 42693927,
+      "cpt_salary": 8100,
+      "salary": 5400,
+      "id": 42693891,
+      "avg_ppg": 23.36,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 12.5,
+          "over": -114,
+          "under": -111
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -138,
+          "under": 105
+        },
+        "assists": {
+          "line": 2.5,
+          "over": 113,
+          "under": -149
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -180,
+          "under": 136
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 101,
+          "under": -135
+        }
+      },
+      "turnovers": 1.42,
+      "dd_odds": 4100,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 12.5,
+        "rebounds": 3.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 11.4,
+        "rpg": 3.8,
+        "apg": 2.4,
+        "3pmpg": 2.2,
+        "stlpg": 1.2,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Christian Braun",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "SG",
+      "positions": [
+        "SG"
+      ],
+      "util_id": 42693892,
+      "util_salary": 5200,
+      "cpt_id": 42693928,
+      "cpt_salary": 7800,
+      "salary": 5200,
+      "id": 42693892,
+      "avg_ppg": 23.96,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 32.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 11.5,
+          "over": -108,
+          "under": -118
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -139,
+          "under": 106
+        },
+        "assists": {
+          "line": 2.5,
+          "over": 130,
+          "under": -172
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 161,
+          "under": -215
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 146,
+          "under": -196
+        }
+      },
+      "turnovers": 0.97,
+      "dd_odds": 1500,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 11.5,
+        "rebounds": 4.5,
+        "assists": 2.5,
+        "threes": 1.5,
+        "stls_blks": 1.5
+      },
+      "season_avg": {
+        "ppg": 10.9,
+        "rpg": 5.0,
+        "apg": 1.9,
+        "3pmpg": 1.2,
+        "stlpg": 1.1,
+        "blkpg": 0.5
+      }
+    },
+    {
+      "name": "Peyton Watson",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42693893,
+      "util_salary": 4600,
+      "cpt_id": 42693929,
+      "cpt_salary": 6900,
+      "salary": 4600,
+      "id": 42693893,
+      "avg_ppg": 27.86,
+      "status": "OUT",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Tim Hardaway Jr.",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42693894,
+      "util_salary": 4400,
+      "cpt_id": 42693930,
+      "cpt_salary": 6600,
+      "salary": 4400,
+      "id": 42693894,
+      "avg_ppg": 21.1,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 24.8
+      },
+      "dk_props": {
+        "points": {
+          "line": 9.5,
+          "over": -130,
+          "under": 102
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": 118,
+          "under": -155
+        },
+        "assists": {
+          "line": 1.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -178,
+          "under": 135
+        },
+        "stls_blks": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.81,
+      "dd_odds": 3000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 9.5,
+        "rebounds": 2.5,
+        "assists": 1.9,
+        "threes": 1.5,
+        "stls_blks": 0.6
+      },
+      "season_avg": {
+        "ppg": 10.2,
+        "rpg": 1.3,
+        "apg": 1.9,
+        "3pmpg": 2.0,
+        "stlpg": 0.5,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Bruce Brown",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42693895,
+      "util_salary": 4000,
+      "cpt_id": 42693931,
+      "cpt_salary": 6000,
+      "salary": 4000,
+      "id": 42693895,
+      "avg_ppg": 18.47,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 22.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 5.5,
+          "over": -132,
+          "under": 104
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 109,
+          "under": -144
+        },
+        "assists": {
+          "line": 2.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.6,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 1.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.96,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 5.5,
+        "rebounds": 3.5,
+        "assists": 2.4,
+        "threes": 0.6,
+        "stls_blks": 1.4
+      },
+      "season_avg": {
+        "ppg": 6.5,
+        "rpg": 3.4,
+        "apg": 2.4,
+        "3pmpg": 0.6,
+        "stlpg": 1.1,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Bones Hyland",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42693896,
+      "util_salary": 3200,
+      "cpt_id": 42693932,
+      "cpt_salary": 4800,
+      "salary": 3200,
+      "id": 42693896,
+      "avg_ppg": 16.54,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 6.0
+      },
+      "dk_props": {
+        "points": {
+          "line": 2.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0.8,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.33,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 2.7,
+        "rebounds": 0.8,
+        "assists": 0.9,
+        "threes": 0.5,
+        "stls_blks": 0.5
+      },
+      "season_avg": {
+        "ppg": 2.7,
+        "rpg": 0.8,
+        "apg": 0.9,
+        "3pmpg": 0.5,
+        "stlpg": 0.4,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Kyle Anderson",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42693897,
+      "util_salary": 2800,
+      "cpt_id": 42693933,
+      "cpt_salary": 4200,
+      "salary": 2800,
+      "id": 42693897,
+      "avg_ppg": 17.47,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 6.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 1.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.4,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.15,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 1.5,
+        "rebounds": 1.2,
+        "assists": 1.1,
+        "threes": 0.1,
+        "stls_blks": 0.4
+      },
+      "season_avg": {
+        "ppg": 1.5,
+        "rpg": 1.2,
+        "apg": 1.1,
+        "3pmpg": 0.1,
+        "stlpg": 0.3,
+        "blkpg": 0.2
+      }
+    },
+    {
+      "name": "Jonas Valanciunas",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693898,
+      "util_salary": 2400,
+      "cpt_id": 42693934,
+      "cpt_salary": 3600,
+      "salary": 2400,
+      "id": 42693898,
+      "avg_ppg": 17.81,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 8.7
+      },
+      "dk_props": {
+        "points": {
+          "line": 4.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.57,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 4.2,
+        "rebounds": 3.5,
+        "assists": 0.9,
+        "threes": 0.2,
+        "stls_blks": 0.5
+      },
+      "season_avg": {
+        "ppg": 4.2,
+        "rpg": 3.5,
+        "apg": 0.9,
+        "3pmpg": 0.2,
+        "stlpg": 0.2,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Spencer Jones",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42693899,
+      "util_salary": 2000,
+      "cpt_id": 42693935,
+      "cpt_salary": 3000,
+      "salary": 2000,
+      "id": 42693899,
+      "avg_ppg": 13.41,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 10.8
+      },
+      "dk_props": {
+        "points": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 1.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 1.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.34,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 1.5,
+        "rebounds": 1.5,
+        "assists": 1.1,
+        "threes": 0.2,
+        "stls_blks": 0.9
+      },
+      "season_avg": {
+        "ppg": 1.5,
+        "rpg": 1.5,
+        "apg": 1.1,
+        "3pmpg": 0.2,
+        "stlpg": 0.6,
+        "blkpg": 0.3
+      }
+    },
+    {
+      "name": "Mike Conley",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693900,
+      "util_salary": 1600,
+      "cpt_id": 42693936,
+      "cpt_salary": 2400,
+      "salary": 1600,
+      "id": 42693900,
+      "avg_ppg": 13.01,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 10.3
+      },
+      "dk_props": {
+        "points": {
+          "line": 2.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0.9,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 2.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.33,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 2.7,
+        "rebounds": 0.9,
+        "assists": 2.1,
+        "threes": 0.5,
+        "stls_blks": 0.5
+      },
+      "season_avg": {
+        "ppg": 2.7,
+        "rpg": 0.9,
+        "apg": 2.1,
+        "3pmpg": 0.5,
+        "stlpg": 0.4,
+        "blkpg": 0.1
+      }
+    },
+    {
+      "name": "Joan Beringer",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693901,
+      "util_salary": 1000,
+      "cpt_id": 42693937,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693901,
+      "avg_ppg": 8.78,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Joe Ingles",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42693902,
+      "util_salary": 1000,
+      "cpt_id": 42693938,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693902,
+      "avg_ppg": 5.03,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Jalen Pickett",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42693903,
+      "util_salary": 1000,
+      "cpt_id": 42693939,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693903,
+      "avg_ppg": 12.37,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Julian Strawther",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42693904,
+      "util_salary": 1000,
+      "cpt_id": 42693940,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693904,
+      "avg_ppg": 12.63,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 1.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 0.7,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0.2,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0.1,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0.06,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0.7,
+        "rebounds": 0.2,
+        "assists": 0.2,
+        "threes": 0.1,
+        "stls_blks": 0.1
+      },
+      "season_avg": {
+        "ppg": 0.7,
+        "rpg": 0.2,
+        "apg": 0.2,
+        "3pmpg": 0.1,
+        "stlpg": 0.0,
+        "blkpg": 0.0
+      }
+    },
+    {
+      "name": "Terrence Shannon Jr.",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42693905,
+      "util_salary": 1000,
+      "cpt_id": 42693941,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693905,
+      "avg_ppg": 9.13,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "David Roddy",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "SF",
+      "positions": [
+        "SF"
+      ],
+      "util_id": 42693906,
+      "util_salary": 1000,
+      "cpt_id": 42693942,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693906,
+      "avg_ppg": 16.6,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Julian Phillips",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42693907,
+      "util_salary": 1000,
+      "cpt_id": 42693943,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693907,
+      "avg_ppg": 5.81,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Enrique Freeman",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42693908,
+      "util_salary": 1000,
+      "cpt_id": 42693944,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693908,
+      "avg_ppg": 9.62,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Zyon Pullin",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693909,
+      "util_salary": 1000,
+      "cpt_id": 42693945,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693909,
+      "avg_ppg": 8.25,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Jaylen Clark",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42693910,
+      "util_salary": 1000,
+      "cpt_id": 42693946,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693910,
+      "avg_ppg": 8.92,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Curtis Jones",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693911,
+      "util_salary": 1000,
+      "cpt_id": 42693947,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693911,
+      "avg_ppg": 6.78,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Tyus Jones",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693912,
+      "util_salary": 1000,
+      "cpt_id": 42693948,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693912,
+      "avg_ppg": 9.25,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Rocco Zikarsky",
+      "team": "MIN",
+      "opponent": "DEN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693913,
+      "util_salary": 1000,
+      "cpt_id": 42693949,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693913,
+      "avg_ppg": 8.8,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "Zeke Nnaji",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693914,
+      "util_salary": 1000,
+      "cpt_id": 42693950,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693914,
+      "avg_ppg": 9.27,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "DaRon Holmes II",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42693915,
+      "util_salary": 1000,
+      "cpt_id": 42693951,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693915,
+      "avg_ppg": 7.15,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    },
+    {
+      "name": "KJ Simpson",
+      "team": "DEN",
+      "opponent": "MIN",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42693916,
+      "util_salary": 1000,
+      "cpt_id": 42693952,
+      "cpt_salary": 1500,
+      "salary": 1000,
+      "id": 42693916,
+      "avg_ppg": 11.46,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": null
+      },
+      "dk_props": {
+        "points": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "rebounds": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "assists": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "threes": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        },
+        "stls_blks": {
+          "line": 0,
+          "over": -110,
+          "under": -110,
+          "_source": "ss_fill"
+        }
+      },
+      "turnovers": 0,
+      "dd_odds": 10000,
+      "td_odds": 10000,
+      "pp_stats": {
+        "points": 0,
+        "rebounds": 0,
+        "assists": 0,
+        "threes": 0,
+        "stls_blks": 0
+      },
+      "season_avg": {
+        "ppg": 0,
+        "rpg": 0,
+        "apg": 0,
+        "3pmpg": 0,
+        "stlpg": 0,
+        "blkpg": 0
+      }
+    }
+  ],
+  "pp_lines": [
+    {
+      "player": "Nikola Jokic",
+      "stat": "Fantasy Score",
+      "line": 63
+    },
+    {
+      "player": "Anthony Edwards",
+      "stat": "Fantasy Score",
+      "line": 45
+    },
+    {
+      "player": "Jamal Murray",
+      "stat": "Fantasy Score",
+      "line": 43.5
+    },
+    {
+      "player": "Julius Randle",
+      "stat": "Fantasy Score",
+      "line": 34.5
+    },
+    {
+      "player": "Rudy Gobert",
+      "stat": "Fantasy Score",
+      "line": 34
+    },
+    {
+      "player": "Aaron Gordon",
+      "stat": "Fantasy Score",
+      "line": 30.5
+    },
+    {
+      "player": "Jaden McDaniels",
+      "stat": "Fantasy Score",
+      "line": 28.5
+    },
+    {
+      "player": "Cameron Johnson",
+      "stat": "Fantasy Score",
+      "line": 24
+    },
+    {
+      "player": "Naz Reid",
+      "stat": "Fantasy Score",
+      "line": 23
+    },
+    {
+      "player": "Christian Braun",
+      "stat": "Fantasy Score",
+      "line": 23
+    },
+    {
+      "player": "Ayo Dosunmu",
+      "stat": "Fantasy Score",
+      "line": 22.5
+    },
+    {
+      "player": "Donte DiVincenzo",
+      "stat": "Fantasy Score",
+      "line": 23
+    }
+  ],
+  "last_updated": "4/21/2026-2:08 AM EST"
+}
