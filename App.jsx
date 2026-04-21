@@ -4319,6 +4319,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
       const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
+      const secondaryTrapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isSecondaryTrap);
       const studEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost && c._type === 'stud');
       const gemPrimaryEntry = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'primary');
       const gemPivotEntry   = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'pivot');
@@ -4331,6 +4332,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>}
+          {secondaryTrapEntry && <span><Icon name="bomb" size={12} color="var(--amber)"/> Secondary <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{secondaryTrapEntry[0]}</span> · field {(ownership[secondaryTrapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></span>}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
           {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
           {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> · field {(ownership[gemPivotEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1].min}%</span></span>}
