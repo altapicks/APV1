@@ -2,6 +2,36 @@
   "sport": "nba",
   "slates": [
     {
+      "date": "2026-04-21-phi-bos",
+      "label": "4/21 PHI @ BOS",
+      "matchup": "PHI @ BOS",
+      "tip_time": "7:10pm ET",
+      "tip_time_24": "19:10",
+      "event": "76ers @ Celtics (showdown)",
+      "graded": false,
+      "live": true
+    },
+    {
+      "date": "2026-04-21-por-sas",
+      "label": "4/21 POR @ SAS",
+      "matchup": "POR @ SAS",
+      "tip_time": "8:10pm ET",
+      "tip_time_24": "20:10",
+      "event": "Trail Blazers @ Spurs (showdown)",
+      "graded": false,
+      "live": true
+    },
+    {
+      "date": "2026-04-21-hou-lal",
+      "label": "4/21 HOU @ LAL",
+      "matchup": "HOU @ LAL",
+      "tip_time": "10:40pm ET",
+      "tip_time_24": "22:40",
+      "event": "Rockets @ Lakers (showdown)",
+      "graded": false,
+      "live": true
+    },
+    {
       "date": "2026-04-20-tor-cle",
       "label": "4/20 TOR @ CLE",
       "matchup": "TOR @ CLE",
