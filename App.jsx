@@ -266,10 +266,12 @@ function buildProjections(data) {
       else if (line.stat === 'Sets Won') projected = player.sw;
       const ev = ppEV(projected, line.line);
       // Attach PP Fantasy Score line + edge for PP Boost consumption in Builder.
-      // Edge = our DK proj − PP line (negative = PP pricing higher, "LESS" signal).
+      // Edge = player.ppProj − PP line (matches what the PP tab displays in
+      // the EDGE column — uses tennis PP scoring, not DK scoring, since tennis
+      // PP uses different stat weights than DK).
       if (line.stat === 'Fantasy Score') {
         player.ppLine = line.line;
-        player.ppEdge = Math.round((player.proj - line.line) * 100) / 100;
+        player.ppEdge = Math.round((player.ppProj - line.line) * 100) / 100;
       }
       ppRows.push({ player: line.player, stat: line.stat, line: line.line, projected: Math.round(projected * 100) / 100, ev, opponent: player.opponent, wp: player.wp, direction: ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-', mult: line.mult || '' });
     });
@@ -385,8 +387,9 @@ function buildMMAProjections(data) {
         ev = Math.round((projected - line.line) * 100) / 100;
         direction = ev > 0 ? 'MORE' : ev < 0 ? 'LESS' : '-';
         // Attach FS line + edge for PP Boost consumption in Builder.
+        // Uses ppProj (MMA PP scoring) to match the PP tab's EDGE column.
         player.ppLine = line.line;
-        player.ppEdge = Math.round((player.proj - line.line) * 100) / 100;
+        player.ppEdge = Math.round((player.ppProj - line.line) * 100) / 100;
       } else if (line.stat === 'Fight Time') {
         // Projected = MEDIAN fight time (where 50% of outcomes land below)
         // PP sets their lines at median, not mean — mean gets pulled up by decisions
@@ -520,10 +523,11 @@ function buildNBAProjections(data) {
       const projected = Math.round(nbaPpProjection(player.stats) * 100) / 100;
       const ev = nbaPpEV(projected, line.line);
       // Attach PP line + edge to the player so Builder can read them without
-      // re-joining through ppRows. Edge = our DK proj − PP line; negative edge
-      // means PP is pricing the player higher than us ("LESS" play signal).
+      // re-joining through ppRows. Edge = ppProj − PP line (uses NBA PP
+      // scoring to match the PP tab's EDGE column; slightly different from
+      // DK proj for NBA since PP doesn't always apply double-double bonuses).
       player.ppLine = line.line;
-      player.ppEdge = Math.round((player.proj - line.line) * 100) / 100;
+      player.ppEdge = Math.round((player.ppProj - line.line) * 100) / 100;
       ppRows.push({
         player: line.player, stat: 'Fantasy Score', line: line.line,
         projected, ev,
