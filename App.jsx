@@ -3389,7 +3389,24 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       if (byVal.length === 0) return { primary: null, pivot: null };
       const isReplacerLabel = (p) => p.team === trapP.team && p.salary >= 3000;
       const primary = { name: byVal[0].name, kind: isReplacerLabel(byVal[0]) ? 'replacer' : 'value' };
-      const pivot = byVal[1] ? { name: byVal[1].name, kind: isReplacerLabel(byVal[1]) ? 'replacer' : 'value' } : null;
+
+      // Pivot (NBA v3.2): leverage play — low-owned + highest ceiling.
+      //   • not a trap (handled by `active` filter upstream)
+      //   • not the primary gem
+      //   • simOwn < 16.4% (below fair ownership on a 6-slot showdown)
+      //   • salary ≥ $1500 (nominal floor; basically always met on DK)
+      //   • ranked by ceil desc
+      // If no player clears the ownership gate, no pivot is shown (cleaner
+      // than a silent fallback that obscures the intent).
+      const pivotPool = active.filter(p =>
+        p.name !== primary.name &&
+        (p.simOwn || 0) < 16.4 &&
+        (p.salary || 0) >= 1500 &&
+        (p.ceil || 0) > 0
+      );
+      const pivotByCeil = [...pivotPool].sort((a, b) => (b.ceil || 0) - (a.ceil || 0));
+      const pivotP = pivotByCeil[0];
+      const pivot = pivotP ? { name: pivotP.name, kind: isReplacerLabel(pivotP) ? 'replacer' : 'value' } : null;
       return { primary, pivot };
     }
 
@@ -3421,14 +3438,22 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     const primaryKind = top.replacerScore > top.valueScore ? 'replacer' : 'value';
     const primary = { name: top.name, kind: primaryKind, score: top.overall };
 
-    // Pivot — simply #2 overall, if score ≥ 25% of primary. Label carries
-    // its own kind (replacer / value) so user sees whether it's same-track
-    // or cross-track at a glance.
+    // Pivot (NBA v3.2): leverage play — low-owned + highest ceiling.
+    //   Same rule as showdown path above. Classic uses `scored` array to
+    //   recover the replacer/value kind for labeling consistency.
     let pivot = null;
-    const next = byOverall[1];
-    if (next && next.overall >= primary.score * 0.25) {
-      const nextKind = next.replacerScore > next.valueScore ? 'replacer' : 'value';
-      pivot = { name: next.name, kind: nextKind, score: next.overall };
+    const pivotPool = active.filter(p =>
+      p.name !== primary.name &&
+      (p.simOwn || 0) < 16.4 &&
+      (p.salary || 0) >= 1500 &&
+      (p.ceil || 0) > 0
+    );
+    const pivotByCeil = [...pivotPool].sort((a, b) => (b.ceil || 0) - (a.ceil || 0));
+    const pivotP = pivotByCeil[0];
+    if (pivotP) {
+      const pivotScored = scored.find(s => s.name === pivotP.name);
+      const nextKind = pivotScored && pivotScored.replacerScore > pivotScored.valueScore ? 'replacer' : 'value';
+      pivot = { name: pivotP.name, kind: nextKind };
     }
     return { primary, pivot };
   }, [pw, trap, secondaryTrap]);
@@ -3464,7 +3489,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         <div className="metric-sub">Who the field needs most</div>
         {secondaryTrap && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
-            or also: <span style={{ color: 'var(--text-muted)' }}>{secondaryTrap}</span> <span style={{ fontSize: 10 }}>(any salary)</span>
+            or: <span style={{ color: 'var(--text-muted)' }}>{secondaryTrap}</span> <span style={{ fontSize: 10 }}>(any salary)</span>
           </div>
         )}
       </div>
@@ -3888,11 +3913,24 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     }
 
-    // Pivot — same threshold as NBADKTab (next highest, ≥25% of primary score)
-    const primaryScore = gemScored[0]?.score || 0;
-    const nextCandidate = gemScored[1];
-    if (nextCandidate && nextCandidate.p && primaryScore > 0 && nextCandidate.score >= primaryScore * 0.25) {
-      const gemPivot = nextCandidate.p;
+    // Pivot (NBA v3.2): leverage play — low-owned + highest ceiling.
+    //   Mirrors NBADKTab's pivot rule so DK tab display and Builder caps
+    //   target the same player.
+    //   • not a trap or stud (already excluded via gemPool)
+    //   • not the primary gem
+    //   • simOwn < 16.4% (below fair ownership on a 6-slot showdown)
+    //   • salary ≥ $1500 (nominal floor)
+    //   • ranked by ceil desc
+    const pivotPool = gemPool.filter(p =>
+      (!gemPrimary || p.name !== gemPrimary.name) &&
+      (ownership[p.name] || 0) < 16.4 &&
+      (p.salary || 0) >= 1500 &&
+      (p.ceil || 0) > 0
+    );
+    const pivotByCeil = [...pivotPool].sort((a, b) => (b.ceil || 0) - (a.ceil || 0));
+    const gemPivot = pivotByCeil[0];
+    if (gemPivot) {
+      const nextKind = (trap && gemPivot.team === trap.team && gemPivot.salary >= 3000) ? 'replacer' : 'value';
       if (!caps[gemPivot.name]) {
         const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
         // No cptMin — gem pivot isn't forced into the captain slot. For
@@ -3908,7 +3946,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           min: pivotMin,
           max: 100,
           ...(isShowdown ? { flexMin: flexLeverageMin } : {}),
-          _isGem: true, _kind: 'pivot', _gemType: nextCandidate.kind,
+          _isGem: true, _kind: 'pivot', _gemType: nextKind,
           _fieldOwn: fieldOwn,
           ...(isShowdown ? { _flexLeverage: 10 } : {}),
         };
