@@ -3773,15 +3773,23 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     }
     if (trap) {
       const trapFieldOwn = ownership[trap.name] || 0;
-      // Per-slot caps (replaces old total-ownership max).
-      // Base values at strength 0.6: CPT max 10, FLEX min 60, FLEX max 85.
-      // The trap is fully faded as CPT (where differentiation matters most
-      // on showdown) but still forced into 60-85% of lineups as UTIL since
-      // dominant players like SGA/Wemby/Cade are must-have projection plays.
-      // Scaling anchored at 0.6: more contrarian → lower CPT max + higher flex min.
-      const cptMax  = Math.max(0,  Math.round(10 - (contrarianStrength - 0.6) * 25));
-      const flexMin = Math.min(80, Math.max(40, Math.round(60 + (contrarianStrength - 0.6) * 25)));
-      const flexMax = Math.min(95, Math.max(70, Math.round(85 - (contrarianStrength - 0.6) * 10)));
+      // Trap caps v2 — leverage-based fade anchored on field ownership.
+      // Base values at strength 0.6:
+      //   • CPT  max  = simOwn − 60pp (severe CPT fade)
+      //   • FLEX min  = simOwn − 35pp (forced FLEX presence)
+      //   • FLEX max  = simOwn − 30pp (FLEX cap)
+      // → narrow 5pp FLEX exposure window between simOwn−35 and simOwn−30.
+      // Replaces the old absolute-value caps (10 / 60 / 85) which ignored
+      // how chalky the trap actually was. Now: chalkier trap = higher caps,
+      // milder trap = lower caps (down to 0). More contrarian strength
+      // widens the leverage gap (capped at 0% on the low end).
+      const cptLeverage     = Math.round(60 + (contrarianStrength - 0.6) * 100);  // 60pp @ 0.6, 100pp @ 1.0
+      const flexMaxLeverage = Math.round(30 + (contrarianStrength - 0.6) *  50);  // 30pp @ 0.6,  50pp @ 1.0
+      const flexMinLeverage = Math.round(35 + (contrarianStrength - 0.6) *  50);  // 35pp @ 0.6,  55pp @ 1.0
+      const cptMax  = Math.max(0, Math.round(trapFieldOwn - cptLeverage));
+      const flexMax = Math.max(0, Math.round(trapFieldOwn - flexMaxLeverage));
+      let   flexMin = Math.max(0, Math.round(trapFieldOwn - flexMinLeverage));
+      if (flexMin > flexMax) flexMin = flexMax;  // safety: floor never above cap
       caps[trap.name] = {
         cptMax, flexMin, flexMax,
         _isTrap: true,
