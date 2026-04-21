@@ -2155,34 +2155,75 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       };
     });
 
+    // (4b) EXTENDED PP FADE FLOOR (v3.22) — on 10+ match slates, PP fades
+    // ranked #2 and #3 get a min floor of simOwn + 5pp (conviction-play
+    // insurance). #1 typically already has gem-pivot + PP-boost treatment
+    // so this rule targets the next two to ensure they also land above field.
+    // Baseline logic: min = max(currMin, simOwn + 5pp × strengthFactor).
+    // Skipped if player is the primary trap (never boosted).
+    if (mc >= 10) {
+      const strengthFactor = contrarianStrength / 0.6;
+      const extFloorPP = Math.round(5 * strengthFactor);
+      const extFadeCandidates = withSal
+        .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+        .filter(p => !trap || p.name !== trap.name)
+        .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+        .slice(1, 3);  // #2 and #3 in edge ranking
+      extFadeCandidates.forEach((fade, idx) => {
+        const existing = caps[fade.name] || {};
+        const fieldOwn = Math.round(ownership[fade.name] || 0);
+        const currMin = existing.min || 0;
+        const currMax = existing.max !== undefined ? existing.max : 100;
+        const simOwnFloor = Math.min(95, fieldOwn + extFloorPP);
+        const newMin = Math.min(Math.max(currMin, simOwnFloor), currMax);
+        caps[fade.name] = {
+          ...existing,
+          min: newMin,
+          _isExtPpFade: true,
+          _extPpFadeRank: idx + 2,   // fades 2 and 3
+          _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+          _extPpFadeAddedMin: newMin - currMin,
+        };
+      });
+    }
+
     // (5) MID-TIER FADE + PIVOT (v3.21) — big-slate structural diversity rule.
     // Only fires on slates with 10+ matches (enough variance for the gamble).
-    // Finds the #1 and #2 highest-owned non-premium players (salary ≤ $9,900)
-    // that aren't already claimed by trap/gem/pivot/pivot-opponent signals.
+    //   Fade pool:  salary ≤ $9,900, highest simOwn
+    //   Pivot pool: salary $7,800-$9,900, highest simOwn (EXCLUDES the fade)
+    //              → pivot must be meaningful mid-salary, not cheap filler
     //   #1 (Mid-Tier Fade):  max = round(simOwn × (1 - 0.50 × strengthFactor))
     //                        at base 0.6, simOwn × 0.50 cap (e.g., 45% → 22%)
-    //   #2 (Mid-Tier Pivot): min = round(simOwn + 10pp × strengthFactor)
-    //                        at base 0.6, +10pp boost (e.g., 36% → 46%)
-    // STACKING: Pivot boost adds on top of any existing min (including PP Boost).
+    //   #2 (Mid-Tier Pivot): min = max(currMin, simOwn + 10pp × strengthFactor)
+    //                        at base 0.6, +10pp above field (e.g., 36% → 46%)
+    // STACKING: Pivot min takes the higher of existing min or simOwn+10pp.
     // strengthFactor: 0 when off, 1.0 at base 0.6, up to ~1.67 at max 1.0.
     // Excluded from selection: primary trap, gem primary, gem pivot, pivot-opponent.
     if (mc >= 10) {
       const strengthFactor = contrarianStrength / 0.6;
-      const midTierPool = withSal
+      const signalExcluded = (p) => {
+        const c = caps[p.name];
+        if (!c) return false;
+        if (c._isTrap) return true;
+        if (c._isGem) return true;           // primary + pivot
+        if (c._isPivotOpponent) return true;
+        return false;
+      };
+      // Fade pool: ≤ $9,900
+      const fadePool = withSal
         .filter(p => (p.salary || 0) <= 9900)
-        .filter(p => {
-          const c = caps[p.name];
-          // Exclude players already claimed by primary signal types
-          if (!c) return true;
-          if (c._isTrap) return false;
-          if (c._isGem) return false;           // primary + pivot
-          if (c._isPivotOpponent) return false;
-          return true;
-        })
+        .filter(p => !signalExcluded(p))
         .sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0));
+      const midTierFade = fadePool[0];
 
-      const midTierFade = midTierPool[0];
-      const midTierPivot = midTierPool[1];
+      // Pivot pool: $7,800 - $9,900 (salary floor raised — the pivot must be
+      // a meaningful mid-tier, not a sub-$7K filler). EXCLUDES the fade.
+      const pivotPool = withSal
+        .filter(p => (p.salary || 0) >= 7800 && (p.salary || 0) <= 9900)
+        .filter(p => !signalExcluded(p))
+        .filter(p => !midTierFade || p.name !== midTierFade.name)
+        .sort((a, b) => (ownership[b.name] || 0) - (ownership[a.name] || 0));
+      const midTierPivot = pivotPool[0];
 
       // #1: Mid-Tier Fade — cap at simOwn × (1 - 0.50 × strengthFactor)
       if (midTierFade) {
@@ -2238,7 +2279,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         // Skip if player has any active signal (trap, gem, pivot, pivot-opp,
         // pp-boost, mid-tier-fade, mid-tier-pivot, etc.)
         const hasSignal = existing._isTrap || existing._isGem || existing._isPivotOpponent
-                        || existing._isPpBoost || existing._isMidTierFade || existing._isMidTierPivot;
+                        || existing._isPpBoost || existing._isMidTierFade || existing._isMidTierPivot
+                        || existing._isExtPpFade;
         if (hasSignal) return;
         const strictMax = Math.min(95, fieldOwn + 10);
         const currMax = existing.max !== undefined ? existing.max : 100;
