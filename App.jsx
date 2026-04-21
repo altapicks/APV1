@@ -3953,20 +3953,10 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const gemPrimaryKind = gemScored[0]?.kind || 'value';
     if (gemPrimary) {
       const fieldOwn = Math.round(ownership[gemPrimary.name] || 0);
-      // Primary Gem FLEX exposure window (v3.11) — hard min/max cap.
-      // Theory: the gem's main job is captaining (40% cptMin), so FLEX
-      // exposure stays in a tight window that SHIFTS DOWN with strength
-      // (more contrarian → less FLEX room → more CPT room):
-      //   @ strength 0.6 (base): FLEX 28–42%
-      //   @ strength 1.0 (max):  FLEX 20–34%
-      //   @ strength 0.0 (off):  FLEX 40–54%
-      // Both bounds shift linearly at −20pp per unit strength from 0.6.
-      const primaryFlexMinBase = Math.max(0, Math.min(95, Math.round(28 - (contrarianStrength - 0.6) * 20)));
-      const primaryFlexMaxBase = Math.max(0, Math.min(95, Math.round(42 - (contrarianStrength - 0.6) * 20)));
       caps[gemPrimary.name] = {
         min: primaryMin,
         max: 100,
-        ...(isShowdown ? { cptMin: 40, flexMin: primaryFlexMinBase, flexMax: primaryFlexMaxBase } : {}),
+        ...(isShowdown ? { cptMin: 40 } : {}),
         _isGem: true, _kind: 'primary', _gemType: gemPrimaryKind,
         _fieldOwn: fieldOwn,
       };
@@ -4104,16 +4094,16 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     // MID-SALARY CPT PIVOT FLOOR (v3.9) — when the secondary trap is a
     // premium-salary chalk (> $10K), the CPT slot is heavily contested by
     // expensive stars. This rule forces the top-2 value plays in the
-    // $4,000-$6,800 mid-salary band to appear as CPT in at least 5% of
+    // $4,000-$6,800 mid-salary band to appear as CPT in at least 12% of
     // lineups each (at base strength 0.6 — scales linearly).
     // Rationale: creates balanced CPT diversification across mid-salary
     // pivots when premium chalk dominates the captain slot landscape.
     //   • Salary band: $4,000 ≤ sal ≤ $6,800 (true mid-range CPT value)
     //   • Ranked by val (proj / $K)
-    //   • cptMin: 5pp @ 0.6 → 8pp @ 1.0, 0pp when contrarian off
+    //   • cptMin: 12pp @ 0.6 → 20pp @ 1.0, 0pp when contrarian off
     //   • Only applies when secondary trap exists AND secondary sal > $10K
     if (secondaryTrap && (secondaryTrap.salary || 0) > 10000) {
-      const cptPivotMinPct = Math.round(contrarianStrength * (5 / 0.6));
+      const cptPivotMinPct = Math.round(contrarianStrength * (12 / 0.6));
       const midSalValuePool = withSal
         .filter(p =>
           !caps[p.name] &&
@@ -4511,7 +4501,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
             <span key={name}><Icon name="trophy" size={12} color="var(--text-dim)"/> Mid-sal CPT pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · cptMin <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.cptMin}%</span></span>
           ))}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
-          {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span>{gemPrimaryEntry[1].cptMin != null && <> · CPT <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].cptMin}%</span></>}{(gemPrimaryEntry[1].flexMin != null || gemPrimaryEntry[1].flexMax != null) && <> / FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].flexMin ?? 0}-{gemPrimaryEntry[1].flexMax ?? 100}%</span></>}</span>}
+          {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
           {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedCptMin}%</span> CPT · +{gemPivotEntry[1]._pivotPoolNames?.length || 0} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotCptTarget}%</span></span>}
           {sleeperEntries.map(([name, c]) => (
             <span key={name}><Icon name="sleeper" size={12}/> Sleeper <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
