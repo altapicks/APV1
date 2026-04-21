@@ -4019,16 +4019,23 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       }
     }
 
-    // SECONDARY TRAP (v3.3) — computed after gems so it can skip anyone
+    // SECONDARY TRAP (v3.8) — computed after gems so it can skip anyone
     // already picked. Mirrors Primary Trap's simOwn×val formula with the
     // additional exclusions (trap + gem primary + gem pivot):
     //   • max(simOwn × val)
     //   • simOwn ≥ 25% (same chalk gate as Primary)
     //   • NO salary gate — any price can qualify
-    // Caps: multiplicative leverage fade (same pattern as before):
-    //   • Base strength 0.6: cap = simOwn × 0.55 (45% leverage fade)
-    //   • secondaryLevFrac = strength × 0.75
-    //   • Same cap applied to both CPT and FLEX (no flexMin floor)
+    // Caps: multiplicative leverage fade (split cpt/flex at premium salary):
+    //   STANDARD (salary ≤ $10K) — unified cap:
+    //     base 0.6: cap = simOwn × 0.55 (45% leverage fade, both cpt & flex)
+    //     scale: secondaryLevFrac = strength × 0.75
+    //   PREMIUM (salary > $10K) — split cpt/flex since the piece is
+    //   salary-critical to FLEX in most lineups:
+    //     base 0.6: cptMax = simOwn × 0.60 (40% leverage fade at CPT)
+    //                flexMax = simOwn × 0.90 (10% leverage fade at FLEX)
+    //     scale cpt:  cptLevFrac  = strength × (0.40/0.6) = strength × 0.667
+    //     scale flex: flexLevFrac = strength × (0.10/0.6) = strength × 0.167
+    //   No flexMin floor either way (secondary traps aren't force-played).
     if (trap) {
       const gemPrimaryName = gemPrimary?.name;
       const gemPivotName = Object.entries(caps).find(([, c]) => c._isGem && c._kind === 'pivot')?.[0];
@@ -4044,12 +4051,24 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       secondaryTrap = stRanked[0] || null;
       if (secondaryTrap) {
         const stFieldOwn = ownership[secondaryTrap.name] || 0;
-        const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));  // 0.45 @ 0.6, 0.75 @ 1.0
-        const stMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
+        const isPremium = (secondaryTrap.salary || 0) > 10000;
+        let stCptMax, stFlexMax;
+        if (isPremium) {
+          // Premium salary → split fade: mild at FLEX, heavy at CPT
+          const cptLevFrac  = Math.min(1, Math.max(0, contrarianStrength * (0.40 / 0.6)));
+          const flexLevFrac = Math.min(1, Math.max(0, contrarianStrength * (0.10 / 0.6)));
+          stCptMax  = Math.max(0, Math.round(stFieldOwn * (1 - cptLevFrac)));
+          stFlexMax = Math.max(0, Math.round(stFieldOwn * (1 - flexLevFrac)));
+        } else {
+          // Standard fade: unified cap for both slots
+          const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));
+          stCptMax = stFlexMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
+        }
         caps[secondaryTrap.name] = {
-          cptMax: stMax,
-          flexMax: stMax,
+          cptMax: stCptMax,
+          flexMax: stFlexMax,
           _isSecondaryTrap: true,
+          _isPremium: isPremium,
           _fieldOwn: Math.round(stFieldOwn),
         };
       }
@@ -4416,7 +4435,10 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       return (
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {trapEntry && <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>}
-          {secondaryTrapEntry && <span><Icon name="bomb" size={12} color="var(--amber)"/> Secondary <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{secondaryTrapEntry[0]}</span> · field {(ownership[secondaryTrapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></span>}
+          {secondaryTrapEntry && <span><Icon name="bomb" size={12} color="var(--amber)"/> Secondary <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{secondaryTrapEntry[0]}</span> · field {(ownership[secondaryTrapEntry[0]] || 0).toFixed(1)}% → {secondaryTrapEntry[1]._isPremium
+            ? <>CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].flexMax}%</span><span style={{ color: 'var(--amber)', fontSize: 10, marginLeft: 4 }}>★$10K+</span></>
+            : <>max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></>
+          }</span>}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
           {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
           {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._displayedCptMin}%</span> CPT · +{gemPivotEntry[1]._pivotPoolNames?.length || 0} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotCptTarget}%</span></span>}
