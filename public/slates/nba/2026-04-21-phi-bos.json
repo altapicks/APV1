@@ -1,0 +1,884 @@
+{
+  "date": "2026-04-21",
+  "slate_type": "showdown",
+  "notes": "PHI@BOS showdown. DK lines devigged, SS fallback for bench. Total 217.5.",
+  "game": {
+    "away": "PHI",
+    "home": "BOS",
+    "tip": "04/21/2026 07:10PM ET",
+    "spread_bos": -14.5,
+    "total": 217.5,
+    "implied_bos": 116.0,
+    "implied_phi": 101.5,
+    "ml_bos": -850,
+    "ml_phi": 575,
+    "pace_bos": 100.0,
+    "pace_phi": 100.0,
+    "blowout_risk_bos": 0.29,
+    "blowout_risk_phi": 0.09
+  },
+  "dk_players": [
+    {
+      "name": "Adem Bona",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702146,
+      "util_salary": 3200,
+      "cpt_id": 42702179,
+      "cpt_salary": 4800,
+      "salary": 3200,
+      "id": 42702146,
+      "avg_ppg": 13.59,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 20.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 3.5,
+          "over": -109,
+          "under": -117
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -149,
+          "under": 113
+        }
+      },
+      "turnovers": 0.4
+    },
+    {
+      "name": "Andre Drummond",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702142,
+      "util_salary": 5800,
+      "cpt_id": 42702175,
+      "cpt_salary": 8700,
+      "salary": 5800,
+      "id": 42702142,
+      "avg_ppg": 22.01,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 19.9
+      },
+      "dk_props": {
+        "points": {
+          "line": 5.5,
+          "over": -133,
+          "under": 104
+        },
+        "threes": {
+          "line": 0.5,
+          "over": 161,
+          "under": -215
+        },
+        "rebounds": {
+          "line": 7.5,
+          "over": -137,
+          "under": 104
+        },
+        "assists": {
+          "line": 1.5,
+          "over": 166,
+          "under": -221
+        }
+      },
+      "turnovers": 1.45,
+      "dd_odds": 710
+    },
+    {
+      "name": "Baylor Scheierman",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42702152,
+      "util_salary": 1600,
+      "cpt_id": 42702185,
+      "cpt_salary": 2400,
+      "salary": 1600,
+      "id": 42702152,
+      "avg_ppg": 13.78,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 13.8
+      },
+      "dk_props": {},
+      "turnovers": 0.44,
+      "manual_proj": 7.81
+    },
+    {
+      "name": "Derrick White",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42702138,
+      "util_salary": 8000,
+      "cpt_id": 42702171,
+      "cpt_salary": 12000,
+      "salary": 8000,
+      "id": 42702138,
+      "avg_ppg": 35.23,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.3
+      },
+      "dk_props": {
+        "points": {
+          "line": 14.5,
+          "over": -115,
+          "under": -111
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -119,
+          "under": -110
+        },
+        "rebounds": {
+          "line": 4.5,
+          "over": -106,
+          "under": -124
+        },
+        "assists": {
+          "line": 4.5,
+          "over": -129,
+          "under": -102
+        },
+        "stls_blks": {
+          "line": 2.0,
+          "over": -106,
+          "under": -111
+        }
+      },
+      "turnovers": 1.52,
+      "dd_odds": 1560
+    },
+    {
+      "name": "Dominick Barlow",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "PF/C",
+      "positions": [
+        "PF",
+        "C"
+      ],
+      "util_id": 42702149,
+      "util_salary": 2200,
+      "cpt_id": 42702182,
+      "cpt_salary": 3300,
+      "salary": 2200,
+      "id": 42702149,
+      "avg_ppg": 18.26,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 16.3
+      },
+      "dk_props": {},
+      "turnovers": 0.44,
+      "manual_proj": 10.35
+    },
+    {
+      "name": "Jaylen Brown",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42702134,
+      "util_salary": 10800,
+      "cpt_id": 42702167,
+      "cpt_salary": 16200,
+      "salary": 10800,
+      "id": 42702134,
+      "avg_ppg": 46.38,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 35.4
+      },
+      "dk_props": {
+        "points": {
+          "line": 26.5,
+          "over": -112,
+          "under": -114
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -104,
+          "under": -127
+        },
+        "rebounds": {
+          "line": 6.5,
+          "over": 106,
+          "under": -139
+        },
+        "assists": {
+          "line": 4.5,
+          "over": -108,
+          "under": -122
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -212,
+          "under": 158
+        }
+      },
+      "turnovers": 2.42,
+      "dd_odds": 474
+    },
+    {
+      "name": "Jayson Tatum",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42702133,
+      "util_salary": 11600,
+      "cpt_id": 42702166,
+      "cpt_salary": 17400,
+      "salary": 11600,
+      "id": 42702133,
+      "avg_ppg": 47.19,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.8
+      },
+      "dk_props": {
+        "points": {
+          "line": 23.5,
+          "over": -116,
+          "under": -110
+        },
+        "threes": {
+          "line": 3.5,
+          "over": 125,
+          "under": -165
+        },
+        "rebounds": {
+          "line": 9.5,
+          "over": -132,
+          "under": 100
+        },
+        "assists": {
+          "line": 5.5,
+          "over": 101,
+          "under": -133
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 151,
+          "under": -203
+        }
+      },
+      "turnovers": 2.4,
+      "dd_odds": -149
+    },
+    {
+      "name": "Jordan Walsh",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "PF",
+      "positions": [
+        "PF"
+      ],
+      "util_id": 42702151,
+      "util_salary": 1800,
+      "cpt_id": 42702184,
+      "cpt_salary": 2700,
+      "salary": 1800,
+      "id": 42702151,
+      "avg_ppg": 13.99,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 12.6
+      },
+      "dk_props": {},
+      "turnovers": 0.58,
+      "manual_proj": 7.87
+    },
+    {
+      "name": "Justin Edwards",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42702153,
+      "util_salary": 1400,
+      "cpt_id": 42702186,
+      "cpt_salary": 2100,
+      "salary": 1400,
+      "id": 42702153,
+      "avg_ppg": 12.06,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 13.1
+      },
+      "dk_props": {},
+      "turnovers": 0.56,
+      "manual_proj": 8.78
+    },
+    {
+      "name": "Kelly Oubre Jr.",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "SG/SF",
+      "positions": [
+        "SG",
+        "SF"
+      ],
+      "util_id": 42702141,
+      "util_salary": 6400,
+      "cpt_id": 42702174,
+      "cpt_salary": 9600,
+      "salary": 6400,
+      "id": 42702141,
+      "avg_ppg": 26.71,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.3
+      },
+      "dk_props": {
+        "points": {
+          "line": 13.5,
+          "over": -107,
+          "under": -119
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -144,
+          "under": 109
+        },
+        "rebounds": {
+          "line": 5.5,
+          "over": -107,
+          "under": -123
+        },
+        "assists": {
+          "line": 1.5,
+          "over": 103,
+          "under": -136
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 175,
+          "under": -237
+        }
+      },
+      "turnovers": 1.47,
+      "dd_odds": 1060
+    },
+    {
+      "name": "Neemias Queta",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702140,
+      "util_salary": 6800,
+      "cpt_id": 42702173,
+      "cpt_salary": 10200,
+      "salary": 6800,
+      "id": 42702140,
+      "avg_ppg": 27.11,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 27.2
+      },
+      "dk_props": {
+        "points": {
+          "line": 10.5,
+          "over": 105,
+          "under": -135
+        },
+        "rebounds": {
+          "line": 7.5,
+          "over": -145,
+          "under": 110
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -112,
+          "under": -117
+        },
+        "stls_blks": {
+          "line": 2.0,
+          "over": 108,
+          "under": -127
+        }
+      },
+      "turnovers": 1.21,
+      "dd_odds": 295
+    },
+    {
+      "name": "Nikola Vucevic",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "C",
+      "positions": [
+        "C"
+      ],
+      "util_id": 42702143,
+      "util_salary": 5000,
+      "cpt_id": 42702176,
+      "cpt_salary": 7500,
+      "salary": 5000,
+      "id": 42702143,
+      "avg_ppg": 33.42,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 21.6
+      },
+      "dk_props": {
+        "points": {
+          "line": 7.5,
+          "over": -126,
+          "under": -101
+        },
+        "threes": {
+          "line": 0.5,
+          "over": -155,
+          "under": 117
+        },
+        "rebounds": {
+          "line": 5.5,
+          "over": 103,
+          "under": -136
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -148,
+          "under": 112
+        }
+      },
+      "turnovers": 1.14,
+      "dd_odds": 1420
+    },
+    {
+      "name": "Paul George",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42702136,
+      "util_salary": 9400,
+      "cpt_id": 42702169,
+      "cpt_salary": 14100,
+      "salary": 9400,
+      "id": 42702136,
+      "avg_ppg": 33.84,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 34.2
+      },
+      "dk_props": {
+        "points": {
+          "line": 17.5,
+          "over": -119,
+          "under": -107
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -127,
+          "under": -104
+        },
+        "rebounds": {
+          "line": 5.5,
+          "over": -104,
+          "under": -126
+        },
+        "assists": {
+          "line": 3.5,
+          "over": -104,
+          "under": -127
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 160,
+          "under": -215
+        }
+      },
+      "turnovers": 2.88,
+      "dd_odds": 1020
+    },
+    {
+      "name": "Payton Pritchard",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42702139,
+      "util_salary": 7400,
+      "cpt_id": 42702172,
+      "cpt_salary": 11100,
+      "salary": 7400,
+      "id": 42702139,
+      "avg_ppg": 32.11,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 27.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 14.5,
+          "over": -106,
+          "under": -120
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 118,
+          "under": -156
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 108,
+          "under": -142
+        },
+        "assists": {
+          "line": 4.5,
+          "over": -104,
+          "under": -127
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": -148,
+          "under": 111
+        }
+      },
+      "turnovers": 1.15,
+      "dd_odds": 2300
+    },
+    {
+      "name": "Quentin Grimes",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42702144,
+      "util_salary": 4600,
+      "cpt_id": 42702177,
+      "cpt_salary": 6900,
+      "salary": 4600,
+      "id": 42702144,
+      "avg_ppg": 25.01,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 22.9
+      },
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": -116,
+          "under": -110
+        },
+        "threes": {
+          "line": 1.5,
+          "over": 180,
+          "under": -241
+        },
+        "rebounds": {
+          "line": 2.5,
+          "over": -114,
+          "under": -116
+        },
+        "assists": {
+          "line": 1.5,
+          "over": -189,
+          "under": 143
+        }
+      },
+      "turnovers": 1.19
+    },
+    {
+      "name": "Sam Hauser",
+      "team": "BOS",
+      "opponent": "PHI",
+      "positions_str": "SF/PF",
+      "positions": [
+        "SF",
+        "PF"
+      ],
+      "util_id": 42702145,
+      "util_salary": 4200,
+      "cpt_id": 42702178,
+      "cpt_salary": 6300,
+      "salary": 4200,
+      "id": 42702145,
+      "avg_ppg": 18.94,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 28.5
+      },
+      "dk_props": {
+        "points": {
+          "line": 8.5,
+          "over": -103,
+          "under": -124
+        },
+        "threes": {
+          "line": 2.5,
+          "over": 110,
+          "under": -145
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": -121,
+          "under": -109
+        },
+        "assists": {
+          "line": 1.5,
+          "over": 173,
+          "under": -231
+        },
+        "stls_blks": {
+          "line": 0.5,
+          "over": 103,
+          "under": -137
+        }
+      },
+      "turnovers": 0.62
+    },
+    {
+      "name": "Tyrese Maxey",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "PG",
+      "positions": [
+        "PG"
+      ],
+      "util_id": 42702135,
+      "util_salary": 10600,
+      "cpt_id": 42702168,
+      "cpt_salary": 15900,
+      "salary": 10600,
+      "id": 42702135,
+      "avg_ppg": 47.74,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 37.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 26.5,
+          "over": -105,
+          "under": -121
+        },
+        "threes": {
+          "line": 2.5,
+          "over": -140,
+          "under": 106
+        },
+        "rebounds": {
+          "line": 3.5,
+          "over": 102,
+          "under": -134
+        },
+        "assists": {
+          "line": 6.5,
+          "over": 110,
+          "under": -145
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 138,
+          "under": -184
+        }
+      },
+      "turnovers": 2.26,
+      "dd_odds": 554
+    },
+    {
+      "name": "VJ Edgecombe",
+      "team": "PHI",
+      "opponent": "BOS",
+      "positions_str": "PG/SG",
+      "positions": [
+        "PG",
+        "SG"
+      ],
+      "util_id": 42702137,
+      "util_salary": 8600,
+      "cpt_id": 42702170,
+      "cpt_salary": 12900,
+      "salary": 8600,
+      "id": 42702137,
+      "avg_ppg": 33.37,
+      "status": "ACTIVE",
+      "mins": {
+        "L3": null,
+        "L5": null,
+        "L10": null,
+        "All": 35.1
+      },
+      "dk_props": {
+        "points": {
+          "line": 14.5,
+          "over": -126,
+          "under": -101
+        },
+        "threes": {
+          "line": 1.5,
+          "over": -167,
+          "under": 126
+        },
+        "rebounds": {
+          "line": 5.5,
+          "over": -102,
+          "under": -129
+        },
+        "assists": {
+          "line": 3.5,
+          "over": -135,
+          "under": 102
+        },
+        "stls_blks": {
+          "line": 1.5,
+          "over": 168,
+          "under": -227
+        }
+      },
+      "turnovers": 1.91,
+      "dd_odds": 920
+    }
+  ],
+  "pp_lines": [
+    {
+      "player": "Jayson Tatum",
+      "stat": "Fantasy Score",
+      "line": 47.5
+    },
+    {
+      "player": "Jaylen Brown",
+      "stat": "Fantasy Score",
+      "line": 41.5
+    },
+    {
+      "player": "Tyrese Maxey",
+      "stat": "Fantasy Score",
+      "line": 40.5
+    },
+    {
+      "player": "Derrick White",
+      "stat": "Fantasy Score",
+      "line": 33
+    },
+    {
+      "player": "Paul George",
+      "stat": "Fantasy Score",
+      "line": 32.5
+    },
+    {
+      "player": "VJ Edgecombe",
+      "stat": "Fantasy Score",
+      "line": 29.5
+    },
+    {
+      "player": "Payton Pritchard",
+      "stat": "Fantasy Score",
+      "line": 27.5
+    },
+    {
+      "player": "Neemias Queta",
+      "stat": "Fantasy Score",
+      "line": 26.5
+    },
+    {
+      "player": "Kelly Oubre Jr.",
+      "stat": "Fantasy Score",
+      "line": 25.5
+    },
+    {
+      "player": "Nikola Vucevic",
+      "stat": "Fantasy Score",
+      "line": 18.5
+    },
+    {
+      "player": "Quentin Grimes",
+      "stat": "Fantasy Score",
+      "line": 16.5
+    }
+  ],
+  "last_updated": "4/21/2026-4:30 PM EST"
+}
