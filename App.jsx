@@ -3757,7 +3757,10 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   // CONTRARIAN MODE (NBA) — mirrors tennis/MMA with NBA-specific gem band
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
-    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
+    // Filter out low-projection players (proj < 5) — they're not viable
+    // contrarian plays. Keeping them in meant the floor bucket was wasting
+    // lineup slots on $1K players with 0.1-0.8 projections.
+    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
     if (withSal.length === 0) return {};
     const caps = {};
 
@@ -4051,14 +4054,19 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       secondaryTrap = stRanked[0] || null;
       if (secondaryTrap) {
         const stFieldOwn = ownership[secondaryTrap.name] || 0;
+        const stCptFieldOwn = cptOwnership[secondaryTrap.name] || 0;
         const isPremium = (secondaryTrap.salary || 0) > 10000;
         let stCptMax, stFlexMax;
         if (isPremium) {
-          // Premium salary → split fade: mild at FLEX, heavy at CPT
-          const cptLevFrac  = Math.min(1, Math.max(0, contrarianStrength * (0.40 / 0.6)));
+          // Premium salary → CPT uses captain-specific ownership with 55%
+          // leverage fade (cptOwn × 0.45 at base). Someone projected 40% at
+          // CPT caps at ~18%. FLEX uses total sim ownership with mild 10%
+          // leverage fade (simOwn × 0.90 at base) — premium salary is too
+          // valuable to aggressively fade at FLEX.
+          const cptLevFrac  = Math.min(1, Math.max(0, contrarianStrength * (0.55 / 0.6)));
           const flexLevFrac = Math.min(1, Math.max(0, contrarianStrength * (0.10 / 0.6)));
-          stCptMax  = Math.max(0, Math.round(stFieldOwn * (1 - cptLevFrac)));
-          stFlexMax = Math.max(0, Math.round(stFieldOwn * (1 - flexLevFrac)));
+          stCptMax  = Math.max(0, Math.round(stCptFieldOwn * (1 - cptLevFrac)));
+          stFlexMax = Math.max(0, Math.round(stFieldOwn    * (1 - flexLevFrac)));
         } else {
           // Standard fade: unified cap for both slots
           const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));
@@ -4070,6 +4078,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           _isSecondaryTrap: true,
           _isPremium: isPremium,
           _fieldOwn: Math.round(stFieldOwn),
+          _cptFieldOwn: Math.round(stCptFieldOwn),
         };
       }
     }
@@ -4247,8 +4256,13 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         const userSet = exp[p.name] || {};
         const userMin = userSet.min !== undefined ? userSet.min : globalMin;
         const userMax = userSet.max !== undefined ? userSet.max : globalMax;
-        const effMin = Math.max(userMin, cap.min || 0);
-        const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
+        // Hard-exclude players projected under 5 FS — they shouldn't compete
+        // for pool slots against real contrarian plays. Setting maxExp = 0
+        // keeps them in the `pd` array (preserves indexing) but blocks all
+        // lineup inclusion.
+        const lowProj = (p.proj || 0) < 5;
+        const effMin = lowProj ? 0 : Math.max(userMin, cap.min || 0);
+        const effMax = lowProj ? 0 : Math.min(userMax, cap.max !== undefined ? cap.max : 100);
         // Per-slot caps — merge contrarian caps (e.g., trap CPT max 10 /
         // FLEX min 60) with user-set caps by taking the MORE-RESTRICTIVE
         // of each bound, consistent with how all/min/max merge works.
