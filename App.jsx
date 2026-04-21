@@ -3310,19 +3310,12 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     return sorted[0]?.name || '';
   }, [pw]);
   // ═══════════════════════════════════════════════════════════════════════
-  // SECONDARY TRAP — pure "best value on the slate" (highest val, any
-  // salary). No ownership metric, no chalk gate — just whoever DK priced
-  // with the most projected-points-per-$K. The idea: under v3.1 philosophy
-  // (DK prices for a reason), the absolute best-val player IS a tournament
-  // trap by construction — even if the field hasn't piled on yet, the
-  // price is the warning sign. Always a DIFFERENT player from Primary.
+  // SECONDARY TRAP (v3.3) — continues down the Primary Trap list, skipping
+  // anyone already selected as Primary Trap / Gem Primary / Gem Pivot.
+  // Same gates as Primary Trap: simOwn ≥ 25%, salary > $6000.
+  // Formula: max(simOwn × val) among eligible remaining players.
+  // Computed AFTER `gem` so we can exclude gem.primary / gem.pivot.
   // ═══════════════════════════════════════════════════════════════════════
-  const secondaryTrap = useMemo(() => {
-    const active = pw.filter(p => !p.isOut && p.projectable && p.name !== trap && (p.val || 0) > 0);
-    if (active.length === 0) return '';
-    const sorted = [...active].sort((a, b) => (b.val || 0) - (a.val || 0));
-    return sorted[0]?.name || '';
-  }, [pw, trap]);
   // ═══════════════════════════════════════════════════════════════════════
   // GEM ALGORITHM — NBA v3 (slate-type aware, dual-pivot)
   //
@@ -3344,11 +3337,10 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
   const gem = useMemo(() => {
     const trapP = pw.find(p => p.name === trap);
     if (!trapP) return { primary: null, pivot: null };
-    // Exclude BOTH Primary and Secondary traps from gem consideration.
-    // Rationale: gem + trap are supposed to represent distinct edges —
-    // if the top-val player already surfaces as Secondary Trap, the gem
-    // should dig one layer deeper to a genuinely different play.
-    const active = pw.filter(p => p.projectable && !p.isOut && p.name !== trap && p.name !== secondaryTrap);
+    // Exclude only Primary Trap from gem consideration. Secondary Trap is
+    // now computed AFTER gems (continues down the Primary Trap list past
+    // whoever is already selected as Primary/Gem Primary/Gem Pivot).
+    const active = pw.filter(p => p.projectable && !p.isOut && p.name !== trap);
     if (active.length === 0) return { primary: null, pivot: null };
 
     // Default to showdown — when classic slates are built this flips based
@@ -3463,11 +3455,29 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       pivot = { name: pivotP.name, kind: nextKind };
     }
     return { primary, pivot };
-  }, [pw, trap, secondaryTrap]);
+  }, [pw, trap]);
   const gemName = gem.primary?.name || '';
   const gemKind = gem.primary?.kind || '';
   const pivotName = gem.pivot?.name || '';
   const pivotKind = gem.pivot?.kind || '';
+
+  // Secondary Trap — computed AFTER gem so we can skip players already
+  // selected as Gem Primary / Gem Pivot (and the Primary Trap itself).
+  // v3.3: simOwn ≥ 25% + max(simOwn × val). No salary gate — chalk at
+  // any price can surface (e.g., sub-$6K mid-salary punts the field is
+  // piling onto also qualify).
+  const secondaryTrap = useMemo(() => {
+    const excluded = new Set([trap, gem.primary?.name, gem.pivot?.name].filter(Boolean));
+    const pool = pw.filter(p =>
+      !p.isOut && p.projectable &&
+      !excluded.has(p.name) &&
+      (p.simOwn || 0) >= 25 &&
+      (p.val || 0) > 0
+    );
+    if (pool.length === 0) return '';
+    const sorted = [...pool].sort((a, b) => ((b.simOwn || 0) * (b.val || 0)) - ((a.simOwn || 0) * (a.val || 0)));
+    return sorted[0]?.name || '';
+  }, [pw, trap, gem]);
 
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
 
@@ -3496,7 +3506,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
         <div className="metric-sub">Who the field needs most</div>
         {secondaryTrap && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
-            or: <span style={{ color: 'var(--text-muted)' }}>{secondaryTrap}</span> <span style={{ fontSize: 10 }}>(any salary)</span>
+            or: <span style={{ color: 'var(--text-muted)' }}>{secondaryTrap}</span> <span style={{ fontSize: 10 }}>(sim ≥25%, sal &gt;$6K)</span>
           </div>
         )}
       </div>
@@ -3836,38 +3846,15 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const bucketOf = s => { const str = String(s || ''); if (/C|PF/.test(str)) return 'big'; if (/SF/.test(str)) return 'wing'; return 'guard'; };
     const positionOverlap = (a, b) => { const ab = bucketOf(a), bb = bucketOf(b); if (ab === bb) return 1.0; if ((ab === 'guard' && bb === 'big') || (ab === 'big' && bb === 'guard')) return 0.25; return 0.55; };
 
-    // SECONDARY TRAP (builder) — mirrors NBADKTab's secondaryTrap:
-    // pure highest-val player on the slate, any salary, excluding primary.
-    // Capped with multiplicative leverage fade (no flexMin — these are
-    // punt plays that don't need forced exposure):
-    //   • Base contrarian strength 0.6: cap = simOwn × (1 − 0.45) = simOwn × 0.55
-    //     e.g. 36% owned → ~20% cap, 20% owned → ~11% cap
-    //   • Scales linearly: secondaryLevFrac = strength × 0.75
-    //     → 0 @ strength 0, 0.45 @ 0.6, 0.75 @ 1.0
-    //     → multiplier ranges from 1.0 (no fade) down to 0.25 (heavy fade)
+    // SECONDARY TRAP (builder v3.3) — defined after Gems below so it can
+    // skip any player already selected as Gem Primary / Gem Pivot. Same
+    // gates as Primary Trap (simOwn ≥ 25%, sal > $6K). Placeholder here
+    // so gemPool can reference it without a ReferenceError.
     let secondaryTrap = null;
-    if (trap) {
-      const byVal = [...withSal]
-        .filter(p => p.name !== trap.name && (p.val || 0) > 0)
-        .sort((a, b) => (b.val || 0) - (a.val || 0));
-      secondaryTrap = byVal[0] || null;
-    }
-    if (secondaryTrap) {
-      const stFieldOwn = ownership[secondaryTrap.name] || 0;
-      const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));   // 0.45 @ 0.6, 0.75 @ 1.0
-      const stMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
-      caps[secondaryTrap.name] = {
-        cptMax: stMax,
-        flexMax: stMax,
-        _isSecondaryTrap: true,
-        _fieldOwn: Math.round(stFieldOwn),
-      };
-    }
 
     const gemPool = trap ? withSal.filter(p =>
       p.name !== trap.name &&
-      p.name !== stud?.name &&
-      p.name !== secondaryTrap?.name
+      p.name !== stud?.name
     ) : [];
 
     // NBA SHOWDOWN — next-best-value pivot with salary > $6,000 (v3).
@@ -3982,6 +3969,42 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           _isGem: true, _kind: 'pivot', _gemType: nextKind,
           _fieldOwn: fieldOwn,
           ...(isShowdown ? { _flexLeverage: 10 } : {}),
+        };
+      }
+    }
+
+    // SECONDARY TRAP (v3.3) — computed after gems so it can skip anyone
+    // already picked. Mirrors Primary Trap's simOwn×val formula with the
+    // additional exclusions (trap + gem primary + gem pivot):
+    //   • max(simOwn × val)
+    //   • simOwn ≥ 25% (same chalk gate as Primary)
+    //   • NO salary gate — any price can qualify
+    // Caps: multiplicative leverage fade (same pattern as before):
+    //   • Base strength 0.6: cap = simOwn × 0.55 (45% leverage fade)
+    //   • secondaryLevFrac = strength × 0.75
+    //   • Same cap applied to both CPT and FLEX (no flexMin floor)
+    if (trap) {
+      const gemPrimaryName = gemPrimary?.name;
+      const gemPivotName = Object.entries(caps).find(([, c]) => c._isGem && c._kind === 'pivot')?.[0];
+      const stExcluded = new Set([trap.name, stud?.name, gemPrimaryName, gemPivotName].filter(Boolean));
+      const stPool = withSal.filter(p =>
+        !stExcluded.has(p.name) &&
+        (ownership[p.name] || 0) >= 25 &&
+        (p.val || 0) > 0
+      );
+      const stRanked = [...stPool].sort((a, b) =>
+        ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
+      );
+      secondaryTrap = stRanked[0] || null;
+      if (secondaryTrap) {
+        const stFieldOwn = ownership[secondaryTrap.name] || 0;
+        const secondaryLevFrac = Math.min(1, Math.max(0, contrarianStrength * 0.75));  // 0.45 @ 0.6, 0.75 @ 1.0
+        const stMax = Math.max(0, Math.round(stFieldOwn * (1 - secondaryLevFrac)));
+        caps[secondaryTrap.name] = {
+          cptMax: stMax,
+          flexMax: stMax,
+          _isSecondaryTrap: true,
+          _fieldOwn: Math.round(stFieldOwn),
         };
       }
     }
