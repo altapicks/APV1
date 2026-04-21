@@ -140,12 +140,12 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enabled ? 12 : 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>
-          <Icon name="swords" size={15} color="#F5C518"/> Contrarian Mode
+          <Icon name="swords" size={15} color="#F5C518"/> OverOwned Mode
           <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 500, marginLeft: 8 }}>
-            (fade chalk, leverage dogs)
+            (fade chalk, force leverage)
           </span>
         </div>
-        <button onClick={() => onToggle(!enabled)} aria-label="Toggle Contrarian Mode" style={{
+        <button onClick={() => onToggle(!enabled)} aria-label="Toggle OverOwned Mode" style={{
           width: 40, minWidth: 40, height: 22, minHeight: 22, maxHeight: 22,
           padding: 0, flexShrink: 0,
           background: enabled ? 'var(--primary)' : 'var(--border)',
@@ -170,8 +170,8 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
             {Math.round(strength * 100)}% · −{Math.round(strength * 50)}pp
           </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>
-          Trap is capped at <strong style={{ color: 'var(--text-muted)' }}>field_own − {Math.round(strength * 50)}pp</strong> (defaults to −30 at 60%, max −50 at 100%). Below-avg-value underowned plays get boosted for differentiation.
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8, fontStyle: 'italic' }}>
+          OverOwned Mode is a formula derived from thousands of studied samples — it fades the chalk and forces the lower-owned ceiling into lineups.
         </div>
       </>)}
     </div>
@@ -1008,6 +1008,10 @@ export default function App() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   // Reset to live when sport changes so user isn't stuck on a date that may not exist in new sport
   useEffect(() => { setSlateDate('live'); }, [sport]);
+  // Reset to DK tab when sport changes — non-DK tabs can show confusing
+  // error/empty states when the new sport's slate isn't loaded yet (or
+  // doesn't exist for today). DK tab handles the empty state cleanly.
+  useEffect(() => { setTab('dk'); }, [sport]);
   // Projection overrides: user-entered projection values keyed by player name. Reset when slate/sport swaps.
   const [projOverrides, setProjOverrides] = useState({});
   useEffect(() => { setProjOverrides({}); }, [sport, data]);
@@ -3790,17 +3794,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   // CONTRARIAN MODE (NBA) — mirrors tennis/MMA with NBA-specific gem band
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
-    // PP PROJECTION BOOST (v3.18) — Option A (cascading).
-    // Theory: the top-3 LESS edges on PrizePicks (players PP is pricing above
-    // our DK projection by ≥ 2 FS points) are signal that PP sees upside we're
-    // missing. We boost those players' proj / val / ceil to match the PP line,
-    // then cascade through the contrarian signals (trap / gem / pivot / etc.).
-    // simOwn is UNCHANGED — field ownership reflects original projections, so
-    // the gap between our boosted proj and field simOwn IS the leverage signal.
-    // DK tab signals remain unboosted; only contrarian builds see the boost.
-    // EXCLUSION: if a player would be the Primary Trap (on original projections),
-    // they do NOT qualify for the boost — they're already chalky, a boost on
-    // top would compound the leverage signal incorrectly.
+    // PP EXPOSURE BOOST (v3.19) — exposure-layer boost (replaces v3.18 proj boost).
+    // Theory: PP's most-aggressive LESS lines signal PP-identified upside.
+    // We don't touch projections — instead we stack +5pp cptMin and +15pp
+    // flexMin on top of whatever caps the player already has from other
+    // signals (pivot, sleeper, etc.). Multiple signals compound additively.
+    // Selection (unchanged from v3.18): top-3 most-negative edges with
+    // ppEdge ≤ -2, excluding the original Primary Trap (computed on original
+    // projections — the trap is already chalky, compounding PP on top would
+    // fight the fade).
+    // Cap-win rule: if the boosted flexMin would exceed an existing flexMax
+    // (e.g., Top Value Cap at 10%), the floor is clipped to the max. The
+    // existing cap's fade intent wins.
     const origWithSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
     const origSalaryPool = origWithSal.filter(p => (p.salary || 0) > 6000);
     const origGated = origSalaryPool.filter(p => (ownership[p.name] || 0) >= 25);
@@ -3810,44 +3815,19 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     )[0]?.name || null;
     const ppFadeCandidates = rp
       .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
-      .filter(p => p.name !== origPrimaryTrapName)  // primary trap can't be boosted
-      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))  // most-negative first
+      .filter(p => p.name !== origPrimaryTrapName)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
       .slice(0, 3);
-    const boostSet = new Map(ppFadeCandidates.map(p => [p.name, p]));
-    const boostedRp = rp.map(p => {
-      if (!boostSet.has(p.name)) return p;
-      const newProj = p.ppLine;                               // boost to PP line
-      const ceilRatio = (p.proj || 0) > 0 ? (p.ceil || 0) / p.proj : 1.25;
-      const newCeil = Math.round(newProj * ceilRatio * 100) / 100;
-      const sal = p.salary || p.util_salary || 0;
-      const newVal = sal > 0 ? Math.round(newProj / (sal / 1000) * 100) / 100 : p.val;
-      const newCval = sal > 0 ? Math.round(newCeil / (sal / 1000) * 100) / 100 : p.cval;
-      return {
-        ...p,
-        _ppBoosted: true,
-        _origProj: p.proj, _origCeil: p.ceil, _origVal: p.val,
-        proj: newProj, ceil: newCeil, val: newVal, cval: newCval,
-      };
-    });
     // Filter out low-projection players (proj < 5) — they're not viable
     // contrarian plays. Keeping them in meant the floor bucket was wasting
     // lineup slots on $1K players with 0.1-0.8 projections.
-    const withSal = boostedRp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
+    const withSal = rp.filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT' && (p.proj || 0) >= 5);
     if (withSal.length === 0) return {};
     const caps = {};
-    // Expose boost metadata via a well-known key so the ribbon can render a
-    // "PP Boosted: [names]" pill without re-deriving which players qualified.
-    if (ppFadeCandidates.length > 0) {
-      caps.__ppBoost = {
-        _isMeta: true,
-        names: ppFadeCandidates.map(p => ({
-          name: p.name,
-          origProj: p.proj,
-          boostedProj: p.ppLine,
-          edge: p.ppEdge,
-        })),
-      };
-    }
+    // Stash the PP boost list for later — applied AFTER all other signals
+    // assign their caps so the boost is additive on top of whatever the
+    // player already got.
+    const _ppBoostNames = ppFadeCandidates.map(p => p.name);
 
     const byProj = [...withSal].sort((a, b) => (b.ceil || b.proj || 0) - (a.ceil || a.proj || 0));
     const topProjN = Math.max(3, Math.ceil(withSal.length * 0.3));
@@ -4261,10 +4241,12 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
 
     sleeperCandidates.forEach((p, idx) => {
       const fieldOwn = Math.round(ownership[p.name] || 0);
-      // Sleeper leverage floor — scales linearly with contrarian strength:
-      //   0pp @ strength 0, +10pp @ 0.6 (base), +16-17pp @ 1.0 (max).
-      // Matches the stud scaling — ensures both groups flex with the meter.
-      const slpLevPP = Math.round(contrarianStrength * (10 / 0.6));
+      // Sleeper leverage floor (v3.19) — simplified to +5pp at base 0.6.
+      // Scales linearly: 0pp @ strength 0, +5pp @ 0.6, ~8pp @ 1.0.
+      // Reduced from prior +10pp base — sleepers now get a lighter nudge
+      // (PP Boost on top adds another +15pp flex if the sleeper is also a
+      // PP fade target; the two boosts compound additively).
+      const slpLevPP = Math.round(contrarianStrength * (5 / 0.6));
       caps[p.name] = {
         min: Math.min(95, fieldOwn + slpLevPP),
         max: 100,
@@ -4379,48 +4361,50 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       };
     });
 
+    // PP EXPOSURE BOOST (v3.19) — applied LAST, after all other signals have
+    // assigned their caps. For each top-3 PP fade target (identified above
+    // in `_ppBoostNames`, excluding the primary trap), add +5pp cptMin and
+    // +15pp flexMin additively on top of whatever the player already has.
+    //
+    // Cap-win rule: if the boosted floor would exceed an existing MAX cap
+    // (e.g., Top Value flexMax = 10%, boosted flexMin wants 20%), the floor
+    // is clipped down to the max. This protects fade intent — a player the
+    // Top Value rule wants capped at 10% stays capped, PP signal notwithstanding.
+    // Cap-raise rule for MIN: if existing cptMax/flexMax are undefined (no
+    // fade cap in place), the boost applies cleanly.
+    _ppBoostNames.forEach((name, idx) => {
+      const existing = caps[name] || {};
+      const fieldOwn = Math.round(ownership[name] || 0);
+      const currCptMin  = existing.cptMin  || 0;
+      const currFlexMin = existing.flexMin || 0;
+      const currCptMax  = existing.cptMax  !== undefined ? existing.cptMax  : 100;
+      const currFlexMax = existing.flexMax !== undefined ? existing.flexMax : 100;
+      // +5pp CPT, +15pp FLEX (fixed, not strength-scaled — user spec)
+      const newCptMin  = Math.min(currCptMin  + 5,  currCptMax);   // cap wins
+      const newFlexMin = Math.min(currFlexMin + 15, currFlexMax);  // cap wins
+      const fade = ppFadeCandidates.find(p => p.name === name);
+      caps[name] = {
+        ...existing,
+        cptMin:  newCptMin,
+        flexMin: newFlexMin,
+        _isPpBoost: true,
+        _ppBoostRank: idx + 1,
+        _ppBoostEdge: fade?.ppEdge || 0,
+        _ppBoostLine: fade?.ppLine || 0,
+        _ppBoostOrigProj: fade?.proj || 0,
+        _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : fieldOwn,
+        _ppBoostAddedCptMin:  newCptMin  - currCptMin,
+        _ppBoostAddedFlexMin: newFlexMin - currFlexMin,
+      };
+    });
+
     return caps;
   }, [rp, ownership, cptOwnership, contrarianOn, contrarianStrength, avgVal]);
 
-  const sp = useMemo(() => {
-    const base = [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT');
-    // PP BOOST (sp-layer, v3.18) — mirrors the boost applied inside
-    // contrarianCaps. When contrarian is on, the top-3 LESS edges (ppEdge ≤ -2,
-    // excluding the primary trap) get their proj / ceil / val scaled to match
-    // the PP line. This is what the optimizer actually SCORES on, so without
-    // this step the signals would cascade but the builder wouldn't try harder
-    // to play the boosted players.
-    if (contrarianOn) {
-      const origSalaryPool = base.filter(p => (p.salary || 0) > 6000 && (p.proj || 0) >= 5);
-      const origGated = origSalaryPool.filter(p => (ownership[p.name] || 0) >= 25);
-      const origPool = origGated.length > 0 ? origGated : origSalaryPool;
-      const origPrimaryTrapName = [...origPool].sort((a, b) =>
-        ((ownership[b.name] || 0) * (b.val || 0)) - ((ownership[a.name] || 0) * (a.val || 0))
-      )[0]?.name || null;
-      const boostNames = new Set(
-        base
-          .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
-          .filter(p => p.name !== origPrimaryTrapName)
-          .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
-          .slice(0, 3)
-          .map(p => p.name)
-      );
-      if (boostNames.size > 0) {
-        return base.map(p => {
-          if (!boostNames.has(p.name)) return p;
-          const newProj = p.ppLine;
-          const ceilRatio = (p.proj || 0) > 0 ? (p.ceil || 0) / p.proj : 1.25;
-          const newCeil = Math.round(newProj * ceilRatio * 100) / 100;
-          const sal = p.salary || p.util_salary || 0;
-          const newVal = sal > 0 ? Math.round(newProj / (sal / 1000) * 100) / 100 : p.val;
-          const newCval = sal > 0 ? Math.round(newCeil / (sal / 1000) * 100) / 100 : p.cval;
-          return { ...p, _ppBoosted: true, _origProj: p.proj, _origCeil: p.ceil, _origVal: p.val,
-                   proj: newProj, ceil: newCeil, val: newVal, cval: newCval };
-        }).sort((a, b) => b.val - a.val);
-      }
-    }
-    return base.sort((a, b) => b.val - a.val);
-  }, [rp, contrarianOn, ownership]);
+  const sp = useMemo(() =>
+    [...rp].filter(p => p.salary > 0 && p.projectable && (p.status || 'ACTIVE').toUpperCase() !== 'OUT')
+           .sort((a, b) => b.val - a.val),
+    [rp]);
 
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
@@ -4438,18 +4422,8 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       });
     };
     if (isShowdown) {
-      // Build PP-boost map once so showdown + classic paths share logic.
-      // boostedProj replaces p.proj for scoring; ceil is scaled by the same
-      // ratio so ceil-based strategies (variance path) also see the boost.
-      const ppBoostMap = new Map();
-      const ppMeta = contrarianCaps.__ppBoost;
-      if (ppMeta && Array.isArray(ppMeta.names)) {
-        ppMeta.names.forEach(b => { ppBoostMap.set(b.name, b.boostedProj); });
-      }
       const baseProjs = sp.map(p => p.proj);
       const pd = sp.map(p => {
-        const boosted = ppBoostMap.get(p.name);
-        const effProj = boosted !== undefined ? boosted : p.proj;
         const cap = contrarianCaps[p.name] || {};
         const userSet = exp[p.name] || {};
         const userMin = userSet.min !== undefined ? userSet.min : globalMin;
@@ -4458,7 +4432,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         // for pool slots against real contrarian plays. Setting maxExp = 0
         // keeps them in the `pd` array (preserves indexing) but blocks all
         // lineup inclusion.
-        const lowProj = effProj < 5;
+        const lowProj = (p.proj || 0) < 5;
         const effMin = lowProj ? 0 : Math.max(userMin, cap.min || 0);
         const effMax = lowProj ? 0 : Math.min(userMax, cap.max !== undefined ? cap.max : 100);
         // Per-slot caps — merge contrarian caps (e.g., trap CPT max 10 /
@@ -4469,7 +4443,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         const userFlexMin = userSet.flexMin !== undefined ? userSet.flexMin : 0;
         const userFlexMax = userSet.flexMax !== undefined ? userSet.flexMax : 100;
         return {
-          name: p.name, team: p.team, projection: effProj * jitter(),
+          name: p.name, team: p.team, projection: p.proj * jitter(),
           util_salary: p.util_salary || p.salary, cpt_salary: p.cpt_salary,
           util_id: p.util_id || p.id, cpt_id: p.cpt_id,
           salary: p.util_salary || p.salary, id: p.util_id || p.id,
@@ -4526,15 +4500,8 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       return;
     }
     // Classic
-    const ppBoostMapC = new Map();
-    const ppMetaC = contrarianCaps.__ppBoost;
-    if (ppMetaC && Array.isArray(ppMetaC.names)) {
-      ppMetaC.names.forEach(b => { ppBoostMapC.set(b.name, b.boostedProj); });
-    }
     const baseProjs = sp.map(p => p.proj);
     const pd = sp.map(p => {
-      const boosted = ppBoostMapC.get(p.name);
-      const effProj = boosted !== undefined ? boosted : p.proj;
       const cap = contrarianCaps[p.name] || {};
       const userSet = exp[p.name] || {};
       const userMin = userSet.min !== undefined ? userSet.min : globalMin;
@@ -4542,7 +4509,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const effMin = Math.max(userMin, cap.min || 0);
       const effMax = Math.min(userMax, cap.max !== undefined ? cap.max : 100);
       return {
-        name: p.name, team: p.team, projection: effProj * jitter(),
+        name: p.name, team: p.team, projection: p.proj * jitter(),
         salary: p.salary, id: p.id, positions: p.positions || [],
         status: p.status, maxExp: effMax, minExp: effMin,
       };
@@ -4640,76 +4607,80 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
-      const trapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTrap);
-      const secondaryTrapEntry = Object.entries(contrarianCaps).find(([, c]) => c._isSecondaryTrap);
-      const studEntry = Object.entries(contrarianCaps).find(([, c]) => c._isBoost && c._type === 'stud');
-      const gemPrimaryEntry = Object.entries(contrarianCaps).find(([, c]) => c._isGem && c._kind === 'primary');
-      const gemPivotEntries = Object.entries(contrarianCaps)
-        .filter(([, c]) => c._isGem && c._kind === 'pivot')
-        .sort((a, b) => (a[1]._pivotRank || 0) - (b[1]._pivotRank || 0));
-      const ppBoostMeta = contrarianCaps.__ppBoost;
-      const sleeperEntries = Object.entries(contrarianCaps)
-        .filter(([, c]) => c._isSleeper)
-        .sort((a, b) => (a[1]._sleeperRank || 0) - (b[1]._sleeperRank || 0));
-      const midSalCptPivotEntries = Object.entries(contrarianCaps)
-        .filter(([, c]) => c._isMidSalCptPivot)
-        .sort((a, b) => (a[1]._midSalCptPivotRank || 0) - (b[1]._midSalCptPivotRank || 0));
-      const extSleeperCount = Object.values(contrarianCaps).filter(c => c._isExtSleeper).length;
-      const midChalkCount = Object.values(contrarianCaps).filter(c => c._isMidChalk).length;
-      const floorCount = Object.values(contrarianCaps).filter(c => c._isFloor).length;
+      // OverOwned Mode display (v3.19) — simplified to show only the top 5
+      // biggest exposure changes (ranked by |newBound − fieldOwn|). Players
+      // not shown still have their caps enforced by the optimizer.
+      //
+      // For each capped player, compute a "primary change" — the single
+      // bound that represents the rule's intent (trap → max, gem → min,
+      // pivot → flexMin, top value → flexMax, PP boost → flexMin, etc.).
+      const labelFor = (c) => {
+        if (c._isWashTrap) return { label: 'Wash Trap', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isTrap) return { label: 'Trap', icon: 'bomb', color: 'var(--red)' };
+        if (c._isTopValueCap) return { label: 'Top Value Cap', icon: 'trophy', color: 'var(--amber)' };
+        if (c._isSecondaryTrap) return { label: 'Secondary Trap', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidSalCptPivot) return { label: 'Mid-sal Pivot', icon: 'trophy', color: 'var(--green)' };
+        if (c._isGem && c._kind === 'primary') return { label: 'Gem', icon: 'gem', color: 'var(--green)' };
+        if (c._isGem && c._kind === 'pivot') return { label: `Pivot ${c._pivotRank || ''}`.trim(), icon: 'gem', color: 'var(--green)' };
+        if (c._isBoost && c._type === 'stud') return { label: 'Stud', icon: 'trophy', color: 'var(--green)' };
+        if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
+        if (c._isSleeper) return { label: `Sleeper ${c._sleeperRank || ''}`.trim(), icon: 'sleeper', color: 'var(--green)' };
+        if (c._isCptPivot) return { label: 'CPT Pivot', icon: 'trophy', color: 'var(--green)' };
+        return null;
+      };
+      const describeChange = (c) => {
+        // Returns { bound: number, sym: '→ min X%' | '→ max X%' | '→ X-Y%' | '→ match X%', magnitude: number }
+        if (c._isWashTrap) return { sym: `match ${c.max}%`, mag: 0 };  // wash has 0 delta
+        if (c._isTrap) {
+          const bound = c.flexMax != null ? c.flexMax : c.cptMax;
+          return { sym: `CPT max ${c.cptMax}% / FLEX ${c.flexMin}-${c.flexMax}%`, bound };
+        }
+        if (c._isTopValueCap) return { sym: `CPT max ${c.cptMax}% / FLEX max ${c.flexMax}%`, bound: c.flexMax };
+        if (c._isSecondaryTrap) {
+          return { sym: c._isPremium
+            ? `CPT max ${c.cptMax}% / FLEX max ${c.flexMax}% ★$10K+`
+            : `max ${c.cptMax}%`,
+            bound: c.flexMax != null ? c.flexMax : c.cptMax };
+        }
+        if (c._isMidSalCptPivot) return { sym: `CPT ${c.cptMin}% / FLEX ${c.flexMin}%`, bound: c.flexMin };
+        if (c._isGem && c._kind === 'primary') return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isGem && c._kind === 'pivot') return { sym: `FLEX ${c._displayedFlexMin}% / CPT ${c._displayedCptMin}%`, bound: c._displayedFlexMin };
+        if (c._isBoost && c._type === 'stud') return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isPpBoost) return { sym: `+${c._ppBoostAddedCptMin}% CPT / +${c._ppBoostAddedFlexMin}% FLEX (stacked)`, bound: c.flexMin };
+        if (c._isSleeper) return { sym: `min ${c.min}%`, bound: c.min };
+        if (c._isCptPivot) return { sym: `CPT min ${c.cptMin}%`, bound: c.cptMin };
+        return { sym: '', bound: 0 };
+      };
+      // Build list of (name, cap, labelInfo, desc, delta) and rank by |delta|
+      const ranked = [];
+      for (const [name, c] of Object.entries(contrarianCaps)) {
+        const lbl = labelFor(c);
+        if (!lbl) continue;
+        const desc = describeChange(c);
+        const field = ownership[name] || 0;
+        const delta = desc.bound != null ? Math.abs(desc.bound - field) : 0;
+        ranked.push({ name, cap: c, lbl, desc, field, delta });
+      }
+      ranked.sort((a, b) => b.delta - a.delta);
+      const top5 = ranked.slice(0, 5);
+      const othersCount = ranked.length - top5.length;
       return (
-        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {(() => {
-            const ppBoostMeta = contrarianCaps.__ppBoost;
-            if (!ppBoostMeta || !ppBoostMeta.names || ppBoostMeta.names.length === 0) return null;
-            return (
-              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                <Icon name="rocket" size={12} color="var(--primary)"/>
-                <span>PP Boost:</span>
-                {ppBoostMeta.names.map((b, i) => (
-                  <span key={b.name}>
-                    <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{b.name}</span>{' '}
-                    <span style={{ color: 'var(--text-dim)' }}>({b.origProj.toFixed(1)}</span>
-                    <span style={{ color: 'var(--green-text)', fontWeight: 600 }}>→{b.boostedProj.toFixed(1)}</span>
-                    <span style={{ color: 'var(--text-dim)' }}>, +{Math.abs(b.edge).toFixed(2)})</span>
-                    {i < ppBoostMeta.names.length - 1 && <span style={{ color: 'var(--text-dim)' }}>{' · '}</span>}
-                  </span>
-                ))}
-              </span>
-            );
-          })()}
-          {trapEntry && (trapEntry[1]._isWashTrap
-            ? <span><Icon name="bomb" size={12} color="var(--amber)"/> #1 Value Trap <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → match <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].max}%</span> <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>(shoot for wash)</span></span>
-            : <span><Icon name="bomb" size={12} color="var(--red)"/> Fading <span style={{ color: 'var(--red)', fontWeight: 600 }}>{trapEntry[0]}</span> · field {(ownership[trapEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{trapEntry[1].flexMin}-{trapEntry[1].flexMax}%</span></span>
+        <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>Top 5 Exposure Changes</span>
+          {top5.map(({ name, lbl, desc, field }) => (
+            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Icon name={lbl.icon} size={12} color={lbl.color}/>
+              <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
+              <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
+              <span style={{ color: 'var(--text-dim)' }}>· field {field.toFixed(1)}% →</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{desc.sym}</span>
+            </span>
+          ))}
+          {othersCount > 0 && (
+            <span style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: 11 }}>
+              +{othersCount} more signals enforced
+            </span>
           )}
-          {(() => {
-            const topValueEntry = Object.entries(contrarianCaps).find(([, c]) => c._isTopValueCap);
-            if (!topValueEntry) return null;
-            return <span><Icon name="trophy" size={12} color="var(--text-dim)"/> Top Value <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{topValueEntry[0]}</span> · field {(ownership[topValueEntry[0]] || 0).toFixed(1)}% → CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{topValueEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{topValueEntry[1].flexMax}%</span></span>;
-          })()}
-          {secondaryTrapEntry && <span><Icon name="bomb" size={12} color="var(--amber)"/> Secondary <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{secondaryTrapEntry[0]}</span> · field {(ownership[secondaryTrapEntry[0]] || 0).toFixed(1)}% → {secondaryTrapEntry[1]._isPremium
-            ? <>CPT max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span>, FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].flexMax}%</span><span style={{ color: 'var(--amber)', fontSize: 10, marginLeft: 4 }}>★$10K+</span></>
-            : <>max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></>
-          }</span>}
-          {midSalCptPivotEntries.map(([name, c]) => (
-            <span key={name}><Icon name="trophy" size={12} color="var(--text-dim)"/> Mid-sal pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · CPT <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.cptMin}%</span> / FLEX <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.flexMin}%</span></span>
-          ))}
-          {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
-          {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
-          {gemPivotEntries.map(([name, c], idx) => (
-            <span key={name}><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot{gemPivotEntries.length > 1 ? ` ${idx + 1}` : ''} <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._displayedFlexMin}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._displayedCptMin}%</span> CPT{c._pivotPoolNames && <> · +{c._pivotPoolNames.length} pool <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._pivotFlexTarget}%</span>/<span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c._pivotCptTarget}%</span></>}</span>
-          ))}
-          {ppBoostMeta && ppBoostMeta.names && ppBoostMeta.names.length > 0 && (
-            <span><Icon name="rocket" size={12} color="var(--text-dim)"/> PP Boost {ppBoostMeta.names.map((n, i) => (
-              <span key={n.name}>{i > 0 ? ', ' : ''}<span style={{ color: 'var(--green)', fontWeight: 600 }}>{n.name}</span> <span style={{ color: 'var(--text-dim)' }}>({n.origProj.toFixed(1)}→{n.boostedProj.toFixed(1)}, +{Math.abs(n.edge).toFixed(2)})</span></span>
-            ))}</span>
-          )}
-          {sleeperEntries.map(([name, c]) => (
-            <span key={name}><Icon name="sleeper" size={12}/> Sleeper <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
-          ))}
-          {extSleeperCount > 0 && <span><Icon name="sleeper" size={12} color="var(--text-dim)"/> +{extSleeperCount} extended sleepers · each min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>field+{Math.round(5 * (contrarianStrength / 0.6))}pp</span></span>}
-          {midChalkCount > 0 && <span><Icon name="target" size={12} color="var(--text-muted)"/> {midChalkCount} mid-chalk · each min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>= field</span></span>}
-          {floorCount > 0 && <span><Icon name="link" size={12} color="var(--text-muted)"/> {floorCount} others · floor <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{Math.round(1 + contrarianStrength * 7)}%</span></span>}
         </div>
       );
     })()}
