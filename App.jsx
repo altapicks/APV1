@@ -3953,22 +3953,27 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const nextKind = (trap && gemPivot.team === trap.team && gemPivot.salary >= 3000) ? 'replacer' : 'value';
       if (!caps[gemPivot.name]) {
         const fieldOwn = Math.round(ownership[gemPivot.name] || 0);
-        // No cptMin — gem pivot isn't forced into the captain slot. For
-        // NBA SHOWDOWN we leverage them at FLEX instead: flex exposure is
-        // +10pp over field sim ownership. This keeps the pivot heavily
-        // played in UTIL (where the field already uses them) without
-        // crowding the captain slot that the primary gem already claims.
-        // Capped at 90 to avoid impossible-to-satisfy floors on mega-chalk
-        // plays (if fieldOwn is already 85+, flex+10 would overshoot).
-        // Classic NBA skips flexMin since there's no flex/util slot distinction.
-        const flexLeverageMin = Math.max(0, Math.min(90, fieldOwn + 10));
+        // GEM PIVOT POOL (v3.4) — slot-based exposure instead of forcing one
+        // named player. The display name (gemPivot = top ceilVal) still shows
+        // in the ribbon, but the optimizer's target is the ENTIRE pivot pool:
+        //   • pivotFlexTarget of lineups contain ≥1 pool player in FLEX
+        //   • pivotCptTarget  of lineups have a pool player as CPT
+        // Within each reserved slot, the optimizer naturally buys up the
+        // highest-ceiling pool member that fits the remaining salary (higher
+        // ceil → higher proj → preferred in phase-1 min-fill scoring).
+        // Scaling: proportional from 0 → base 0.6 → max 1.0
+        //   flex: 40% @ 0.6 → 67% @ 1.0
+        //   cpt:  10% @ 0.6 → 17% @ 1.0
+        const pivotFlexTarget = Math.round(contrarianStrength * (40 / 0.6));
+        const pivotCptTarget  = Math.round(contrarianStrength * (10 / 0.6));
+        const poolNames = pivotPool.map(p => p.name);
         caps[gemPivot.name] = {
-          min: pivotMin,
-          max: 100,
-          ...(isShowdown ? { flexMin: flexLeverageMin } : {}),
+          min: 0, max: 100,
           _isGem: true, _kind: 'pivot', _gemType: nextKind,
           _fieldOwn: fieldOwn,
-          ...(isShowdown ? { _flexLeverage: 10 } : {}),
+          _pivotPoolNames: poolNames,
+          _pivotFlexTarget: pivotFlexTarget,
+          _pivotCptTarget: pivotCptTarget,
         };
       }
     }
@@ -4201,6 +4206,14 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         };
       });
       enforceMinNudge(pd, baseProjs);
+      // Extract gem pivot pool info (v3.4 slot-based exposure) from
+      // contrarianCaps. The pivot pool drives slot reservation in the
+      // optimizer: pivotFlexTarget% of lineups contain ≥1 pool player in
+      // FLEX, pivotCptTarget% have a pool player as CPT.
+      const pivotPoolCap = Object.values(contrarianCaps).find(c => c._isGem && c._kind === 'pivot');
+      const pivotPoolSet = new Set(pivotPoolCap?._pivotPoolNames || []);
+      const pivotFlexFrac = (pivotPoolCap?._pivotFlexTarget || 0) / 100;
+      const pivotCptFrac  = (pivotPoolCap?._pivotCptTarget  || 0) / 100;
       const r = nbaOptimizeShowdown(pd, nL, 50000, 48000, {
         locked: new Set(lockedPlayers),
         excluded: new Set(excludedPlayers),
@@ -4208,6 +4221,9 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         flexLocked: new Set(flexLockedPlayers),
         cptExcluded: new Set(cptExcludedPlayers),
         flexExcluded: new Set(flexExcludedPlayers),
+        pivotPool: pivotPoolSet,
+        pivotFlexTarget: pivotFlexFrac,
+        pivotCptTarget: pivotCptFrac,
       });
       // Merge favorited lineups: remap name-based favorites to the new pData
       // indices, prepend to r.lineups, and recompute counts so the exposure
@@ -4358,7 +4374,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           {secondaryTrapEntry && <span><Icon name="bomb" size={12} color="var(--amber)"/> Secondary <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{secondaryTrapEntry[0]}</span> · field {(ownership[secondaryTrapEntry[0]] || 0).toFixed(1)}% → max <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{secondaryTrapEntry[1].cptMax}%</span></span>}
           {studEntry && <span><Icon name="trophy" size={12}/> Stud <span style={{ color: 'var(--green)', fontWeight: 600 }}>{studEntry[0]}</span> · field {(ownership[studEntry[0]] || 0).toFixed(1)}% → <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{studEntry[1].min}-{studEntry[1].max}%</span></span>}
           {gemPrimaryEntry && <span><Icon name="gem" size={12}/> Gem <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPrimaryEntry[0]}</span> · field {(ownership[gemPrimaryEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPrimaryEntry[1].min}%</span></span>}
-          {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> · field {(ownership[gemPivotEntry[0]] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1].min}%</span></span>}
+          {gemPivotEntry && <span><Icon name="gem" size={12} color="var(--text-dim)"/> Pivot pool <span style={{ color: 'var(--green)', fontWeight: 600 }}>{gemPivotEntry[0]}</span> + {(gemPivotEntry[1]._pivotPoolNames?.length || 1) - 1} others · <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotFlexTarget}%</span> FLEX / <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{gemPivotEntry[1]._pivotCptTarget}%</span> CPT</span>}
           {sleeperEntries.map(([name, c]) => (
             <span key={name}><Icon name="sleeper" size={12}/> Sleeper <span style={{ color: 'var(--green)', fontWeight: 600 }}>{name}</span> · field {(ownership[name] || 0).toFixed(1)}% → min <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{c.min}%</span></span>
           ))}
