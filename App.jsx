@@ -3804,8 +3804,23 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       const flexMaxLeverage = Math.round(30 + (contrarianStrength - 0.6) *  50);  // 30pp @ 0.6,  50pp @ 1.0
       const flexMinLeverage = Math.round(35 + (contrarianStrength - 0.6) *  50);  // 35pp @ 0.6,  55pp @ 1.0
       const cptMax  = Math.max(0, Math.round(trapFieldOwn - cptLeverage));
-      const flexMax = Math.max(0, Math.round(trapFieldOwn - flexMaxLeverage));
+      let   flexMax = Math.max(0, Math.round(trapFieldOwn - flexMaxLeverage));
       let   flexMin = Math.max(0, Math.round(trapFieldOwn - flexMinLeverage));
+      // PREMIUM-SALARY TRAP RULE (v3.6) — if trap salary > $10,000 they're
+      // too salary-critical to fade at FLEX. Force flexMin to 80% at base
+      // strength 0.6 (scales proportionally: 0 @ off, 80 @ 0.6, 95 @ 1.0,
+      // capped at 95 so 5% of lineups can always skip them). CPT rules
+      // unchanged — the fade still happens at the captain slot only.
+      if ((trap.salary || 0) > 10000) {
+        const premiumFlexMin = Math.min(95, Math.round(contrarianStrength * (80 / 0.6)));
+        if (premiumFlexMin > flexMin) {
+          flexMin = premiumFlexMin;
+          // flexMax must be ≥ flexMin; if the leverage formula capped it
+          // below the premium floor, open it up to 100 so the optimizer
+          // has headroom to satisfy the floor.
+          if (flexMax < flexMin) flexMax = 100;
+        }
+      }
       if (flexMin > flexMax) flexMin = flexMax;  // safety: floor never above cap
       caps[trap.name] = {
         cptMax, flexMin, flexMax,
