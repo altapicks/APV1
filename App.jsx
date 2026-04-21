@@ -3403,8 +3403,8 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       const pivotPool = active.filter(p =>
         p.name !== primary.name &&
         (p.simOwn || 0) >= 6 &&
-        (p.simOwn || 0) < 25 &&
-        (p.salary || 0) >= 2000 &&
+        (p.simOwn || 0) < 33 &&
+        (p.salary || 0) >= 2700 &&
         (p.ceil || 0) > 0
       );
       const ceilVal = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
@@ -3450,8 +3450,8 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     const pivotPool = active.filter(p =>
       p.name !== primary.name &&
       (p.simOwn || 0) >= 6 &&
-      (p.simOwn || 0) < 25 &&
-      (p.salary || 0) >= 2000 &&
+      (p.simOwn || 0) < 33 &&
+      (p.salary || 0) >= 2700 &&
       (p.ceil || 0) > 0
     );
     const ceilValC = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
@@ -3981,33 +3981,36 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       secondaryTrapCandidateName = preRanked[0]?.name || null;
     }
 
-    // Pivot (NBA v3.13): owned-but-not-chalky leverage play, ranked by
+    // Pivot (NBA v3.14): owned-but-not-chalky leverage play, ranked by
     //   ceiling-value (ceil per $1K). Mirrors NBADKTab's pivot rule so
     //   DK tab display and Builder caps target the same player.
     //   • not a trap (primary OR secondary) or stud or primary gem
-    //   • 6% ≤ simOwn < 25% (on the field's radar but not chalk)
-    //   • salary ≥ $2000 (raised from $1500 — excludes deep punts)
+    //   • 6% ≤ simOwn < 33% (expanded upper bound to catch chalkier pivots
+    //     like Robert Williams that the field is on but aren't the single
+    //     biggest trap target)
+    //   • salary ≥ $2,700 (raised floor — excludes punts like Kris Murray
+    //     that dominate ceilVal through salary-denominator gaming)
     //   • ranked by ceil / (salary/1000) desc — ceiling-adjusted value
     const pivotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
       p.name !== secondaryTrapCandidateName &&
       (ownership[p.name] || 0) >= 6 &&
-      (ownership[p.name] || 0) < 25 &&
-      (p.salary || 0) >= 2000 &&
+      (ownership[p.name] || 0) < 33 &&
+      (p.salary || 0) >= 2700 &&
       (p.ceil || 0) > 0
     );
     const ceilValB = (p) => (p.ceil || 0) / Math.max(1, (p.salary || 0) / 1000);
     const pivotByCeil = [...pivotPool].sort((a, b) => ceilValB(b) - ceilValB(a));
     const gemPivot = pivotByCeil[0];
-    // SLOT-TARGET POOL (v3.7/v3.13) — wider 6-35% simOwn band used only for
+    // SLOT-TARGET POOL (v3.7/v3.14) — wider 6-35% simOwn band used only for
     // slot-based exposure targeting (the "+N pool" in the ribbon). Same
-    // exclusions as display pool (traps + primary gem) + $2K salary floor.
+    // exclusions as display pool (traps + primary gem) + $2,700 salary floor.
     const pivotSlotPool = gemPool.filter(p =>
       (!gemPrimary || p.name !== gemPrimary.name) &&
       p.name !== secondaryTrapCandidateName &&
       (ownership[p.name] || 0) >= 6 &&
       (ownership[p.name] || 0) < 35 &&
-      (p.salary || 0) >= 2000 &&
+      (p.salary || 0) >= 2700 &&
       (p.ceil || 0) > 0
     );
     if (gemPivot) {
