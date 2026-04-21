@@ -153,14 +153,11 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
   font-weight: 600; color: var(--text-muted); font-size: 11px;
 }
 .lu-proj { color: var(--primary); font-size: 14px; font-weight: 700; }
-.lu-row {
-  display: flex; align-items: baseline; gap: 10px; padding: 3px 0;
-  color: var(--text-muted);
-}
-.lu-row .lu-name { color: var(--text); font-weight: 500; flex: 0 0 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
-.lu-row .lu-opp { color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
-.lu-row .lu-sal { width: 55px; text-align: right; flex-shrink: 0; }
-.lu-row .lu-pts { width: 45px; text-align: right; color: var(--primary); flex-shrink: 0; }
+.lu-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; color: var(--text-muted); }
+.lu-row .lu-name { color: var(--text); font-weight: 500; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lu-row .lu-opp { color: var(--text-dim); flex: 0 0 auto; width: 54px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+.lu-row .lu-sal { width: 62px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.lu-row .lu-pts { width: 42px; text-align: right; color: var(--primary); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .lu-footer {
   display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px;
   border-top: 1px solid var(--border); font-weight: 600; font-size: 12px;
