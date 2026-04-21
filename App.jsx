@@ -1711,16 +1711,17 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     return scored[0]?.name || '';
   }, [pw]);
 
-  // Hidden Gem — dual-track with primary + optional pivot:
+  // Hidden Gem — dual-track with primary + optional PP-based pivot:
   //   PRIMARY 1 (preferred): trap's opponent, IF they're +199 or better
   //     (wp >= 33.4%). Close matchup = salary-swap + real upset upside.
-  //   PRIMARY 2 (fallback / pivot): best player in trap's salary band.
-  //     Band starts tight (-$1000 / +$300). If no candidates (short
-  //     slates), widens to -$2500 / +$1000. If STILL nothing (very
-  //     short slate), falls back to highest-leverage player — biggest
-  //     (wp% − simOwn) gap, the inverse of the trap signal.
-  //   When opponent qualifies, salary-band winner shows as PIVOT.
-  //   When opponent doesn't qualify, salary-band winner stands alone.
+  //   PRIMARY 2 (fallback): best player in trap's salary band
+  //     (-$1000 to +$300, widened to -$2500/+$1000 if empty, then
+  //     highest (wp − simOwn) gap).
+  //   PIVOT (v3.19): best PrizePicks LESS signal with ppEdge ≤ -2,
+  //     excluding primary and trap. If primary gem = top PP LESS,
+  //     the pivot falls to #2 PP LESS. If no PP data available on
+  //     the slate, pivot falls back to the salary-band winner
+  //     (the old pivot logic).
   const gem = useMemo(() => {
     const trapPlayer = pw.find(p => p.name === trap);
     if (!trapPlayer) return { primary: null, pivot: null };
@@ -1745,30 +1746,49 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       return { name: p.name, score };
     }).sort((a, b) => b.score - a.score);
 
-    let bandWinner = scoreBand(-1000, 300)[0];
-    if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0];
-    // Final fallback — inverse of trap signal: highest (wp − simOwn) gap.
-    // Rewards underowned players with real win probability.
-    if (!bandWinner) {
-      const lev = pw.filter(p => {
+    // Compute salary-band rankings once — used for primary (if opponent
+    // doesn't qualify) AND as pivot fallback when no PP data available.
+    let bandRanked = scoreBand(-1000, 300);
+    if (bandRanked.length === 0) bandRanked = scoreBand(-2500, 1000);
+    // Leverage fallback if salary-band empty (very short slates)
+    if (bandRanked.length === 0) {
+      bandRanked = pw.filter(p => {
         if (p.name === trap) return false;
         if (opponentQualifies && opponent && p.name === opponent.name) return false;
         return (p.salary || 0) > 0;
       }).map(p => ({ name: p.name, score: (p.wp || 0) * 100 - (p.simOwn || 0) }))
-        .sort((a, b) => b.score - a.score);
-      if (lev[0] && lev[0].score > 0) bandWinner = lev[0];
+        .sort((a, b) => b.score - a.score)
+        .filter(x => x.score > 0);
     }
 
+    // Determine primary
+    let primary;
     if (opponentQualifies) {
-      return {
-        primary: { name: opponent.name, kind: 'opponent', wp: opponent.wp },
-        pivot: bandWinner ? { name: bandWinner.name, kind: 'value' } : null,
-      };
+      primary = { name: opponent.name, kind: 'opponent', wp: opponent.wp };
+    } else {
+      const winner = bandRanked[0];
+      primary = winner ? { name: winner.name, kind: 'value' } : null;
     }
-    return {
-      primary: bandWinner ? { name: bandWinner.name, kind: 'value' } : null,
-      pivot: null,
-    };
+
+    // PIVOT — top PP LESS with ppEdge ≤ -2, excluding primary + trap
+    const ppFades = pw
+      .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => p.name !== trap)
+      .filter(p => !primary || p.name !== primary.name)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+      .slice(0, 2);
+
+    let pivot = null;
+    if (ppFades.length > 0) {
+      const top = ppFades[0];
+      pivot = { name: top.name, kind: 'pp-fade', ppEdge: top.ppEdge };
+    } else {
+      // Fallback: salary-band winner (excluding primary)
+      const fallback = bandRanked.find(x => !primary || x.name !== primary.name);
+      if (fallback) pivot = { name: fallback.name, kind: 'value' };
+    }
+
+    return { primary, pivot };
   }, [pw, trap]);
   const gemName = gem.primary?.name || '';
   const pivotName = gem.pivot?.name || '';
@@ -1978,7 +1998,10 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       };
     }
 
-    // (2) + (3) GEM PRIMARY + OPTIONAL PIVOT — mirror DK tab's dual-track.
+    // (2) + (3) GEM PRIMARY + PP-based PIVOT (v3.19) — mirror DK tab.
+    //   Primary: opponent (if wp ≥ 33.4%) else salary-band winner.
+    //   Pivot:   top PP LESS with ppEdge ≤ -2, excluding primary + trap.
+    //            Falls back to salary-band winner if no PP data.
     let gemPrimary = null;
     let gemPivot   = null;
     if (trap) {
@@ -2001,25 +2024,41 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         return { p, score };
       }).sort((a, b) => b.score - a.score);
 
-      let bandWinner = scoreBand(-1000, 300)[0]?.p;
-      if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0]?.p;
-      if (!bandWinner) {
-        // Leverage fallback: highest (wp − simOwn) gap
+      // Salary-band rankings — used for primary if opponent doesn't qualify
+      // AND as pivot fallback when no PP data available.
+      let bandRanked = scoreBand(-1000, 300);
+      if (bandRanked.length === 0) bandRanked = scoreBand(-2500, 1000);
+      if (bandRanked.length === 0) {
         const lev = withSal.filter(p => {
           if (p.name === trap.name) return false;
           if (opponentQualifies && opponent && p.name === opponent.name) return false;
           return (p.salary || 0) > 0;
         }).map(p => ({ p, score: (p.wp || 0) * 100 - (ownership[p.name] || 0) }))
-          .sort((a, b) => b.score - a.score);
-        if (lev[0] && lev[0].score > 0) bandWinner = lev[0].p;
+          .sort((a, b) => b.score - a.score)
+          .filter(x => x.score > 0);
+        bandRanked = lev;
       }
 
+      // Primary
       if (opponentQualifies) {
         gemPrimary = opponent;
-        gemPivot   = bandWinner || null;
       } else {
-        gemPrimary = bandWinner || null;
-        gemPivot   = null;
+        gemPrimary = bandRanked[0]?.p || null;
+      }
+
+      // PIVOT — top PP LESS with ppEdge ≤ -2, excluding primary + trap
+      const ppFades = withSal
+        .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+        .filter(p => p.name !== trap.name)
+        .filter(p => !gemPrimary || p.name !== gemPrimary.name)
+        .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+        .slice(0, 2);
+
+      if (ppFades.length > 0) {
+        gemPivot = ppFades[0];
+      } else {
+        // Fallback: salary-band winner (excluding primary)
+        gemPivot = bandRanked.find(x => !gemPrimary || x.p.name !== gemPrimary.name)?.p || null;
       }
     }
 
@@ -2689,28 +2728,24 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = []
     return scored[0]?.name || '';
   }, [pw]);
 
-  // Hidden Gem — dual-track with primary + optional pivot (same shape as
-  // tennis gem):
+  // Hidden Gem — dual-track with primary + optional PP-based pivot (v3.19):
   //   PRIMARY 1 (preferred): trap's opponent, IF they're +199 or better
   //     (wp >= 33.4%). A fighter with a real win path can flip a close
   //     fight with a single finish, and comes with the exact salary swap.
-  //   PRIMARY 2 (fallback / pivot): best fighter in trap's salary band
-  //     (-$1000 / +$300). Upside boost uses finishProb (MMA analog of
-  //     pStraight in tennis — probability of a high-scoring outcome).
-  //     Short-card fallback widens to -$2500/+$1000, then to highest
-  //     leverage (wp − simOwn) gap if still empty.
-  //   When opponent qualifies, salary-band winner shows as PIVOT.
-  //   When opponent doesn't qualify, salary-band winner stands alone.
+  //   PRIMARY 2 (fallback): best fighter in trap's salary band
+  //     (-$1000/+$300, widened to -$2500/+$1000 if empty, then
+  //     highest (wp − simOwn) gap).
+  //   PIVOT (v3.19): best PrizePicks LESS signal with ppEdge ≤ -2,
+  //     excluding primary and trap. Falls back to salary-band winner
+  //     (old pivot logic) when no PP data available.
   const gem = useMemo(() => {
     const trapPlayer = pw.find(p => p.name === trap);
     if (!trapPlayer) return { primary: null, pivot: null };
     const trapOwn = trapPlayer.simOwn || 0;
 
-    // Path 1: opponent (close-matchup dog)
     const opponent = pw.find(p => p.name === trapPlayer.opponent);
     const opponentQualifies = opponent && (opponent.wp || 0) >= 0.334;
 
-    // Path 2: salary-band — tight, wider, then leverage fallback
     const trapSal = trapPlayer.salary;
     const scoreBand = (lo, hi) => pw.filter(p => {
       if (p.name === trap) return false;
@@ -2727,28 +2762,46 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = []
       return { name: p.name, score };
     }).sort((a, b) => b.score - a.score);
 
-    let bandWinner = scoreBand(-1000, 300)[0];
-    if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0];
-    if (!bandWinner) {
-      const lev = pw.filter(p => {
+    // Salary-band rankings — used for primary if opponent doesn't qualify
+    // AND as pivot fallback when no PP data available.
+    let bandRanked = scoreBand(-1000, 300);
+    if (bandRanked.length === 0) bandRanked = scoreBand(-2500, 1000);
+    if (bandRanked.length === 0) {
+      bandRanked = pw.filter(p => {
         if (p.name === trap) return false;
         if (opponentQualifies && opponent && p.name === opponent.name) return false;
         return (p.salary || 0) > 0;
       }).map(p => ({ name: p.name, score: (p.wp || 0) * 100 - (p.simOwn || 0) }))
-        .sort((a, b) => b.score - a.score);
-      if (lev[0] && lev[0].score > 0) bandWinner = lev[0];
+        .sort((a, b) => b.score - a.score)
+        .filter(x => x.score > 0);
     }
 
+    let primary;
     if (opponentQualifies) {
-      return {
-        primary: { name: opponent.name, kind: 'opponent', wp: opponent.wp },
-        pivot: bandWinner ? { name: bandWinner.name, kind: 'value' } : null,
-      };
+      primary = { name: opponent.name, kind: 'opponent', wp: opponent.wp };
+    } else {
+      const winner = bandRanked[0];
+      primary = winner ? { name: winner.name, kind: 'value' } : null;
     }
-    return {
-      primary: bandWinner ? { name: bandWinner.name, kind: 'value' } : null,
-      pivot: null,
-    };
+
+    // PIVOT — top PP LESS with ppEdge ≤ -2, excluding primary + trap
+    const ppFades = pw
+      .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => p.name !== trap)
+      .filter(p => !primary || p.name !== primary.name)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+      .slice(0, 2);
+
+    let pivot = null;
+    if (ppFades.length > 0) {
+      const top = ppFades[0];
+      pivot = { name: top.name, kind: 'pp-fade', ppEdge: top.ppEdge };
+    } else {
+      const fallback = bandRanked.find(x => !primary || x.name !== primary.name);
+      if (fallback) pivot = { name: fallback.name, kind: 'value' };
+    }
+
+    return { primary, pivot };
   }, [pw, trap]);
   const gemName = gem.primary?.name || '';
   const pivotName = gem.pivot?.name || '';
@@ -2945,7 +2998,10 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       };
     }
 
-    // (2) + (3) GEM PRIMARY + OPTIONAL PIVOT — mirror MMA DK tab.
+    // (2) + (3) GEM PRIMARY + PP-based PIVOT (v3.19) — mirror MMA DK tab.
+    //   Primary: opponent (if wp ≥ 33.4%) else salary-band winner.
+    //   Pivot:   top PP LESS with ppEdge ≤ -2, excluding primary + trap.
+    //            Falls back to salary-band winner if no PP data.
     let gemPrimary = null;
     let gemPivot   = null;
     if (trap) {
@@ -2969,24 +3025,40 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         return { p, score };
       }).sort((a, b) => b.score - a.score);
 
-      let bandWinner = scoreBand(-1000, 300)[0]?.p;
-      if (!bandWinner) bandWinner = scoreBand(-2500, 1000)[0]?.p;
-      if (!bandWinner) {
+      // Salary-band rankings — used for primary if opponent doesn't qualify
+      // AND as pivot fallback when no PP data available.
+      let bandRanked = scoreBand(-1000, 300);
+      if (bandRanked.length === 0) bandRanked = scoreBand(-2500, 1000);
+      if (bandRanked.length === 0) {
         const lev = withSal.filter(p => {
           if (p.name === trap.name) return false;
           if (opponentQualifies && opponent && p.name === opponent.name) return false;
           return (p.salary || 0) > 0;
         }).map(p => ({ p, score: (p.wp || 0) * 100 - (ownership[p.name] || 0) }))
-          .sort((a, b) => b.score - a.score);
-        if (lev[0] && lev[0].score > 0) bandWinner = lev[0].p;
+          .sort((a, b) => b.score - a.score)
+          .filter(x => x.score > 0);
+        bandRanked = lev;
       }
 
+      // Primary
       if (opponentQualifies) {
         gemPrimary = opponent;
-        gemPivot   = bandWinner || null;
       } else {
-        gemPrimary = bandWinner || null;
-        gemPivot   = null;
+        gemPrimary = bandRanked[0]?.p || null;
+      }
+
+      // PIVOT — top PP LESS with ppEdge ≤ -2, excluding primary + trap
+      const ppFades = withSal
+        .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+        .filter(p => p.name !== trap.name)
+        .filter(p => !gemPrimary || p.name !== gemPrimary.name)
+        .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+        .slice(0, 2);
+
+      if (ppFades.length > 0) {
+        gemPivot = ppFades[0];
+      } else {
+        gemPivot = bandRanked.find(x => !gemPrimary || x.p.name !== gemPrimary.name)?.p || null;
       }
     }
 
