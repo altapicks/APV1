@@ -2403,8 +2403,8 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (9) TOP 3 VAL <$5,900 — CAP + OPP BOOST (v3.24.5)
-  //     Find top 3 players by val with salary < $5,900, EXCLUDING any
+  // (9) TOP 3 VAL ≤$5,900 — CAP + OPP BOOST (v3.24.5)
+  //     Find top 3 players by val with salary ≤ $5,900, EXCLUDING any
   //     player already flagged as a trap, gem primary, or or-pivot
   //     (traps and gems always have priority — their caps are the
   //     structural play, and Rule 9 shouldn't touch them).
@@ -2418,7 +2418,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   //     our structural pivot UP to their opponent (the real leverage).
   // ─────────────────────────────────────────────────────────────────
   const topVal = withSal
-    .filter(p => (p.salary || 0) < 5900)
+    .filter(p => (p.salary || 0) <= 5900)
     .filter(p => {
       // Exclude traps, gems, and or-pivots from Rule 9 selection pool
       const c = caps[p.name];
