@@ -3112,15 +3112,65 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj * jitter(), opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     enforceMinNudge(pd, sp);
-    // v3.23: 18+ match tennis slates use a $49,200 minSalary floor (up from
-    // $48,000). Forces meaningful cap utilization on deep slates where
-    // cheap-filler lineups become structurally similar, improving lineup
-    // diversity and paying a modest speed dividend from the smaller pool.
-    // Threshold chosen empirically: cuts the valid-lineup pool ~62% on a
-    // 24-match slate (1.36M → 517k) while preserving the top projection
-    // (330.71 → 330.06, filler loss only). mc prop is slate match count.
+    // ─────────────────────────────────────────────────────────────
+    // v3.24.12: CONTRARIAN-SCORE PROJECTION ADJUSTMENT (16+ only)
+    // For 16+ match tennis slates with contrarian mode on, adjust the
+    // optimizer's ranking projection by a "contrarian score" reflecting
+    // how favored/disfavored each player is by the ruleset. This biases
+    // lineup ranking toward positive-signal players without forcing it —
+    // min/max caps still enforce hard floors/ceilings (option 3a).
+    //
+    // Score formula: contrarianScore = targetExposure - fieldOwnership
+    //   • targetExposure = cap.min for boosted players (gem, pivot, opp boosts)
+    //   • targetExposure = cap.max for capped players (trap, fades, hard caps)
+    //   • targetExposure = fieldOwn for no-signal players (score = 0, neutral)
+    // Adjusted projection = projection × (1 + 0.3 × strengthFactor × score/100)
+    //
+    // At strength 0.6 → 30% weight on contrarian score. A gem going from
+    // 0% → 35% target (+35 score) gets +10.5% projection boost for ranking.
+    // A trap going from 92% → 18% (−74 score) gets −22% projection penalty.
+    //
+    // IMPORTANT: original p.proj values are preserved on the sp array, so
+    // the final lineup display (which reads p.proj from the original pool)
+    // still shows true projections. Only the optimizer's internal ranking
+    // sees the adjusted values.
+    const savedProjs = pd.map(p => p.projection);
+    if (mc >= 16 && contrarianOn && contrarianStrength > 0) {
+      const strengthFactor = contrarianStrength / 0.6;
+      const contrarianWeight = 0.3 * strengthFactor;
+      pd.forEach((player, i) => {
+        const cap = contrarianCaps[player.name] || {};
+        const fieldOwn = ownership[player.name] || 0;
+        let target;
+        if (cap._isGem || cap._isValOppBoost || cap._isHardFadeOpp || cap._isMidTierChalkOppBoost) {
+          // Boosted player — target is the min floor
+          target = cap.min !== undefined ? cap.min : fieldOwn;
+        } else if (cap._isTrap || cap._isOrTrap || cap._isPivotOpponent
+                 || cap._isPpFadeOpponent || cap._isStraightSetsCap
+                 || cap._isValCap || cap._isHardFade || cap._isCheapCap
+                 || cap._isMidTierChalkCap || cap._isLowOwnCap) {
+          // Capped player — target is the max ceiling
+          target = cap.max !== undefined ? cap.max : fieldOwn;
+        } else {
+          // No-signal player — neutral (score will be 0)
+          target = fieldOwn;
+        }
+        const contrarianScore = target - fieldOwn;
+        const adjustmentFactor = 1 + contrarianWeight * (contrarianScore / 100);
+        player.projection = player.projection * adjustmentFactor;
+      });
+    }
     const minSal = mc >= 18 ? 49200 : 48000;
     const r = optimize(pd, nL, 50000, 6, minSal, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
+    // Restore original projections on pd so lineup sums display true projections.
+    pd.forEach((player, i) => { player.projection = savedProjs[i]; });
+    // Recompute each lineup's proj field from the restored (true) projections
+    // so display shows real projection sums, not adjusted ones used for ranking.
+    if (mc >= 16 && contrarianOn && contrarianStrength > 0 && r && r.lineups) {
+      r.lineups.forEach(lu => {
+        lu.proj = Math.round(lu.players.reduce((s, i) => s + (pd[i].projection || 0), 0) * 100) / 100;
+      });
+    }
     // Merge favorited classic lineups (remapped from name tuples to new indices).
     const favCls = [];
     const nameIdx = new Map(pd.map((p, i) => [p.name, i]));
