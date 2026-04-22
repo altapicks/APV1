@@ -2502,6 +2502,41 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   // cap on no-signal players was interfering with the sim. No-signal
   // players now get the default max 100 (unrestricted).
 
+  // ─────────────────────────────────────────────────────────────────
+  // (11) CHEAP FILLER HARD CAP (v3.24.8) — tiered salary caps to
+  //      prevent the optimizer from tunneling ultra-cheap filler
+  //      plays into high exposure just because they fit salary
+  //      geometry. Two tiers:
+  //        • Salary < $5,000         → max 4%
+  //        • Salary $5,000 – $5,699  → max 8%
+  //        • Salary ≥ $5,700         → no cap from this rule
+  //
+  //      Skips if player has an active signal (Trap, Or Trap, Gem
+  //      Primary, Or Pivot, PP Pivot) — traps/gems always have
+  //      priority per established convention.
+  // ─────────────────────────────────────────────────────────────────
+  withSal.forEach(p => {
+    const sal = p.salary || 0;
+    if (sal >= 5700) return;
+    const existing = caps[p.name] || {};
+    // Skip if player has any active structural signal
+    if (existing._isTrap || existing._isOrTrap) return;
+    if (existing._isGem) return;  // covers primary, or-pivot, and pivot kinds
+    const fieldOwn = own(p.name);
+    // Tiered cap: under $5,000 → 4%, $5,000-$5,699 → 8%
+    const baseCapPct = sal < 5000 ? 4 : 8;
+    const hardCap = roundInt(baseCapPct * strengthFactor);
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    const newMax = Math.min(currMax, hardCap);
+    caps[p.name] = {
+      ...existing,
+      max: newMax,
+      _isCheapCap: true,
+      _cheapCapTier: sal < 5000 ? 'sub-5k' : 'sub-5.7k',
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+  });
+
   return caps;
 }
 
@@ -3069,6 +3104,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isHardFadeOpp)   return { label: 'Hard-Fade Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValCap)        return { label: 'Val Cap', icon: 'bomb', color: 'var(--red)' };
+        if (c._isCheapCap)      return { label: 'Cheap Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
@@ -3084,6 +3120,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isHardFadeOpp)   return { sym: `min ${c.min}% (+${c._hardFadeOppAddedMin || 0}pp)`, bound: c.min };
         if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
         if (c._isValCap)        return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isCheapCap)      return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
