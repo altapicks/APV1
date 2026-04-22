@@ -1934,9 +1934,6 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
               {gem.primaries.map((p, i) => (
                 <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)' }}>
                   {i + 1}. {p.name}
-                  <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 6 }}>
-                    {p.tier === 'hedged' ? '(hedged)' : ''}
-                  </span>
                 </div>
               ))}
             </div>
@@ -1960,7 +1957,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
             On ≤15 slates, show single gem pivot as before. */}
         {(mc || 0) >= 16 && gem.orPivotOpps && gem.orPivotOpps.length > 0 && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
-            or Pivot: <span style={{ color: 'var(--text-muted)' }}>{gem.orPivotOpps.map(x => x.name).join(', ')}</span>
+            or Pivot: <span style={{ color: 'var(--text-muted)' }}>{gem.orPivotOpps.map(x => x.bandPlayer).join(', ')}</span>
           </div>
         )}
         {(mc || 0) >= 16 && topPpFades.length > 0 ? (
@@ -2011,7 +2008,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
         if (isBig && gem.primaries) {
           const primaryEntry = gem.primaries.find(x => x.name === p.name);
           if (primaryEntry) {
-            gemLabel = `Hidden Gem #${primaryEntry.rank}${primaryEntry.tier === 'hedged' ? ' (hedged)' : ''}`;
+            gemLabel = `Hidden Gem #${primaryEntry.rank}`;
           }
         } else if (gem.primary?.kind === 'opp-fade') {
           gemLabel = 'Hidden Gem (chalk fade)';
