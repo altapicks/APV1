@@ -2610,8 +2610,8 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (13) LOW-OWN CAP (v3.24.9) — any player with sim own ≤ 0.8% is
-  //      capped at max 8% exposure. Prevents the optimizer from
+  // (13) LOW-OWN CAP (v3.24.13) — any player with sim own ≤ 0.8% is
+  //      capped at max 2% exposure. Prevents the optimizer from
   //      manufacturing exposure to players the field has fully
   //      abandoned (usually a signal the matchup is a lost cause).
   //
@@ -2619,7 +2619,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   //      are preserved — low ownership is often the whole point of a
   //      gem play (Sierra at 0% today, etc.). Traps and hard-faded
   //      players are also preserved (their caps are the structural
-  //      play). Only no-signal abandoned players get the 8% cap.
+  //      play). Only no-signal abandoned players get the 2% cap.
   // ─────────────────────────────────────────────────────────────────
   withSal.forEach(p => {
     if (own(p.name) > 0.8) return;
@@ -2628,7 +2628,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     if (existing._isTrap || existing._isOrTrap) return;
     if (existing._isGem) return;
     const fieldOwn = own(p.name);
-    const hardCap = roundInt(8 * strengthFactor);
+    const hardCap = roundInt(2 * strengthFactor);
     const currMax = existing.max !== undefined ? existing.max : 100;
     const newMax = Math.min(currMax, hardCap);
     caps[p.name] = {
