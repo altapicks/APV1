@@ -2610,31 +2610,36 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (13) LOW-OWN CAP (v3.24.13) — any player with sim own ≤ 0.8% is
-  //      capped at max 2% exposure. Prevents the optimizer from
-  //      manufacturing exposure to players the field has fully
-  //      abandoned (usually a signal the matchup is a lost cause).
+  // (13) LOW-OWN HARD FADE (v3.24.14) — HARD OVERRIDE of min/max only.
+  //      Any player with sim own ≤ 0.8% is capped at max 4% exposure.
+  //      At this ownership level, the field has fully abandoned them,
+  //      and on 16+ match slates, no one at this price point is
+  //      typically needed regardless of structural labeling.
   //
-  //      EXCEPTION: Gems of any kind (Gem Primary, Or Pivot, PP Pivot)
-  //      are preserved — low ownership is often the whole point of a
-  //      gem play (Sierra at 0% today, etc.). Traps and hard-faded
-  //      players are also preserved (their caps are the structural
-  //      play). Only no-signal abandoned players get the 2% cap.
+  //      OVERRIDE SEMANTICS (v3.24.15): preserves all signal metadata
+  //      (_isGem, _kind, etc.) so downstream UI (gem card, Builder
+  //      panel labels, row badges) keep the gem/pivot labeling. Only
+  //      the numeric min/max are overridden — min:0 (stripped from
+  //      gem's 10%/35% floor) and max:hardCap (4%). _isLowOwnCap is
+  //      added as a secondary flag so this rule is traceable, but
+  //      labelFor's priority order ensures gems still display as gems.
+  //
+  //      Traps are preserved entirely — their structural-fade cap is
+  //      already more restrictive than 4% typically.
   // ─────────────────────────────────────────────────────────────────
   withSal.forEach(p => {
     if (own(p.name) > 0.8) return;
     const existing = caps[p.name] || {};
-    // Skip if any active signal (gems always preserved, traps preserved too)
+    // Preserve traps entirely (their structural caps stay)
     if (existing._isTrap || existing._isOrTrap) return;
-    if (existing._isGem) return;
     const fieldOwn = own(p.name);
-    const hardCap = roundInt(2 * strengthFactor);
-    const currMax = existing.max !== undefined ? existing.max : 100;
-    const newMax = Math.min(currMax, hardCap);
+    const hardCap = roundInt(4 * strengthFactor);
     caps[p.name] = {
-      ...existing,
-      max: newMax,
+      ...existing,   // preserve all gem metadata (_isGem, _kind, _gemPrimaryRank, etc.)
+      min: 0,        // strip gem floor to avoid min>max conflict
+      max: hardCap,  // hard override
       _isLowOwnCap: true,
+      _lowOwnOverrodeGem: !!(existing._isGem),  // debug flag
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
     };
   });
@@ -3142,7 +3147,11 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         const cap = contrarianCaps[player.name] || {};
         const fieldOwn = ownership[player.name] || 0;
         let target;
-        if (cap._isGem || cap._isValOppBoost || cap._isHardFadeOpp || cap._isMidTierChalkOppBoost) {
+        if (cap._isLowOwnCap) {
+          // Low-own override wins regardless of any gem flag also present —
+          // the max:4 is the binding constraint, not the stripped min.
+          target = cap.max !== undefined ? cap.max : fieldOwn;
+        } else if (cap._isGem || cap._isValOppBoost || cap._isHardFadeOpp || cap._isMidTierChalkOppBoost) {
           // Boosted player — target is the min floor
           target = cap.min !== undefined ? cap.min : fieldOwn;
         } else if (cap._isTrap || cap._isOrTrap || cap._isPivotOpponent
