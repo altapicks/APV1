@@ -1167,13 +1167,21 @@ export default function App() {
   // Ownership now returns { overall, cpt } — captain-specific tracking for
   // showdown slates is critical since a player at 60% total ownership but
   // only 8% CPT is a different fade target than one at 60% / 40% CPT.
+  //
+  // CRITICAL: uses rawDkPlayers (pre-override), not dkPlayers (override-applied).
+  // simulateOwnership runs a 1500-lineup Monte Carlo optimize internally — if this
+  // memo depended on dkPlayers, every keystroke in a projection edit input would
+  // invalidate it and re-run the full simulation, freezing the UI and eating
+  // keystrokes. Ownership represents what the FIELD does based on default
+  // projections, which doesn't change when the user privately edits their own
+  // projections, so rawDkPlayers is also the semantically correct input.
   const ownershipData = useMemo(() => {
-    if (dkPlayers.length === 0) return { overall: {}, cpt: {} };
-    if (sport === 'tennis') return simulateOwnership(dkPlayers);
-    if (sport === 'mma') return simulateMMAOwnership(dkPlayers);
-    if (sport === 'nba') return simulateNBAOwnership(dkPlayers, data?.slate_type || 'showdown');
+    if (rawDkPlayers.length === 0) return { overall: {}, cpt: {} };
+    if (sport === 'tennis') return simulateOwnership(rawDkPlayers);
+    if (sport === 'mma') return simulateMMAOwnership(rawDkPlayers);
+    if (sport === 'nba') return simulateNBAOwnership(rawDkPlayers, data?.slate_type || 'showdown');
     return { overall: {}, cpt: {} };
-  }, [dkPlayers, sport, data]);
+  }, [rawDkPlayers, sport, data]);
   const ownership = ownershipData.overall;
   const cptOwnership = ownershipData.cpt;
 
@@ -1780,12 +1788,21 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     }
 
     // Determine primary
-    let primary;
-    if (opponentQualifies) {
+    // v3.23: added ≥3% sim own gate — prevents noise-level picks. Applied to
+    // both the opponent path and the bandRanked path. If the opponent fails
+    // the gate, we fall through to bandRanked (graceful degradation) rather
+    // than null-out the primary entirely. Behavior-preserving for any slate
+    // where the current primary already has ≥3% sim own.
+    let primary = null;
+    if (opponentQualifies && (opponent.simOwn || 0) >= 3) {
       primary = { name: opponent.name, kind: 'opponent', wp: opponent.wp };
-    } else {
-      const winner = bandRanked[0];
-      primary = winner ? { name: winner.name, kind: 'value' } : null;
+    }
+    if (!primary) {
+      const winner = bandRanked.find(x => {
+        const cand = pw.find(p => p.name === x.name);
+        return (cand?.simOwn || 0) >= 3;
+      });
+      if (winner) primary = { name: winner.name, kind: 'value' };
     }
 
     // PIVOT — top PP LESS with ppEdge ≤ -2, excluding primary + trap
@@ -2058,10 +2075,13 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       }
 
       // Primary
-      if (opponentQualifies) {
+      // v3.23: mirrors DK tab — ≥3% sim own gate on opponent path AND
+      // bandRanked path. Opponent failing the gate falls through to bandRanked.
+      if (opponentQualifies && (ownership[opponent.name] || 0) >= 3) {
         gemPrimary = opponent;
-      } else {
-        gemPrimary = bandRanked[0]?.p || null;
+      }
+      if (!gemPrimary) {
+        gemPrimary = bandRanked.find(x => (ownership[x.p.name] || 0) >= 3)?.p || null;
       }
 
       // PIVOT — top PP LESS with ppEdge ≤ -2, excluding primary + trap
