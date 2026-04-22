@@ -2661,7 +2661,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 //   contrarianOn: used to modulate subtitle
 //   strength:    contrarian strength (display only)
 //   isContrarian: truthy when contrarian pipeline is active (adds rules line)
-function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, poolSize = 0 }) {
+function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, poolSize = 0, buildStage = 0 }) {
   // ETA estimate by match count — empirically calibrated to browser builds
   const estSeconds = useMemo(() => {
     if (mc >= 24) return 28;
@@ -2673,7 +2673,10 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
     return 3;
   }, [mc]);
 
-  // Track progress tick — updates every 100ms to animate stat counters
+  // Track progress tick — updates every 100ms to animate stat counters.
+  // NOTE: while optimize() blocks the JS thread, this interval won't fire,
+  // so between setBuildStage() calls the counters freeze. The chunked yield
+  // pattern in runBuild() ensures the animation re-paints between stages.
   const [tick, setTick] = useState(0);
   const startRef = useRef(Date.now());
   useEffect(() => {
@@ -2686,18 +2689,27 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
   const progress = Math.min(1, elapsed / estSeconds);
   const etaRemaining = Math.max(0, estSeconds - elapsed);
 
-  // Stage determination based on progress
-  const stageNames = ['Simulating ownership', 'Enumerating lineups', 'Applying contrarian rules', 'Ranking + polishing'];
-  const stageIdx = Math.min(3, Math.floor(progress * 4));
-  const currentStage = stageNames[stageIdx];
-  const rulesApplied = Math.min(13, Math.floor(progress * 13 + 1));
+  // v3.24.19: stage label driven by buildStage prop (set by chunked runBuild),
+  // NOT by elapsed-time estimation. This way the stage advances as real work
+  // completes, not based on a guess. Fall back to elapsed estimation if
+  // buildStage isn't updating (strength=0 or contrarian off paths).
+  const stageNames = ['Preparing pool', 'Applying contrarian rules', 'Enumerating lineups', 'Ranking + polishing'];
+  const currentStage = stageNames[Math.min(3, buildStage)];
+  // Rules applied counter also driven by stage — stages 1+ = applying rules,
+  // reaches 13 by stage 3 (polishing done).
+  const rulesApplied = buildStage === 0 ? 0
+                     : buildStage === 1 ? Math.min(13, Math.floor(progress * 13 + 1))
+                     : buildStage === 2 ? 13
+                     : 13;
 
-  // Scanning pool counter — animates from 10% → 100% of estimate over the
-  // first 70% of the build duration (so the counter "fills" faster than
-  // ETA progresses, giving a sense of completion momentum). Starts at 10%
-  // of total so the user sees a real number immediately, not just 0.
-  const poolProgress = poolSize > 0 ? Math.min(1, 0.1 + progress * 1.4) : 0;
-  const displayedPool = Math.round(poolSize * poolProgress);
+  // v3.24.19: Scanning pool counter — stage-driven (was elapsed-driven).
+  // Each stage represents a discrete chunk of the pool being processed:
+  //   Stage 0 (preparing)    → 10% (initial scan, looks non-zero immediately)
+  //   Stage 1 (applying)     → 40% (pool being caveated by rules)
+  //   Stage 2 (enumerating)  → 80% (main enumeration)
+  //   Stage 3 (polishing)    → 100% (full pool scanned)
+  const stageFill = [0.1, 0.4, 0.8, 1.0][Math.min(3, buildStage)];
+  const displayedPool = Math.round(poolSize * stageFill);
 
   return (
     <>
@@ -2796,7 +2808,7 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
               </div>
             </div>
             <div className="br-progress-bar">
-              <div className="br-progress-fill" style={{ width: `${Math.round(progress * 100)}%` }}/>
+              <div className="br-progress-fill" style={{ width: `${Math.round(stageFill * 100)}%` }}/>
             </div>
             <div className="br-sub">
               {contrarianOn ? (
@@ -2819,6 +2831,10 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
   const [building, setBuilding] = useState(false);
   const [buildPoolSize, setBuildPoolSize] = useState(0);
+  // v3.24.19: track actual build stage (0-3) driven by the chunked runBuild
+  // pipeline. Lets the animation advance between stages as real work happens,
+  // rather than being locked to elapsed-time estimation.
+  const [buildStage, setBuildStage] = useState(0);
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -3236,26 +3252,26 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
 
   // v3.24.16: wrap build in animation gate. For 16+ tennis builds, show the
   // court-radar BuildingAnimation while the synchronous optimize() runs.
-  // The yield pattern (setState → rAF → setTimeout → work) forces the
-  // browser to paint the animation frame BEFORE the JS thread blocks on
-  // enumeration. Without this, setBuilding(true) + optimize() in the same
-  // tick means the animation never appears because JS blocks the paint.
-  const run = () => {
+  // v3.24.19: chunked yielding — each build stage yields to the browser via
+  // setTimeout(0) so React can flush state updates (stage counter, pool count,
+  // rules applied) between chunks. Main optimize() call is still one blocking
+  // chunk, but wrapping it gives us 4 paint opportunities (pre-sim, pre-optimize,
+  // pre-post-processing, pre-finalize) which updates the UI noticeably during
+  // the build even without a Web Worker.
+  const yieldToBrowser = () => new Promise(r => setTimeout(r, 0));
+
+  const run = async () => {
     if (!canBuild) return;
-    // Hide old results, show animation immediately
     setRes(null);
     setBuilding(true);
-    // Estimate pool size for the animation's counter display. Empirically
-    // calibrated from actual tennis builds (not theoretical combinatorics —
-    // theory gives 8.6M for 24 matches, actual is ~1.36M after salary cap
-    // filtering, and ~517k after the $49,200 minSalary floor kicks in).
-    // Numbers below are observed valid-lineup counts from real builds.
+    setBuildStage(0);
+    // Empirically-calibrated pool size estimates from actual tennis builds
     if (!isShowdown && mc > 0) {
       let approxPool;
-      if (mc >= 24) approxPool = 517000;       // 24-match with $49,200 floor
+      if (mc >= 24) approxPool = 517000;
       else if (mc >= 22) approxPool = 380000;
       else if (mc >= 20) approxPool = 240000;
-      else if (mc >= 18) approxPool = 140000;  // 18-match with $49,200 floor
+      else if (mc >= 18) approxPool = 140000;
       else if (mc >= 16) approxPool = 70000;
       else if (mc >= 14) approxPool = 38000;
       else if (mc >= 12) approxPool = 18000;
@@ -3265,21 +3281,18 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     } else {
       setBuildPoolSize(0);
     }
-    // Yield twice to guarantee animation paints before optimize() blocks
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          try {
-            runBuild();
-          } finally {
-            setBuilding(false);
-          }
-        }, 20);  // 20ms breathing room for animation to render
-      });
-    });
+    // Yield twice to guarantee initial paint before any work starts
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await yieldToBrowser();
+    try {
+      await runBuild();
+    } finally {
+      setBuilding(false);
+      setBuildStage(0);
+    }
   };
 
-  const runBuild = () => {
+  const runBuild = async () => {
     // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
     // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -3329,6 +3342,10 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj * jitter(), opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     enforceMinNudge(pd, sp);
+    // v3.24.19: yield point 1 — transitioning from setup (ownership/cap
+    // resolution) into contrarian rule application. Animation shows stage 1.
+    setBuildStage(1);
+    await yieldToBrowser();
     // ─────────────────────────────────────────────────────────────
     // v3.24.12: CONTRARIAN-SCORE PROJECTION ADJUSTMENT (16+ only)
     // For 16+ match tennis slates with contrarian mode on, adjust the
@@ -3394,7 +3411,16 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       });
     }
     const minSal = mc >= 18 ? 49200 : 48000;
+    // v3.24.19: yield point 2 — transitioning into main optimize() call.
+    // Animation shows stage 2 (enumerating lineups). The optimize call is
+    // still one synchronous block, but this yield lets the UI paint the
+    // stage transition before JS blocks.
+    setBuildStage(2);
+    await yieldToBrowser();
     const r = optimize(pd, nL, 50000, 6, minSal, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
+    // v3.24.19: yield point 3 — transitioning from optimize to ranking/polishing.
+    setBuildStage(3);
+    await yieldToBrowser();
     // Restore original projections on pd so lineup sums display true projections.
     pd.forEach((player, i) => { player.projection = savedProjs[i]; });
     // Recompute each lineup's proj field from the restored (true) projections
@@ -3570,7 +3596,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} poolSize={buildPoolSize} />}
+    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} poolSize={buildPoolSize} buildStage={buildStage} />}
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
