@@ -2692,8 +2692,12 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
   const currentStage = stageNames[stageIdx];
   const rulesApplied = Math.min(13, Math.floor(progress * 13 + 1));
 
-  // Scanning pool counter — animates from 0 up to poolSize (fake count-up effect)
-  const displayedPool = Math.round(poolSize * Math.min(1, progress * 1.3));
+  // Scanning pool counter — animates from 10% → 100% of estimate over the
+  // first 70% of the build duration (so the counter "fills" faster than
+  // ETA progresses, giving a sense of completion momentum). Starts at 10%
+  // of total so the user sees a real number immediately, not just 0.
+  const poolProgress = poolSize > 0 ? Math.min(1, 0.1 + progress * 1.4) : 0;
+  const displayedPool = Math.round(poolSize * poolProgress);
 
   return (
     <>
@@ -3241,14 +3245,22 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     // Hide old results, show animation immediately
     setRes(null);
     setBuilding(true);
-    // Estimate pool size for the animation's counter display. For tennis
-    // classic, approximate valid-lineup count from match count (empirical:
-    // 24 matches ≈ 1.36M, 18 matches ≈ 517k, 12 matches ≈ 130k).
+    // Estimate pool size for the animation's counter display. Empirically
+    // calibrated from actual tennis builds (not theoretical combinatorics —
+    // theory gives 8.6M for 24 matches, actual is ~1.36M after salary cap
+    // filtering, and ~517k after the $49,200 minSalary floor kicks in).
+    // Numbers below are observed valid-lineup counts from real builds.
     if (!isShowdown && mc > 0) {
-      // Rough: choose(mc, 6) × 2^6 = binomial × side combinations. Clamp
-      // to reasonable display range.
-      const choose = (n, k) => { let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return r; };
-      const approxPool = Math.round(choose(mc, 6) * 64);
+      let approxPool;
+      if (mc >= 24) approxPool = 517000;       // 24-match with $49,200 floor
+      else if (mc >= 22) approxPool = 380000;
+      else if (mc >= 20) approxPool = 240000;
+      else if (mc >= 18) approxPool = 140000;  // 18-match with $49,200 floor
+      else if (mc >= 16) approxPool = 70000;
+      else if (mc >= 14) approxPool = 38000;
+      else if (mc >= 12) approxPool = 18000;
+      else if (mc >= 10) approxPool = 8000;
+      else approxPool = 3000;
       setBuildPoolSize(approxPool);
     } else {
       setBuildPoolSize(0);
