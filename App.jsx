@@ -2537,6 +2537,71 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     };
   });
 
+  // ─────────────────────────────────────────────────────────────────
+  // (12) MID-TIER CHALK CAP (v3.24.9) — top 3 sim-owned players in
+  //      the $8,000 – $8,900 range are capped at max 8% exposure.
+  //      This is the "sneaky chalk" tier — mid-salary favorites the
+  //      field gravitates to for perceived value. Capping them forces
+  //      structural diversity around the mid-range.
+  //
+  //      Skips if player has an active signal (Trap, Or Trap, Gem
+  //      Primary, Or Pivot, PP Pivot) — established priority pattern.
+  // ─────────────────────────────────────────────────────────────────
+  const midTierChalk = withSal
+    .filter(p => (p.salary || 0) >= 8000 && (p.salary || 0) <= 8900)
+    .filter(p => {
+      const c = caps[p.name];
+      if (!c) return true;
+      if (c._isTrap || c._isOrTrap) return false;
+      if (c._isGem) return false;
+      return true;
+    })
+    .sort((a, b) => own(b.name) - own(a.name))
+    .slice(0, 3);
+  midTierChalk.forEach(p => {
+    const existing = caps[p.name] || {};
+    const fieldOwn = own(p.name);
+    const hardCap = roundInt(8 * strengthFactor);
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    const newMax = Math.min(currMax, hardCap);
+    caps[p.name] = {
+      ...existing,
+      max: newMax,
+      _isMidTierChalkCap: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (13) LOW-OWN CAP (v3.24.9) — any player with sim own ≤ 0.8% is
+  //      capped at max 8% exposure. Prevents the optimizer from
+  //      manufacturing exposure to players the field has fully
+  //      abandoned (usually a signal the matchup is a lost cause).
+  //
+  //      EXCEPTION: Gems of any kind (Gem Primary, Or Pivot, PP Pivot)
+  //      are preserved — low ownership is often the whole point of a
+  //      gem play (Sierra at 0% today, etc.). Traps and hard-faded
+  //      players are also preserved (their caps are the structural
+  //      play). Only no-signal abandoned players get the 8% cap.
+  // ─────────────────────────────────────────────────────────────────
+  withSal.forEach(p => {
+    if (own(p.name) > 0.8) return;
+    const existing = caps[p.name] || {};
+    // Skip if any active signal (gems always preserved, traps preserved too)
+    if (existing._isTrap || existing._isOrTrap) return;
+    if (existing._isGem) return;
+    const fieldOwn = own(p.name);
+    const hardCap = roundInt(8 * strengthFactor);
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    const newMax = Math.min(currMax, hardCap);
+    caps[p.name] = {
+      ...existing,
+      max: newMax,
+      _isLowOwnCap: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+  });
+
   return caps;
 }
 
@@ -3105,6 +3170,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValCap)        return { label: 'Val Cap', icon: 'bomb', color: 'var(--red)' };
         if (c._isCheapCap)      return { label: 'Cheap Cap', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidTierChalkCap) return { label: 'Mid-Tier Chalk Cap', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isLowOwnCap)     return { label: 'Low-Own Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
@@ -3121,6 +3188,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
         if (c._isValCap)        return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isCheapCap)      return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isMidTierChalkCap) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isLowOwnCap)     return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
