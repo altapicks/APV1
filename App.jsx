@@ -2461,10 +2461,10 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 
   // ─────────────────────────────────────────────────────────────────
   // (10) ≤$7,800 + >50% WP FADE — hard override (except PP pivots).
-  //      Target: max 5%. Opponent gets min = oppSimOwn × 1.2.
+  //      Target: max 5%. Opponent: min 10% flat floor (v3.24.6 — was
+  //      oppSimOwn × 1.2 additive boost, simplified to flat floor).
   //      If target player is a PP Pivot (_isGem + _kind='pivot'), PP wins.
   // ─────────────────────────────────────────────────────────────────
-  const hardFadeMult = scaledBoostPct(0.20);
   withSal.forEach(p => {
     if ((p.salary || 0) > 7800) return;
     if ((p.wp || 0) <= 0.50) return;
@@ -2479,18 +2479,18 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
       _isHardFade: true,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
     };
-    // Boost opponent
+    // Opponent gets flat 10% min floor (floor-wins, cap-wins)
     const opp = withSal.find(x => x.name === p.opponent);
     if (opp) {
       const oppExisting = caps[opp.name] || {};
       const oppFieldOwn = own(opp.name);
       const oppCurrMin = oppExisting.min || 0;
       const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
-      const oppAddedMin = Math.round(oppFieldOwn * hardFadeMult);
-      const oppNewMin = Math.min(oppCurrMin + oppAddedMin, oppCurrMax);
+      const flatFloor = roundInt(10 * strengthFactor);
+      const oppNewMin = Math.min(Math.max(oppCurrMin, flatFloor), oppCurrMax);
       caps[opp.name] = {
         ...oppExisting,
-        min: Math.max(oppCurrMin, oppNewMin),
+        min: oppNewMin,
         _isHardFadeOpp: true,
         _hardFadeOppAddedMin: oppNewMin - oppCurrMin,
         _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
