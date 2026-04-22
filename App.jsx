@@ -2538,17 +2538,25 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (12) MID-TIER CHALK CAP (v3.24.9) — top 3 sim-owned players in
-  //      the $8,000 – $8,900 range are capped at max 8% exposure.
+  // (12) MID-TIER CHALK CAP (v3.24.10) — top 3 sim-owned players in
+  //      the $7,800 – $8,900 range are capped at max 8% exposure.
   //      This is the "sneaky chalk" tier — mid-salary favorites the
   //      field gravitates to for perceived value. Capping them forces
   //      structural diversity around the mid-range.
+  //
+  //      OPPONENT BOOST: the opponents of those top 3 are evaluated —
+  //      if opponent val < 6.20, boost them to min 15%. If opponent
+  //      val ≥ 6.20, skip them (no boost — they're already projected
+  //      to be a value play, no need to force them in).
+  //
+  //      All thresholds scale with strength slider (8% cap and 15%
+  //      opp floor both × strengthFactor).
   //
   //      Skips if player has an active signal (Trap, Or Trap, Gem
   //      Primary, Or Pivot, PP Pivot) — established priority pattern.
   // ─────────────────────────────────────────────────────────────────
   const midTierChalk = withSal
-    .filter(p => (p.salary || 0) >= 8000 && (p.salary || 0) <= 8900)
+    .filter(p => (p.salary || 0) >= 7800 && (p.salary || 0) <= 8900)
     .filter(p => {
       const c = caps[p.name];
       if (!c) return true;
@@ -2558,17 +2566,34 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     })
     .sort((a, b) => own(b.name) - own(a.name))
     .slice(0, 3);
-  midTierChalk.forEach(p => {
-    const existing = caps[p.name] || {};
-    const fieldOwn = own(p.name);
+  midTierChalk.forEach(chalk => {
+    // Cap the chalk player at 8%
+    const existing = caps[chalk.name] || {};
+    const fieldOwn = own(chalk.name);
     const hardCap = roundInt(8 * strengthFactor);
     const currMax = existing.max !== undefined ? existing.max : 100;
-    const newMax = Math.min(currMax, hardCap);
-    caps[p.name] = {
+    caps[chalk.name] = {
       ...existing,
-      max: newMax,
+      max: Math.min(currMax, hardCap),
       _isMidTierChalkCap: true,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+    // Evaluate opponent — boost to min 15% if opp val < 6.20, else skip
+    const opp = withSal.find(p => p.name === chalk.opponent);
+    if (!opp) return;
+    if ((opp.val || 0) >= 6.20) return;  // skip high-val opps
+    const oppExisting = caps[opp.name] || {};
+    const oppFieldOwn = own(opp.name);
+    const oppCurrMin = oppExisting.min || 0;
+    const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
+    const oppFloor = roundInt(15 * strengthFactor);
+    const oppNewMin = Math.min(Math.max(oppCurrMin, oppFloor), oppCurrMax);
+    caps[opp.name] = {
+      ...oppExisting,
+      min: oppNewMin,
+      _isMidTierChalkOppBoost: true,
+      _midTierChalkOppAddedMin: oppNewMin - oppCurrMin,
+      _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
     };
   });
 
@@ -3171,6 +3196,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isValCap)        return { label: 'Val Cap', icon: 'bomb', color: 'var(--red)' };
         if (c._isCheapCap)      return { label: 'Cheap Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierChalkCap) return { label: 'Mid-Tier Chalk Cap', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isMidTierChalkOppBoost) return { label: 'Mid-Tier Chalk Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isLowOwnCap)     return { label: 'Low-Own Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
@@ -3189,6 +3215,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isValCap)        return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isCheapCap)      return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierChalkCap) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isMidTierChalkOppBoost) return { sym: `min ${c.min}% (+${c._midTierChalkOppAddedMin || 0}pp)`, bound: c.min };
         if (c._isLowOwnCap)     return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
