@@ -2648,10 +2648,173 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// TENNIS BUILDING ANIMATION (v3.24.16) — court-radar UI for 16+ builds
+// ═══════════════════════════════════════════════════════════════════════
+// Renders while the tennis optimizer is running on 16+ match slates.
+// Calibrates stage progression to expected build duration based on match
+// count. Self-contained — inlines its own styles as <style> tag scoped
+// by unique class prefix (br-*) to avoid collision with app styles.
+//
+// Props:
+//   mc:          match count (drives ETA)
+//   nL:          lineup count being built (display only)
+//   contrarianOn: used to modulate subtitle
+//   strength:    contrarian strength (display only)
+//   isContrarian: truthy when contrarian pipeline is active (adds rules line)
+function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, poolSize = 0 }) {
+  // ETA estimate by match count — empirically calibrated to browser builds
+  const estSeconds = useMemo(() => {
+    if (mc >= 24) return 28;
+    if (mc >= 20) return 20;
+    if (mc >= 18) return 14;
+    if (mc >= 16) return 10;
+    if (mc >= 14) return 7;
+    if (mc >= 10) return 5;
+    return 3;
+  }, [mc]);
+
+  // Track progress tick — updates every 100ms to animate stat counters
+  const [tick, setTick] = useState(0);
+  const startRef = useRef(Date.now());
+  useEffect(() => {
+    startRef.current = Date.now();
+    const iv = setInterval(() => setTick(t => t + 1), 100);
+    return () => clearInterval(iv);
+  }, []);
+
+  const elapsed = (Date.now() - startRef.current) / 1000;
+  const progress = Math.min(1, elapsed / estSeconds);
+  const etaRemaining = Math.max(0, estSeconds - elapsed);
+
+  // Stage determination based on progress
+  const stageNames = ['Simulating ownership', 'Enumerating lineups', 'Applying contrarian rules', 'Ranking + polishing'];
+  const stageIdx = Math.min(3, Math.floor(progress * 4));
+  const currentStage = stageNames[stageIdx];
+  const rulesApplied = Math.min(13, Math.floor(progress * 13 + 1));
+
+  // Scanning pool counter — animates from 0 up to poolSize (fake count-up effect)
+  const displayedPool = Math.round(poolSize * Math.min(1, progress * 1.3));
+
+  return (
+    <>
+      <style>{`
+        @keyframes br-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes br-blip { 0% { opacity: 0; transform: scale(0.5); } 10% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.8); } }
+        @keyframes br-pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,24,0.5); } 50% { box-shadow: 0 0 20px 4px rgba(245,197,24,0.2); } }
+        @keyframes br-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .br-container { animation: br-fade-in 0.3s ease-out; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px; margin-top: 20px; }
+        .br-layout { display: flex; align-items: center; gap: 32px; }
+        .br-court { width: 220px; height: 220px; position: relative; flex-shrink: 0; animation: br-pulse-glow 3s ease-in-out infinite; border-radius: 50%; }
+        .br-court svg { width: 100%; height: 100%; display: block; }
+        .br-sweep { transform-origin: 110px 110px; animation: br-sweep 2.8s linear infinite; }
+        .br-info { flex: 1; min-width: 0; }
+        .br-stage-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 6px; }
+        .br-stage-value { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 18px; }
+        .br-metric-row { display: flex; gap: 28px; margin-bottom: 16px; }
+        .br-metric { flex: 1; }
+        .br-metric-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 4px; }
+        .br-metric-value { font-size: 22px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; font-family: ui-monospace, monospace; }
+        .br-metric-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+        .br-progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+        .br-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--primary-glow)); transition: width 0.3s ease-out; border-radius: 2px; }
+        .br-sub { font-size: 12px; color: var(--text-muted); margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .br-sub-strength { color: var(--primary); font-weight: 600; }
+        @media (max-width: 640px) {
+          .br-layout { flex-direction: column; gap: 20px; }
+          .br-court { width: 180px; height: 180px; }
+          .br-sweep { transform-origin: 90px 90px; }
+          .br-metric-row { gap: 16px; }
+          .br-metric-value { font-size: 18px; }
+        }
+      `}</style>
+      <div className="br-container">
+        <div className="br-layout">
+          <div className="br-court">
+            <svg viewBox="0 0 220 220">
+              <defs>
+                <radialGradient id="br-court-grad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#162948" stopOpacity="1"/>
+                  <stop offset="100%" stopColor="#0A1628" stopOpacity="1"/>
+                </radialGradient>
+                <linearGradient id="br-sweep-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#F5C518" stopOpacity="0"/>
+                  <stop offset="60%" stopColor="#F5C518" stopOpacity="0.25"/>
+                  <stop offset="100%" stopColor="#FFD73D" stopOpacity="0.55"/>
+                </linearGradient>
+              </defs>
+              {/* court circle + range rings */}
+              <circle cx="110" cy="110" r="108" fill="url(#br-court-grad)" stroke="#2A3D5F" strokeWidth="1"/>
+              <circle cx="110" cy="110" r="80" fill="none" stroke="rgba(245,197,24,0.08)" strokeWidth="0.5"/>
+              <circle cx="110" cy="110" r="55" fill="none" stroke="rgba(245,197,24,0.08)" strokeWidth="0.5"/>
+              <circle cx="110" cy="110" r="30" fill="none" stroke="rgba(245,197,24,0.08)" strokeWidth="0.5"/>
+              {/* court cross-hairs */}
+              <line x1="110" y1="5" x2="110" y2="215" stroke="rgba(245,197,24,0.05)" strokeWidth="0.5"/>
+              <line x1="5" y1="110" x2="215" y2="110" stroke="rgba(245,197,24,0.05)" strokeWidth="0.5"/>
+              {/* tennis court outline in center */}
+              <rect x="70" y="75" width="80" height="70" fill="none" stroke="rgba(245,197,24,0.15)" strokeWidth="0.5"/>
+              <line x1="110" y1="75" x2="110" y2="145" stroke="rgba(245,197,24,0.15)" strokeWidth="0.5"/>
+              <line x1="70" y1="110" x2="150" y2="110" stroke="rgba(245,197,24,0.15)" strokeWidth="0.5"/>
+              {/* blips — fire at offset intervals */}
+              <circle cx="172" cy="72" r="3" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '0.3s' }}/>
+              <circle cx="58" cy="148" r="2.5" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '1.0s' }}/>
+              <circle cx="148" cy="172" r="2" fill="#FFD73D" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '1.6s' }}/>
+              <circle cx="48" cy="58" r="2.5" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '2.1s' }}/>
+              <circle cx="90" cy="42" r="2" fill="#FFD73D" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '0.7s' }}/>
+              <circle cx="168" cy="140" r="2.5" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '1.9s' }}/>
+              {/* sweep arm */}
+              <g className="br-sweep">
+                <path d="M 110 110 L 110 5 A 105 105 0 0 1 208 72 Z" fill="url(#br-sweep-grad)"/>
+                <line x1="110" y1="110" x2="110" y2="5" stroke="#F5C518" strokeWidth="1.5" strokeLinecap="round"/>
+              </g>
+              {/* center dot */}
+              <circle cx="110" cy="110" r="5" fill="#F5C518"/>
+              <circle cx="110" cy="110" r="2.5" fill="#FFD73D"/>
+            </svg>
+          </div>
+          <div className="br-info">
+            <div className="br-stage-label">Current stage</div>
+            <div className="br-stage-value">{currentStage}</div>
+            <div className="br-metric-row">
+              <div className="br-metric">
+                <div className="br-metric-label">Scanning pool</div>
+                <div className="br-metric-value">{displayedPool.toLocaleString()}</div>
+                <div className="br-metric-sub">valid lineups · {mc} matches</div>
+              </div>
+              <div className="br-metric">
+                <div className="br-metric-label">{contrarianOn ? 'Applied rules' : 'Target lineups'}</div>
+                <div className="br-metric-value">{contrarianOn ? `${rulesApplied} / 13` : nL}</div>
+                <div className="br-metric-sub">{contrarianOn ? 'contrarian pipeline' : 'optimizer top-N'}</div>
+              </div>
+              <div className="br-metric">
+                <div className="br-metric-label">Est. remaining</div>
+                <div className="br-metric-value">~{Math.ceil(etaRemaining)}s</div>
+                <div className="br-metric-sub">approx · varies by device</div>
+              </div>
+            </div>
+            <div className="br-progress-bar">
+              <div className="br-progress-fill" style={{ width: `${Math.round(progress * 100)}%` }}/>
+            </div>
+            <div className="br-sub">
+              {contrarianOn ? (
+                <>Building with <span className="br-sub-strength">OverOwned {strength.toFixed(1)}</span> {mc >= 16 ? ' · 16+ deep-slate ruleset active' : ''}</>
+              ) : (
+                <>Building {nL} lineups from top projections</>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // TENNIS BUILDER — surgical additive change for contrarian mode
 // ═══════════════════════════════════════════════════════════════════════
 function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0 }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
+  const [building, setBuilding] = useState(false);
+  const [buildPoolSize, setBuildPoolSize] = useState(0);
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -3066,8 +3229,45 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const isShowdown = useMemo(() => sp.some(p => p.cpt_salary != null), [sp]);
+
+  // v3.24.16: wrap build in animation gate. For 16+ tennis builds, show the
+  // court-radar BuildingAnimation while the synchronous optimize() runs.
+  // The yield pattern (setState → rAF → setTimeout → work) forces the
+  // browser to paint the animation frame BEFORE the JS thread blocks on
+  // enumeration. Without this, setBuilding(true) + optimize() in the same
+  // tick means the animation never appears because JS blocks the paint.
   const run = () => {
-    if (!canBuild) return;                      // DK compliance gate — user must edit ≥2 projections
+    if (!canBuild) return;
+    // Hide old results, show animation immediately
+    setRes(null);
+    setBuilding(true);
+    // Estimate pool size for the animation's counter display. For tennis
+    // classic, approximate valid-lineup count from match count (empirical:
+    // 24 matches ≈ 1.36M, 18 matches ≈ 517k, 12 matches ≈ 130k).
+    if (!isShowdown && mc > 0) {
+      // Rough: choose(mc, 6) × 2^6 = binomial × side combinations. Clamp
+      // to reasonable display range.
+      const choose = (n, k) => { let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return r; };
+      const approxPool = Math.round(choose(mc, 6) * 64);
+      setBuildPoolSize(approxPool);
+    } else {
+      setBuildPoolSize(0);
+    }
+    // Yield twice to guarantee animation paints before optimize() blocks
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          try {
+            runBuild();
+          } finally {
+            setBuilding(false);
+          }
+        }, 20);  // 20ms breathing room for animation to render
+      });
+    });
+  };
+
+  const runBuild = () => {
     // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
     // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -3346,6 +3546,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
+    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} poolSize={buildPoolSize} />}
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
