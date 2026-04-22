@@ -1746,6 +1746,33 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     return scored[0]?.name || '';
   }, [pw]);
 
+  // v3.24: "Or Trap" — #2 in the same (simOwn − wp×100) ranking.
+  // Only displayed on 16+ match tennis slates where the ruleset fades both.
+  const orTrap = useMemo(() => {
+    if ((mc || 0) < 16) return '';
+    const active = pw.filter(p => p.salary > 0 && (p.wp || 0) >= 0.30 && p.name !== trap);
+    if (active.length === 0) return '';
+    const scored = active.map(p => {
+      const own = p.simOwn || 0;
+      const wp  = (p.wp || 0) * 100;
+      return { name: p.name, score: own - wp };
+    }).sort((a, b) => b.score - a.score);
+    return scored[0]?.name || '';
+  }, [pw, trap, mc]);
+
+  // v3.24: Top 3 PP fades (ppEdge ≤ -2), excluding trap. Displayed as
+  // "or pivot: A, B, C" on 16+ match slates. Just the names — we don't
+  // expose the formula to users.
+  const topPpFades = useMemo(() => {
+    if ((mc || 0) < 16) return [];
+    return pw
+      .filter(p => p.salary > 0 && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => p.name !== trap)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+      .slice(0, 3)
+      .map(p => p.name);
+  }, [pw, trap, mc]);
+
   // Hidden Gem — dual-track with primary + optional PP-based pivot:
   //   PRIMARY 1 (preferred): trap's opponent, IF they're +199 or better
   //     (wp >= 33.4%). Close matchup = salary-swap + real upset upside.
@@ -1802,8 +1829,32 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     // the gate, we fall through to bandRanked (graceful degradation) rather
     // than null-out the primary entirely. Behavior-preserving for any slate
     // where the current primary already has ≥3% sim own.
+    // v3.24: 16+ match slates use a completely different primary: the cheap
+    // dog paired with the highest-owned chalk opponent in the trap's salary
+    // band. Opponent must have sim own ≥ 25% to count as "chalk worth fading."
+    // This overrides the opponent+band logic above entirely for deep slates.
     let primary = null;
-    if (opponentQualifies && (opponent.simOwn || 0) >= 3) {
+    if ((mc || 0) >= 16) {
+      const trapSal = trapPlayer.salary || 0;
+      const inBand = (p, lo, hi) => {
+        if (p.name === trap) return false;
+        const diff = (p.salary || 0) - trapSal;
+        return diff >= lo && diff <= hi;
+      };
+      let band = pw.filter(p => p.salary > 0 && inBand(p, -1000, 300));
+      if (band.length === 0) band = pw.filter(p => p.salary > 0 && inBand(p, -2500, 1000));
+      const candidates = band.map(bp => {
+        const opp = pw.find(p => p.name === bp.opponent);
+        if (!opp) return null;
+        if ((opp.simOwn || 0) < 25) return null;
+        return { bp, opp, oppOwn: opp.simOwn || 0 };
+      }).filter(Boolean).sort((a, b) => b.oppOwn - a.oppOwn);
+      if (candidates.length > 0) {
+        primary = { name: candidates[0].bp.name, kind: 'opp-fade', fadedOpp: candidates[0].opp.name };
+      }
+    }
+    // Fall through to default logic if no 16+ primary found (or slate < 16 matches)
+    if (!primary && opponentQualifies && (opponent.simOwn || 0) >= 3) {
       primary = { name: opponent.name, kind: 'opponent', wp: opponent.wp };
     }
     if (!primary) {
@@ -1833,7 +1884,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     }
 
     return { primary, pivot };
-  }, [pw, trap]);
+  }, [pw, trap, mc]);
   const gemName = gem.primary?.name || '';
   const pivotName = gem.pivot?.name || '';
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
@@ -1845,19 +1896,37 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
         <div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div>
         <div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem.primary?.name || '-'}</div>
         <div className="metric-sub">
-          {gem.primary?.kind === 'opponent'
+          {gem.primary?.kind === 'opp-fade'
+            ? `Fade ${gem.primary.fadedOpp} chalk`
+            : gem.primary?.kind === 'opponent'
             ? `Close matchup · ${fmtPct(gem.primary.wp)} win prob`
             : gem.primary?.kind === 'value'
             ? "Overlooked value in trap's price range"
             : 'Low ownership, high upside'}
         </div>
-        {gem.pivot && (
+        {/* v3.24: 16+ match slates show top 3 PP fades as "or pivot" list (names only).
+            On ≤15 match slates, show single gem pivot as before. */}
+        {(mc || 0) >= 16 && topPpFades.length > 0 ? (
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
+            or pivot: <span style={{ color: 'var(--text-muted)' }}>{topPpFades.join(', ')}</span>
+          </div>
+        ) : gem.pivot && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
             or pivot: <span style={{ color: 'var(--text-muted)' }}>{gem.pivot.name}</span> <span style={{ fontSize: 10 }}>({gem.pivot.kind})</span>
           </div>
         )}
       </div>
-      <div className="metric"><div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div><div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div><div className="metric-sub">Who the field needs most</div></div>
+      <div className="metric">
+        <div className="metric-label"><Icon name="bomb" size={13}/> Biggest Trap</div>
+        <div className="metric-value" style={{ color: 'var(--red-text)' }}>{trap || '-'}</div>
+        <div className="metric-sub">Who the field needs most</div>
+        {/* v3.24: 16+ match slates show "or: X" for the second-worst trap. */}
+        {(mc || 0) >= 16 && orTrap && (
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
+            or: <span style={{ color: 'var(--red-text)' }}>{orTrap}</span>
+          </div>
+        )}
+      </div>
     </div>
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
@@ -1867,14 +1936,17 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name);
       const ig = p.name === gemName;
-      const ip = p.name === pivotName && pivotName !== '';
-      const it = p.name === trap;
+      // v3.24: on 16+ slates, any of the top 3 PP fades gets the pivot badge
+      // (not just #1), and orTrap shows as a trap.
+      const isBig = (mc || 0) >= 16;
+      const ip = isBig ? topPpFades.includes(p.name) : (p.name === pivotName && pivotName !== '');
+      const it = p.name === trap || (isBig && orTrap && p.name === orTrap);
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (is) badges.push({ icon: 'target',  label: 'Top 3 Straight Sets' });
-      if (ig) badges.push({ icon: 'gem',     label: gem.primary?.kind === 'opponent' ? 'Hidden Gem (opp)' : 'Hidden Gem (value)' });
-      if (ip) badges.push({ icon: 'gem',     label: 'Gem pivot (value)' });
-      if (it) badges.push({ icon: 'bomb',    label: 'Trap' });
+      if (ig) badges.push({ icon: 'gem',     label: gem.primary?.kind === 'opp-fade' ? 'Hidden Gem (chalk fade)' : gem.primary?.kind === 'opponent' ? 'Hidden Gem (opp)' : 'Hidden Gem (value)' });
+      if (ip) badges.push({ icon: 'gem',     label: isBig ? `Gem pivot #${topPpFades.indexOf(p.name) + 1}` : 'Gem pivot (value)' });
+      if (it) badges.push({ icon: 'bomb',    label: isBig && p.name === orTrap ? 'Or Trap' : 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
       return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
@@ -1960,6 +2032,356 @@ function PPTab({ rows }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24)
+// ═══════════════════════════════════════════════════════════════════════
+// Completely isolated from the ≤15 match logic. Deep tennis slates have
+// different structural dynamics — more chalk consolidation, more cheap
+// dogs with real equity, more need for structural diversity — so they
+// get their own rule pipeline. Do NOT mutate this without verifying
+// ≤15 match slate behavior is unchanged.
+//
+// Exposure math convention: "X% leverage from simOwn" = multiplicative.
+//   Negative leverage (fade): max = simOwn × (1 - X)
+//   Positive leverage (boost): min = simOwn × (1 + X)
+// Strength scaling: base spec is at strength 0.6. strengthFactor = strength/0.6.
+// All percentages scale with strengthFactor; at strength 0 all contrarian
+// rules become no-ops.
+//
+// Rule pipeline (order matters — later rules stack/override earlier ones):
+//   (1)  Biggest Trap              -80% leverage from simOwn
+//   (2)  Or Trap                   -75% leverage from simOwn
+//   (3)  Hidden Gem Primary        min = 35% (Parks-style: cheap dog paired
+//                                  with highest-owned chalk opponent in
+//                                  trap's salary band)
+//   (4)  Three PP Pivots           +100% / +90% / +80% leverage (top 3
+//                                  PP fades, ppEdge ≤ -2)
+//   (5)  Pivot-Opponent Fade       opp of PP Pivot #1 capped at
+//                                  simOwn × (1 - 0.5 × strengthFactor)
+//   (6)  Extended PP Fade Floor    PP Pivots #2 & #3 get min = simOwn +
+//                                  5pp × strengthFactor (floor-wins)
+//   (7)  PP Fade Opponent Cap      opps of top 3 PP fades capped at
+//                                  simOwn × (1 - 0.4 × strengthFactor),
+//                                  only if opp has no existing signal
+//   (8)  Top 3 Straight Sets       max = 10% (cap-wins, hard override
+//                                  over trap since 10 < any trap cap)
+//   (9)  Top 2 Val <$5,800 Opps    min = oppSimOwn × 1.5 (stacks
+//                                  additively if opp already has signal)
+//   (10) ≤$7,800 + >50% wp Fade    max = 5% + opp boost = oppSimOwn × 1.2
+//                                  HARD OVERRIDE (unless PP Pivot — PP wins)
+//   (11) Strict Leverage Cap       no-signal players capped at simOwn+10pp
+function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
+  const withSal = rp.filter(p => p.salary > 0);
+  if (withSal.length === 0) return {};
+  const caps = {};
+  const strengthFactor = contrarianStrength / 0.6;
+  if (contrarianStrength === 0) return {};
+
+  const own = (name) => ownership[name] || 0;
+  // Clamp multiplicative scaling so stronger slider doesn't push caps negative.
+  const scaledFadePct = (basePct) => Math.min(1, basePct * strengthFactor);
+  const scaledBoostPct = (basePct) => basePct * strengthFactor;
+  const roundInt = (x) => Math.max(0, Math.min(100, Math.round(x)));
+
+  // ─────────────────────────────────────────────────────────────────
+  // (1) BIGGEST TRAP — max (simOwn − wp×100), wp ≥ 30% gate
+  // ─────────────────────────────────────────────────────────────────
+  const trapActive = withSal.filter(p => (p.wp || 0) >= 0.30);
+  let trap = null;
+  if (trapActive.length > 0) {
+    const scored = trapActive.map(p => ({
+      p, score: own(p.name) - (p.wp || 0) * 100,
+    })).sort((a, b) => b.score - a.score);
+    trap = scored[0]?.p || null;
+    if (trap && own(trap.name) === 0) {
+      // No ownership data available — fall back to highest proj qualifier
+      trap = [...trapActive].sort((a, b) => (b.proj || 0) - (a.proj || 0))[0] || null;
+    }
+  }
+  if (trap) {
+    const fieldOwn = own(trap.name);
+    caps[trap.name] = {
+      max: roundInt(fieldOwn * (1 - scaledFadePct(0.80))),
+      _isTrap: true,
+      _fieldOwn: Math.round(fieldOwn),
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // (2) OR TRAP — #2 in the same (simOwn − wp×100) ranking, wp ≥ 30%
+  // ─────────────────────────────────────────────────────────────────
+  let orTrap = null;
+  if (trapActive.length > 1 && trap) {
+    const scored = trapActive
+      .filter(p => p.name !== trap.name)
+      .map(p => ({ p, score: own(p.name) - (p.wp || 0) * 100 }))
+      .sort((a, b) => b.score - a.score);
+    orTrap = scored[0]?.p || null;
+  }
+  if (orTrap) {
+    const fieldOwn = own(orTrap.name);
+    caps[orTrap.name] = {
+      max: roundInt(fieldOwn * (1 - scaledFadePct(0.75))),
+      _isOrTrap: true,
+      _fieldOwn: Math.round(fieldOwn),
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // (3) HIDDEN GEM PRIMARY (Parks-style) — cheap dog paired with the
+  //     highest-owned chalk opponent in the trap's salary band.
+  //     Band: [trap−$1000, trap+$300], widened if empty. Opponent must
+  //     be in the band pair (NOT in the band itself — the band player
+  //     IS the gem, and the opponent is the chalk being faded).
+  //     Gate: opponent simOwn ≥ 25% (only fade real chalk).
+  // ─────────────────────────────────────────────────────────────────
+  let gemPrimary = null;
+  let gemPrimaryOpp = null;
+  if (trap) {
+    const trapSal = trap.salary || 0;
+    // Collect band candidates (exclude trap itself)
+    const inBand = (p, lo, hi) => {
+      if (p.name === trap.name) return false;
+      const diff = (p.salary || 0) - trapSal;
+      return diff >= lo && diff <= hi;
+    };
+    let band = withSal.filter(p => inBand(p, -1000, 300));
+    if (band.length === 0) band = withSal.filter(p => inBand(p, -2500, 1000));
+    // For each band player, find opponent and check if opp is chalky + no signal
+    const candidates = band.map(bp => {
+      const opp = withSal.find(p => p.name === bp.opponent);
+      if (!opp) return null;
+      // Opp must pass 25% own gate AND not already have any signal
+      if (own(opp.name) < 25) return null;
+      const oppCap = caps[opp.name];
+      if (oppCap && (oppCap._isTrap || oppCap._isOrTrap)) return null;
+      return { bp, opp, oppOwn: own(opp.name) };
+    }).filter(Boolean).sort((a, b) => b.oppOwn - a.oppOwn);
+    if (candidates.length > 0) {
+      gemPrimary = candidates[0].bp;
+      gemPrimaryOpp = candidates[0].opp;
+    }
+  }
+  if (gemPrimary) {
+    const fieldOwn = own(gemPrimary.name);
+    caps[gemPrimary.name] = {
+      min: roundInt(35 * strengthFactor),
+      max: Math.min(100, roundInt(35 * strengthFactor) + 30),
+      _isGem: true, _kind: 'primary',
+      _fieldOwn: Math.round(fieldOwn),
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // (4) THREE PP PIVOTS — top 3 PP LESS (ppEdge ≤ -2), excluding trap.
+  //     Boost: #1 = +100%, #2 = +90%, #3 = +80% leverage from simOwn.
+  // ─────────────────────────────────────────────────────────────────
+  const ppFades = withSal
+    .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+    .filter(p => !trap || p.name !== trap.name)
+    .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+    .slice(0, 3);
+  const pivotBoosts = [1.00, 0.90, 0.80];
+  const gemPivots = [];
+  ppFades.forEach((fade, idx) => {
+    const fieldOwn = own(fade.name);
+    const boostPct = scaledBoostPct(pivotBoosts[idx]);
+    const boostedMin = roundInt(fieldOwn * (1 + boostPct));
+    const existing = caps[fade.name] || {};
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    caps[fade.name] = {
+      ...existing,
+      min: Math.min(boostedMin, currMax),
+      max: existing.max !== undefined ? existing.max : Math.min(100, boostedMin + 30),
+      _isGem: true, _kind: 'pivot',
+      _ppPivotRank: idx + 1,
+      _ppPivotEdge: fade.ppEdge || 0,
+      _ppPivotLine: fade.ppLine || 0,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+    gemPivots.push(fade);
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (5) PIVOT-OPPONENT FADE — opponent of PP Pivot #1 only.
+  //     Cap: simOwn × (1 - 0.5 × strengthFactor). Skip if opp has signal.
+  // ─────────────────────────────────────────────────────────────────
+  if (gemPivots.length > 0) {
+    const pivotOpp = withSal.find(p => p.name === gemPivots[0].opponent);
+    if (pivotOpp && !caps[pivotOpp.name]) {
+      const oppFieldOwn = own(pivotOpp.name);
+      const oppMax = roundInt(oppFieldOwn * (1 - scaledFadePct(0.50)));
+      caps[pivotOpp.name] = {
+        min: 0, max: oppMax,
+        _isPivotOpponent: true,
+        _fieldOwn: Math.round(oppFieldOwn),
+      };
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // (6) EXTENDED PP FADE FLOOR — PP Pivots #2 and #3.
+  //     Existing pivot boost above already handles them, but ensure
+  //     the floor simOwn + 5pp × strengthFactor is respected (floor-wins).
+  // ─────────────────────────────────────────────────────────────────
+  const extFloorPP = Math.round(5 * strengthFactor);
+  [gemPivots[1], gemPivots[2]].forEach((fade, idx) => {
+    if (!fade) return;
+    const fieldOwn = own(fade.name);
+    const existing = caps[fade.name] || {};
+    const currMin = existing.min || 0;
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    const simOwnFloor = roundInt(fieldOwn + extFloorPP);
+    const newMin = Math.min(Math.max(currMin, simOwnFloor), currMax);
+    caps[fade.name] = {
+      ...existing,
+      min: newMin,
+      _isExtPpFade: true,
+      _extPpFadeRank: idx + 2,
+      _extPpFadeAddedMin: newMin - currMin,
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (7) PP FADE OPPONENT CAP — opponents of top 3 PP fades.
+  //     Cap: simOwn × (1 - 0.4 × strengthFactor). Skip if opp has signal.
+  // ─────────────────────────────────────────────────────────────────
+  const fadeOppMult = scaledFadePct(0.40);
+  gemPivots.forEach(fade => {
+    const opp = withSal.find(p => p.name === fade.opponent);
+    if (!opp) return;
+    const existing = caps[opp.name] || {};
+    const hasSignal = existing._isTrap || existing._isOrTrap || existing._isGem
+                    || existing._isPivotOpponent;
+    if (hasSignal) return;
+    const oppFieldOwn = own(opp.name);
+    const oppMax = roundInt(oppFieldOwn * (1 - fadeOppMult));
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    caps[opp.name] = {
+      ...existing,
+      max: Math.min(currMax, oppMax),
+      _isPpFadeOpponent: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(oppFieldOwn),
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (8) TOP 3 STRAIGHT SETS — max 10%, cap-wins. Hard override over trap.
+  //     Top 3 by pStraight (probability of winning 2-0) across slate.
+  // ─────────────────────────────────────────────────────────────────
+  const topStraight = [...withSal]
+    .sort((a, b) => (b.pStraight || 0) - (a.pStraight || 0))
+    .slice(0, 3);
+  topStraight.forEach(p => {
+    const existing = caps[p.name] || {};
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    const newMax = Math.min(currMax, 10);
+    const fieldOwn = own(p.name);
+    caps[p.name] = {
+      ...existing,
+      max: newMax,
+      _isStraightSetsCap: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (9) TOP 2 VAL <$5,800, OPPONENTS BOOST
+  //     Find top 2 players by val with salary < $5,800.
+  //     Their opponents get min = oppSimOwn × (1 + 0.5 × strengthFactor).
+  //     Stacks additively with existing signal (max((currMin from signal)
+  //     + boost, existing min)), cap-wins against existing max.
+  // ─────────────────────────────────────────────────────────────────
+  const topVal = withSal
+    .filter(p => (p.salary || 0) < 5800)
+    .sort((a, b) => (b.val || 0) - (a.val || 0))
+    .slice(0, 2);
+  const valOppBoost = scaledBoostPct(0.50);
+  topVal.forEach(valPlay => {
+    const opp = withSal.find(p => p.name === valPlay.opponent);
+    if (!opp) return;
+    const existing = caps[opp.name] || {};
+    const oppFieldOwn = own(opp.name);
+    const currMin = existing.min || 0;
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    // Stacking: existing min + (oppSimOwn × boost), cap-wins
+    const addedMin = Math.round(oppFieldOwn * valOppBoost);
+    const newMin = Math.min(currMin + addedMin, currMax);
+    caps[opp.name] = {
+      ...existing,
+      min: Math.max(currMin, newMin),
+      _isValOppBoost: true,
+      _valOppBoostAddedMin: newMin - currMin,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(oppFieldOwn),
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (10) ≤$7,800 + >50% WP FADE — hard override (except PP pivots).
+  //      Target: max 5%. Opponent gets min = oppSimOwn × 1.2.
+  //      If target player is a PP Pivot (_isGem + _kind='pivot'), PP wins.
+  // ─────────────────────────────────────────────────────────────────
+  const hardFadeMult = scaledBoostPct(0.20);
+  withSal.forEach(p => {
+    if ((p.salary || 0) > 7800) return;
+    if ((p.wp || 0) <= 0.50) return;
+    const existing = caps[p.name] || {};
+    // PP pivot wins over this hard-override
+    if (existing._isGem && existing._kind === 'pivot') return;
+    const fieldOwn = own(p.name);
+    caps[p.name] = {
+      // Fully replace (hard override), preserving only _fieldOwn for display
+      min: 0,
+      max: roundInt(5 * strengthFactor),
+      _isHardFade: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+    // Boost opponent
+    const opp = withSal.find(x => x.name === p.opponent);
+    if (opp) {
+      const oppExisting = caps[opp.name] || {};
+      const oppFieldOwn = own(opp.name);
+      const oppCurrMin = oppExisting.min || 0;
+      const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
+      const oppAddedMin = Math.round(oppFieldOwn * hardFadeMult);
+      const oppNewMin = Math.min(oppCurrMin + oppAddedMin, oppCurrMax);
+      caps[opp.name] = {
+        ...oppExisting,
+        min: Math.max(oppCurrMin, oppNewMin),
+        _isHardFadeOpp: true,
+        _hardFadeOppAddedMin: oppNewMin - oppCurrMin,
+        _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
+      };
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (11) STRICT LEVERAGE CAP — no-signal players capped at simOwn+10pp.
+  //      Prevents the optimizer from tunneling chalky mid-salary players
+  //      with no signal attached.
+  // ─────────────────────────────────────────────────────────────────
+  withSal.forEach(p => {
+    const fieldOwn = own(p.name);
+    const existing = caps[p.name] || {};
+    const hasSignal = existing._isTrap || existing._isOrTrap || existing._isGem
+                    || existing._isPivotOpponent || existing._isPpFadeOpponent
+                    || existing._isStraightSetsCap || existing._isValOppBoost
+                    || existing._isHardFade || existing._isHardFadeOpp;
+    if (hasSignal) return;
+    const strictMax = Math.min(95, Math.round(fieldOwn + 10));
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    const newMax = Math.min(currMax, strictMax);
+    caps[p.name] = {
+      ...existing,
+      max: newMax,
+      _isStrictCap: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+  });
+
+  return caps;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // TENNIS BUILDER — surgical additive change for contrarian mode
 // ═══════════════════════════════════════════════════════════════════════
 function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0 }) {
@@ -2013,6 +2435,12 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   //   (6) LEVERAGE CAP — anyone ≥15% field gets max = field+30pp cap.
   const contrarianCaps = useMemo(() => {
     if (!contrarianOn) return {};
+    // v3.24: 16+ match slates use a completely separate ruleset. Dispatch
+    // early so none of the ≤15 match logic below executes on deep slates.
+    // The new function is defined below with its own isolated rule pipeline.
+    if (mc >= 16) {
+      return computeContrarianCaps16Plus(rp, ownership, contrarianStrength);
+    }
     const withSal = rp.filter(p => p.salary > 0);
     if (withSal.length === 0) return {};
     const caps = {};
@@ -2505,21 +2933,32 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
     {contrarianOn && Object.keys(contrarianCaps).length > 0 && (() => {
-      // OverOwned Mode display (v3.19) — top 5 changes by |bound - fieldOwn|.
+      // OverOwned Mode display (v3.19/v3.24) — top 5 changes by |bound - fieldOwn|.
       const labelFor = (c) => {
         if (c._isTrap)   return { label: 'Trap',    icon: 'bomb',   color: 'var(--red)' };
+        if (c._isOrTrap) return { label: 'Or Trap', icon: 'bomb',   color: 'var(--red)' };
         if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
-        if (c._isGem && c._kind === 'pivot')   return { label: 'Pivot',   icon: 'gem',    color: 'var(--green)' };
+        if (c._isGem && c._kind === 'pivot')   return { label: `Pivot${c._ppPivotRank ? ' #' + c._ppPivotRank : ''}`, icon: 'gem', color: 'var(--green)' };
         if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isHardFade)      return { label: 'Hard Fade',  icon: 'bomb', color: 'var(--red)' };
+        if (c._isHardFadeOpp)   return { label: 'Hard-Fade Opp Boost', icon: 'gem', color: 'var(--green)' };
+        if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
+        if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierPivot)  return { label: 'Mid-Tier Pivot', icon: 'gem', color: 'var(--green)' };
         if (c._isPpBoost) return { label: 'PP Boost', icon: 'rocket', color: 'var(--primary)' };
         return null;
       };
       const describeChange = (c) => {
-        if (c._isTrap)   return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isTrap || c._isOrTrap)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
         if (c._isPivotOpponent) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isHardFade)      return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isHardFadeOpp)   return { sym: `min ${c.min}% (+${c._hardFadeOppAddedMin || 0}pp)`, bound: c.min };
+        if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
+        if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierPivot)  return { sym: `min ${c.min}% (+${c._midTierPivotAddedMin}pp stacked)`, bound: c.min };
         if (c._isPpBoost) return { sym: `+${c._ppBoostAddedMin}% min (stacked)`, bound: c.min };
