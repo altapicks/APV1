@@ -1829,42 +1829,59 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     // the gate, we fall through to bandRanked (graceful degradation) rather
     // than null-out the primary entirely. Behavior-preserving for any slate
     // where the current primary already has ≥3% sim own.
-    // v3.24: 16+ match slates use a completely different primary: the cheap
-    // dog paired with the highest-owned chalk opponent in the trap's salary
-    // band. Opponent must have sim own ≥ 25% to count as "chalk worth fading."
-    // This overrides the opponent+band logic above entirely for deep slates.
-    // v3.24.1: TOP 2 primaries on 16+ slates (not just #1). Both displayed,
-    // both boosted. `primaries` array holds them; `primary` kept for ≤15
-    // backward compat.
+    // v3.24.3: 16+ match slates use completely different logic. Run band
+    // search for EACH trap separately (Biggest Trap AND Or Trap). Sort
+    // opponents by VALUE descending, take top 2. Gem Primaries are the
+    // band players paired with top 2. Or Pivot list uses same logic on
+    // Or Trap band, displays opponent names.
     let primary = null;
-    let primaries = [];  // v3.24.1: 16+ top-2
-    if ((mc || 0) >= 16) {
-      const trapSal = trapPlayer.salary || 0;
+    let primaries = [];        // v3.24.3: Hidden Gem primaries (band players from Biggest Trap band)
+    let orPivotOpps = [];      // v3.24.3: Or Pivot opponents (from Or Trap band)
+
+    // Helper: run band search for a trap, return top 2 {bp, opp} by opp.val
+    const findGemPairs = (trapName) => {
+      const trapP = pw.find(p => p.name === trapName);
+      if (!trapP) return [];
+      const trapSal = trapP.salary || 0;
       const inBand = (p, lo, hi) => {
-        if (p.name === trap) return false;
+        if (p.name === trapName) return false;
         const diff = (p.salary || 0) - trapSal;
         return diff >= lo && diff <= hi;
       };
       let band = pw.filter(p => p.salary > 0 && inBand(p, -1000, 300));
       if (band.length === 0) band = pw.filter(p => p.salary > 0 && inBand(p, -2500, 1000));
-      const candidates = band.map(bp => {
+      // Exclude opponents that are themselves the other trap
+      const otherTraps = new Set();
+      if (trap) otherTraps.add(trap);
+      if (orTrap) otherTraps.add(orTrap);
+      otherTraps.delete(trapName);  // own trap is already excluded via inBand
+      const pairs = band.map(bp => {
         const opp = pw.find(p => p.name === bp.opponent);
         if (!opp) return null;
-        if ((opp.simOwn || 0) < 25) return null;
-        return { bp, opp, oppOwn: opp.simOwn || 0 };
-      }).filter(Boolean).sort((a, b) => b.oppOwn - a.oppOwn);
-      // Take top 2
-      for (let rank = 0; rank < Math.min(2, candidates.length); rank++) {
-        primaries.push({
-          name: candidates[rank].bp.name,
-          kind: 'opp-fade',
-          fadedOpp: candidates[rank].opp.name,
-          tier: (candidates[rank].bp.wp || 0) >= 0.30 ? 'standard' : 'hedged',
-          wp: candidates[rank].bp.wp || 0,
-          rank: rank + 1,
-        });
-      }
-      // Set primary = #1 for backward compat with downstream refs
+        if (otherTraps.has(opp.name)) return null;
+        return { bp, opp, oppVal: opp.val || 0 };
+      }).filter(Boolean).sort((a, b) => b.oppVal - a.oppVal);
+      return pairs.slice(0, 2);
+    };
+
+    if ((mc || 0) >= 16) {
+      // Biggest Trap band → Hidden Gem Primaries (display band-player names)
+      const gemPairs = findGemPairs(trap);
+      primaries = gemPairs.map((pair, i) => ({
+        name: pair.bp.name,
+        kind: 'opp-fade',
+        fadedOpp: pair.opp.name,
+        tier: (pair.bp.wp || 0) >= 0.30 ? 'standard' : 'hedged',
+        wp: pair.bp.wp || 0,
+        rank: i + 1,
+      }));
+      // Or Trap band → or Pivot (display opponent names)
+      const orPivotPairs = findGemPairs(orTrap);
+      orPivotOpps = orPivotPairs.map((pair, i) => ({
+        name: pair.opp.name,
+        bandPlayer: pair.bp.name,
+        rank: i + 1,
+      }));
       if (primaries.length > 0) primary = primaries[0];
     }
     // Fall through to default logic if no 16+ primary found (or slate < 16 matches)
@@ -1897,8 +1914,8 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       if (fallback) pivot = { name: fallback.name, kind: 'value' };
     }
 
-    return { primary, primaries, pivot };
-  }, [pw, trap, mc]);
+    return { primary, primaries, orPivotOpps, pivot };
+  }, [pw, trap, orTrap, mc]);
   const gemName = gem.primary?.name || '';
   const gemNames = (gem.primaries && gem.primaries.length > 0) ? gem.primaries.map(p => p.name) : (gemName ? [gemName] : []);
   const pivotName = gem.pivot?.name || '';
@@ -1923,9 +1940,6 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
                 </div>
               ))}
             </div>
-            <div className="metric-sub" style={{ fontSize: 11 }}>
-              Fade {gem.primaries.map(p => p.fadedOpp).join(' + ')} chalk
-            </div>
           </>
         ) : (
           <>
@@ -1941,13 +1955,19 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
             </div>
           </>
         )}
-        {/* v3.24: 16+ match slates show top 3 PP fades as "or pivot" list (names only).
-            On ≤15 match slates, show single gem pivot as before. */}
-        {(mc || 0) >= 16 && topPpFades.length > 0 ? (
+        {/* v3.24.3: 16+ slates display "or Pivot" (opponents from Or Trap band)
+            and "PP Fade" (top 3 PP fades, previously labeled as "or pivot").
+            On ≤15 slates, show single gem pivot as before. */}
+        {(mc || 0) >= 16 && gem.orPivotOpps && gem.orPivotOpps.length > 0 && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
-            or pivot: <span style={{ color: 'var(--text-muted)' }}>{topPpFades.join(', ')}</span>
+            or Pivot: <span style={{ color: 'var(--text-muted)' }}>{gem.orPivotOpps.map(x => x.name).join(', ')}</span>
           </div>
-        ) : gem.pivot && (
+        )}
+        {(mc || 0) >= 16 && topPpFades.length > 0 ? (
+          <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text-dim)' }}>
+            PP Fade: <span style={{ color: 'var(--text-muted)' }}>{topPpFades.join(', ')}</span>
+          </div>
+        ) : (mc || 0) < 16 && gem.pivot && (
           <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--border)', fontSize: 11, color: 'var(--text-dim)' }}>
             or pivot: <span style={{ color: 'var(--text-muted)' }}>{gem.pivot.name}</span> <span style={{ fontSize: 10 }}>({gem.pivot.kind})</span>
           </div>
@@ -1979,6 +1999,9 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       const isBig = (mc || 0) >= 16;
       const ip = isBig ? topPpFades.includes(p.name) : (p.name === pivotName && pivotName !== '');
       const it = p.name === trap || (isBig && orTrap && p.name === orTrap);
+      // v3.24.3: or-pivot band players (boosted same as gem primaries)
+      const orPivotBandNames = (isBig && gem.orPivotOpps) ? gem.orPivotOpps.map(x => x.bandPlayer) : [];
+      const iop = orPivotBandNames.includes(p.name);
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (is) badges.push({ icon: 'target',  label: 'Top 3 Straight Sets' });
@@ -1997,10 +2020,14 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
         }
         badges.push({ icon: 'gem', label: gemLabel });
       }
+      if (iop) {
+        const orPivotEntry = gem.orPivotOpps.find(x => x.bandPlayer === p.name);
+        badges.push({ icon: 'gem', label: `Or Pivot #${orPivotEntry ? orPivotEntry.rank : ''}` });
+      }
       if (ip) badges.push({ icon: 'gem',     label: isBig ? `Gem pivot #${topPpFades.indexOf(p.name) + 1}` : 'Gem pivot (value)' });
       if (it) badges.push({ icon: 'bomb',    label: isBig && p.name === orTrap ? 'Or Trap' : 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
-      return <tr key={p.name} className={ig ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
+      return <tr key={p.name} className={ig ? 'row-hl-green' : iop ? 'row-hl-green' : ip ? 'row-hl-green' : it ? 'row-hl-red' : ''}>
         <td className="muted">{i + 1}</td>
         <td><span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>{badges.map((bd, j) => <Tip key={j} icon={bd.icon} label={bd.label} size={14} />)}</span></td>
         <td className="name">{p.name}</td><td className="muted">{p.opponent}</td>
@@ -2179,50 +2206,58 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // (3) HIDDEN GEM PRIMARIES (x2, Parks-style) — cheap dogs paired with
-  //     the highest-owned chalk opponents in the trap's salary band.
-  //     Band: [trap−$1000, trap+$300], widened if empty. Opponent must
-  //     be in the band pair (NOT in the band itself — the band player
-  //     IS the gem, and the opponent is the chalk being faded).
-  //     Gate: opponent simOwn ≥ 25% (only fade real chalk).
-  //     Take TOP 2 by opponent own (both get primary treatment).
+  // (3) HIDDEN GEM PRIMARIES — (v3.24.3) run band search for EACH trap
+  //     SEPARATELY, do NOT union bands. Sort band's opponents by VALUE
+  //     descending, take top 2, the gem primaries are the band players
+  //     paired with those top 2 opponents.
   //
-  //     EXPOSURE TIERING (v3.24.1): cheap dogs span a huge win-prob range,
-  //     and forcing 35% exposure on a <30% wp longshot is reckless. Tier
-  //     the floor by the gem player's own wp:
-  //       • wp ≥ 30% → min = 35% (flat, high-conviction primary floor)
-  //       • wp < 30% → min = 20% (hedged floor for true longshots)
-  //     Rationale: confirmed w/ user 4/22. Sierra won today at 0% own but
-  //     was a ~27% wp dog — exactly the case this tier protects against.
+  //     Biggest Trap band → Hidden Gem Primaries #1 and #2
+  //     Or Trap band → "or Pivot" section (separate signal type)
+  //
+  //     Opponents excluded from the sort: any that are already a trap
+  //     signal (Biggest Trap or Or Trap themselves).
+  //     No 25% ownership gate. Salary of the trap doesn't matter —
+  //     same logic regardless of whether trap is cheap or expensive.
+  //
+  //     EXPOSURE TIERING: tier the floor by the gem player's wp:
+  //       • wp ≥ 30% → min = 35% (standard)
+  //       • wp < 30% → min = 10% (hedged for longshots)
+  //
+  //     DISPLAY CONVENTION:
+  //       Hidden Gem section displays band-player names (cheap dogs).
+  //       or Pivot section displays opponent names (expensive pivots).
+  //     Both come from the same formula, just different trap source.
   // ─────────────────────────────────────────────────────────────────
-  const gemPrimaries = [];  // up to 2 gem primaries
-  if (trap) {
-    const trapSal = trap.salary || 0;
+  const findGemsForTrap = (trapObj) => {
+    if (!trapObj) return [];
+    const trapSal = trapObj.salary || 0;
     const inBand = (p, lo, hi) => {
-      if (p.name === trap.name) return false;
+      if (p.name === trapObj.name) return false;
       const diff = (p.salary || 0) - trapSal;
       return diff >= lo && diff <= hi;
     };
     let band = withSal.filter(p => inBand(p, -1000, 300));
     if (band.length === 0) band = withSal.filter(p => inBand(p, -2500, 1000));
+    // For each band player, get their opponent. Build a candidate list
+    // where each entry links a band player to their opponent, sorted by
+    // opponent's val descending.
     const candidates = band.map(bp => {
       const opp = withSal.find(p => p.name === bp.opponent);
       if (!opp) return null;
-      if (own(opp.name) < 25) return null;
+      // Exclude if opp is already a trap signal
       const oppCap = caps[opp.name];
       if (oppCap && (oppCap._isTrap || oppCap._isOrTrap)) return null;
-      return { bp, opp, oppOwn: own(opp.name) };
-    }).filter(Boolean).sort((a, b) => b.oppOwn - a.oppOwn);
-    // Take top 2
-    for (let rank = 0; rank < Math.min(2, candidates.length); rank++) {
-      gemPrimaries.push(candidates[rank]);
-    }
-  }
+      return { bp, opp, oppVal: opp.val || 0 };
+    }).filter(Boolean).sort((a, b) => b.oppVal - a.oppVal);
+    return candidates.slice(0, 2);
+  };
+
+  // Hidden Gem Primaries — from Biggest Trap band
+  const gemPrimaries = findGemsForTrap(trap);
   gemPrimaries.forEach(({ bp, opp }, rank) => {
     const fieldOwn = own(bp.name);
     const gemWp = bp.wp || 0;
-    // Tiered floor: 35% if wp ≥ 30%, else 20% (hedged for longshots)
-    const basePct = gemWp >= 0.30 ? 35 : 20;
+    const basePct = gemWp >= 0.30 ? 35 : 10;
     const minVal = roundInt(basePct * strengthFactor);
     caps[bp.name] = {
       min: minVal,
@@ -2231,6 +2266,28 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
       _gemPrimaryRank: rank + 1,
       _gemPrimaryTier: gemWp >= 0.30 ? 'standard' : 'hedged',
       _gemPrimaryFadedOpp: opp.name,
+      _fieldOwn: Math.round(fieldOwn),
+    };
+  });
+
+  // Or Pivots — from Or Trap band (same formula, displayed as opponent names)
+  // The band players get boosted (same tier as gem primary). The opp names
+  // are exposed via _orPivotOpp so the display layer can list them.
+  const orPivotPairs = findGemsForTrap(orTrap);
+  orPivotPairs.forEach(({ bp, opp }, rank) => {
+    // Skip if the band player is already a gem primary from the other band
+    if (caps[bp.name] && caps[bp.name]._isGem) return;
+    const fieldOwn = own(bp.name);
+    const gemWp = bp.wp || 0;
+    const basePct = gemWp >= 0.30 ? 35 : 10;
+    const minVal = roundInt(basePct * strengthFactor);
+    caps[bp.name] = {
+      min: minVal,
+      max: Math.min(100, minVal + 30),
+      _isGem: true, _kind: 'or-pivot',
+      _orPivotRank: rank + 1,
+      _orPivotTier: gemWp >= 0.30 ? 'standard' : 'hedged',
+      _orPivotOpp: opp.name,  // The opponent name (for display)
       _fieldOwn: Math.round(fieldOwn),
     };
   });
@@ -3002,6 +3059,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isTrap)   return { label: 'Trap',    icon: 'bomb',   color: 'var(--red)' };
         if (c._isOrTrap) return { label: 'Or Trap', icon: 'bomb',   color: 'var(--red)' };
         if (c._isGem && c._kind === 'primary') return { label: 'Gem',     icon: 'gem',    color: 'var(--green)' };
+        if (c._isGem && c._kind === 'or-pivot') return { label: 'Or Pivot', icon: 'gem',   color: 'var(--green)' };
         if (c._isGem && c._kind === 'pivot')   return { label: `Pivot${c._ppPivotRank ? ' #' + c._ppPivotRank : ''}`, icon: 'gem', color: 'var(--green)' };
         if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isHardFade)      return { label: 'Hard Fade',  icon: 'bomb', color: 'var(--red)' };
