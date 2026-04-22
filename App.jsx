@@ -3329,11 +3329,23 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     //   • targetExposure = cap.min for boosted players (gem, pivot, opp boosts)
     //   • targetExposure = cap.max for capped players (trap, fades, hard caps)
     //   • targetExposure = fieldOwn for no-signal players (score = 0, neutral)
-    // Adjusted projection = projection × (1 + 0.3 × strengthFactor × score/100)
+    // Adjusted projection = projection × (1 + 0.6 × strengthFactor × score/100)
     //
-    // At strength 0.6 → 30% weight on contrarian score. A gem going from
-    // 0% → 35% target (+35 score) gets +10.5% projection boost for ranking.
-    // A trap going from 92% → 18% (−74 score) gets −22% projection penalty.
+    // v3.24.17: base weight raised from 0.3 → 0.6. Previous 0.3 weight was
+    // producing close projection-adjusted values between high-proj negative-
+    // signal players (Oksana 48.9 + Hard Fade) and lower-proj positive-signal
+    // players (Boulter 43.8 + Or Pivot), often letting the raw projection
+    // edge out. 0.6 doubles the influence: at strength 0.6 base, a gem with
+    // +30 score gets +18% projection boost and a trap with −70 score gets
+    // −42% penalty. Strong separation while projection still dominates when
+    // signals are weak. Still scales linearly with strengthFactor so users
+    // can tune aggression via the OverOwned Mode slider.
+    //
+    // Strength-scaled weights:
+    //   • Strength 0   → weight 0    → no adjustment (contrarian fully off)
+    //   • Strength 0.3 → weight 0.3  → half-aggressive
+    //   • Strength 0.6 → weight 0.6  → baseline (default)
+    //   • Strength 1.0 → weight 1.0  → very aggressive (contrarian dominates)
     //
     // IMPORTANT: original p.proj values are preserved on the sp array, so
     // the final lineup display (which reads p.proj from the original pool)
@@ -3342,7 +3354,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     const savedProjs = pd.map(p => p.projection);
     if (mc >= 16 && contrarianOn && contrarianStrength > 0) {
       const strengthFactor = contrarianStrength / 0.6;
-      const contrarianWeight = 0.3 * strengthFactor;
+      const contrarianWeight = 0.6 * strengthFactor;
       pd.forEach((player, i) => {
         const cap = contrarianCaps[player.name] || {};
         const fieldOwn = ownership[player.name] || 0;
