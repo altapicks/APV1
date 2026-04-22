@@ -2403,33 +2403,59 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (9) TOP 2 VAL <$5,800, OPPONENTS BOOST
-  //     Find top 2 players by val with salary < $5,800.
-  //     Their opponents get min = oppSimOwn × (1 + 0.5 × strengthFactor).
-  //     Stacks additively with existing signal (max((currMin from signal)
-  //     + boost, existing min)), cap-wins against existing max.
+  // (9) TOP 3 VAL <$5,900 — CAP + OPP BOOST (v3.24.5)
+  //     Find top 3 players by val with salary < $5,900, EXCLUDING any
+  //     player already flagged as a trap, gem primary, or or-pivot
+  //     (traps and gems always have priority — their caps are the
+  //     structural play, and Rule 9 shouldn't touch them).
+  //
+  //     • Cap the 3 value plays at max 1% (force the pivot to their opp)
+  //     • Boost their opponents: min += oppSimOwn × 0.5 (additive stack)
+  //
+  //     Intent: cheap high-val dogs are where DK prices the "field
+  //     trap" on the LOW side — the field happily rosters them at
+  //     low ownership because they're salary-efficient. Capping forces
+  //     our structural pivot UP to their opponent (the real leverage).
   // ─────────────────────────────────────────────────────────────────
   const topVal = withSal
-    .filter(p => (p.salary || 0) < 5800)
+    .filter(p => (p.salary || 0) < 5900)
+    .filter(p => {
+      // Exclude traps, gems, and or-pivots from Rule 9 selection pool
+      const c = caps[p.name];
+      if (!c) return true;
+      if (c._isTrap || c._isOrTrap) return false;
+      if (c._isGem) return false;  // covers both _kind='primary' and _kind='or-pivot'
+      return true;
+    })
     .sort((a, b) => (b.val || 0) - (a.val || 0))
-    .slice(0, 2);
+    .slice(0, 3);
   const valOppBoost = scaledBoostPct(0.50);
   topVal.forEach(valPlay => {
+    // Cap the value play at max 1%
+    const existing = caps[valPlay.name] || {};
+    const valFieldOwn = own(valPlay.name);
+    caps[valPlay.name] = {
+      ...existing,
+      min: 0,
+      max: 1,
+      _isValCap: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(valFieldOwn),
+    };
+    // Boost the opponent
     const opp = withSal.find(p => p.name === valPlay.opponent);
     if (!opp) return;
-    const existing = caps[opp.name] || {};
+    const oppExisting = caps[opp.name] || {};
     const oppFieldOwn = own(opp.name);
-    const currMin = existing.min || 0;
-    const currMax = existing.max !== undefined ? existing.max : 100;
-    // Stacking: existing min + (oppSimOwn × boost), cap-wins
+    const oppCurrMin = oppExisting.min || 0;
+    const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
     const addedMin = Math.round(oppFieldOwn * valOppBoost);
-    const newMin = Math.min(currMin + addedMin, currMax);
+    const newMin = Math.min(oppCurrMin + addedMin, oppCurrMax);
     caps[opp.name] = {
-      ...existing,
-      min: Math.max(currMin, newMin),
+      ...oppExisting,
+      min: Math.max(oppCurrMin, newMin),
       _isValOppBoost: true,
-      _valOppBoostAddedMin: newMin - currMin,
-      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(oppFieldOwn),
+      _valOppBoostAddedMin: newMin - oppCurrMin,
+      _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
     };
   });
 
@@ -2472,29 +2498,9 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     }
   });
 
-  // ─────────────────────────────────────────────────────────────────
-  // (11) STRICT LEVERAGE CAP — no-signal players capped at simOwn+10pp.
-  //      Prevents the optimizer from tunneling chalky mid-salary players
-  //      with no signal attached.
-  // ─────────────────────────────────────────────────────────────────
-  withSal.forEach(p => {
-    const fieldOwn = own(p.name);
-    const existing = caps[p.name] || {};
-    const hasSignal = existing._isTrap || existing._isOrTrap || existing._isGem
-                    || existing._isPivotOpponent || existing._isPpFadeOpponent
-                    || existing._isStraightSetsCap || existing._isValOppBoost
-                    || existing._isHardFade || existing._isHardFadeOpp;
-    if (hasSignal) return;
-    const strictMax = Math.min(95, Math.round(fieldOwn + 10));
-    const currMax = existing.max !== undefined ? existing.max : 100;
-    const newMax = Math.min(currMax, strictMax);
-    caps[p.name] = {
-      ...existing,
-      max: newMax,
-      _isStrictCap: true,
-      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
-    };
-  });
+  // Rule 11 (Strict Leverage Cap) DELETED in v3.24.5 — the simOwn+10pp
+  // cap on no-signal players was interfering with the sim. No-signal
+  // players now get the default max 100 (unrestricted).
 
   return caps;
 }
@@ -3062,6 +3068,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isHardFade)      return { label: 'Hard Fade',  icon: 'bomb', color: 'var(--red)' };
         if (c._isHardFadeOpp)   return { label: 'Hard-Fade Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
+        if (c._isValCap)        return { label: 'Val Cap', icon: 'bomb', color: 'var(--red)' };
         if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
@@ -3076,6 +3083,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isHardFade)      return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isHardFadeOpp)   return { sym: `min ${c.min}% (+${c._hardFadeOppAddedMin || 0}pp)`, bound: c.min };
         if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
+        if (c._isValCap)        return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
