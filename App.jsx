@@ -1833,7 +1833,11 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     // dog paired with the highest-owned chalk opponent in the trap's salary
     // band. Opponent must have sim own ≥ 25% to count as "chalk worth fading."
     // This overrides the opponent+band logic above entirely for deep slates.
+    // v3.24.1: TOP 2 primaries on 16+ slates (not just #1). Both displayed,
+    // both boosted. `primaries` array holds them; `primary` kept for ≤15
+    // backward compat.
     let primary = null;
+    let primaries = [];  // v3.24.1: 16+ top-2
     if ((mc || 0) >= 16) {
       const trapSal = trapPlayer.salary || 0;
       const inBand = (p, lo, hi) => {
@@ -1849,9 +1853,19 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
         if ((opp.simOwn || 0) < 25) return null;
         return { bp, opp, oppOwn: opp.simOwn || 0 };
       }).filter(Boolean).sort((a, b) => b.oppOwn - a.oppOwn);
-      if (candidates.length > 0) {
-        primary = { name: candidates[0].bp.name, kind: 'opp-fade', fadedOpp: candidates[0].opp.name };
+      // Take top 2
+      for (let rank = 0; rank < Math.min(2, candidates.length); rank++) {
+        primaries.push({
+          name: candidates[rank].bp.name,
+          kind: 'opp-fade',
+          fadedOpp: candidates[rank].opp.name,
+          tier: (candidates[rank].bp.wp || 0) >= 0.30 ? 'standard' : 'hedged',
+          wp: candidates[rank].bp.wp || 0,
+          rank: rank + 1,
+        });
       }
+      // Set primary = #1 for backward compat with downstream refs
+      if (primaries.length > 0) primary = primaries[0];
     }
     // Fall through to default logic if no 16+ primary found (or slate < 16 matches)
     if (!primary && opponentQualifies && (opponent.simOwn || 0) >= 3) {
@@ -1883,9 +1897,10 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       if (fallback) pivot = { name: fallback.name, kind: 'value' };
     }
 
-    return { primary, pivot };
+    return { primary, primaries, pivot };
   }, [pw, trap, mc]);
   const gemName = gem.primary?.name || '';
+  const gemNames = (gem.primaries && gem.primaries.length > 0) ? gem.primaries.map(p => p.name) : (gemName ? [gemName] : []);
   const pivotName = gem.pivot?.name || '';
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
@@ -1894,16 +1909,38 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       <div className="metric"><div className="metric-label"><Icon name="target" size={13}/> Top Straight Sets</div><div className="metric-value">{t3s.map((n, i) => { const p = players.find(x => x.name === n); return <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? undefined : 'var(--text-muted)' }}>{n} <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{fmtPct(p?.pStraight)}</span></div>; })}</div></div>
       <div className="metric">
         <div className="metric-label"><Icon name="gem" size={13}/> Hidden Gem</div>
-        <div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem.primary?.name || '-'}</div>
-        <div className="metric-sub">
-          {gem.primary?.kind === 'opp-fade'
-            ? `Fade ${gem.primary.fadedOpp} chalk`
-            : gem.primary?.kind === 'opponent'
-            ? `Close matchup · ${fmtPct(gem.primary.wp)} win prob`
-            : gem.primary?.kind === 'value'
-            ? "Overlooked value in trap's price range"
-            : 'Low ownership, high upside'}
-        </div>
+        {/* v3.24.1: 16+ slates show top 2 gem primaries stacked.
+            ≤15 slates show single gem as before. */}
+        {(mc || 0) >= 16 && gem.primaries && gem.primaries.length > 0 ? (
+          <>
+            <div className="metric-value" style={{ color: 'var(--green-text)' }}>
+              {gem.primaries.map((p, i) => (
+                <div key={i} style={{ fontSize: i === 0 ? '16px' : '13px', color: i === 0 ? 'var(--green-text)' : 'var(--text-muted)' }}>
+                  {i + 1}. {p.name}
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 6 }}>
+                    {p.tier === 'hedged' ? '(hedged)' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="metric-sub" style={{ fontSize: 11 }}>
+              Fade {gem.primaries.map(p => p.fadedOpp).join(' + ')} chalk
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="metric-value" style={{ color: 'var(--green-text)' }}>{gem.primary?.name || '-'}</div>
+            <div className="metric-sub">
+              {gem.primary?.kind === 'opp-fade'
+                ? `Fade ${gem.primary.fadedOpp} chalk`
+                : gem.primary?.kind === 'opponent'
+                ? `Close matchup · ${fmtPct(gem.primary.wp)} win prob`
+                : gem.primary?.kind === 'value'
+                ? "Overlooked value in trap's price range"
+                : 'Low ownership, high upside'}
+            </div>
+          </>
+        )}
         {/* v3.24: 16+ match slates show top 3 PP fades as "or pivot" list (names only).
             On ≤15 match slates, show single gem pivot as before. */}
         {(mc || 0) >= 16 && topPpFades.length > 0 ? (
@@ -1935,7 +1972,8 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name);
-      const ig = p.name === gemName;
+      // v3.24.1: on 16+ slates gemNames is the top-2 array; ≤15 is single-name array.
+      const ig = gemNames.includes(p.name);
       // v3.24: on 16+ slates, any of the top 3 PP fades gets the pivot badge
       // (not just #1), and orTrap shows as a trap.
       const isBig = (mc || 0) >= 16;
@@ -1944,7 +1982,21 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       const badges = [];
       if (iv) badges.push({ icon: 'trophy', label: 'Top 3 Value' });
       if (is) badges.push({ icon: 'target',  label: 'Top 3 Straight Sets' });
-      if (ig) badges.push({ icon: 'gem',     label: gem.primary?.kind === 'opp-fade' ? 'Hidden Gem (chalk fade)' : gem.primary?.kind === 'opponent' ? 'Hidden Gem (opp)' : 'Hidden Gem (value)' });
+      if (ig) {
+        // Determine specific gem label
+        let gemLabel = 'Hidden Gem (value)';
+        if (isBig && gem.primaries) {
+          const primaryEntry = gem.primaries.find(x => x.name === p.name);
+          if (primaryEntry) {
+            gemLabel = `Hidden Gem #${primaryEntry.rank}${primaryEntry.tier === 'hedged' ? ' (hedged)' : ''}`;
+          }
+        } else if (gem.primary?.kind === 'opp-fade') {
+          gemLabel = 'Hidden Gem (chalk fade)';
+        } else if (gem.primary?.kind === 'opponent') {
+          gemLabel = 'Hidden Gem (opp)';
+        }
+        badges.push({ icon: 'gem', label: gemLabel });
+      }
       if (ip) badges.push({ icon: 'gem',     label: isBig ? `Gem pivot #${topPpFades.indexOf(p.name) + 1}` : 'Gem pivot (value)' });
       if (it) badges.push({ icon: 'bomb',    label: isBig && p.name === orTrap ? 'Or Trap' : 'Trap' });
       const isOver = overrides && overrides[p.name] != null;
@@ -2127,18 +2179,25 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // (3) HIDDEN GEM PRIMARY (Parks-style) — cheap dog paired with the
-  //     highest-owned chalk opponent in the trap's salary band.
+  // (3) HIDDEN GEM PRIMARIES (x2, Parks-style) — cheap dogs paired with
+  //     the highest-owned chalk opponents in the trap's salary band.
   //     Band: [trap−$1000, trap+$300], widened if empty. Opponent must
   //     be in the band pair (NOT in the band itself — the band player
   //     IS the gem, and the opponent is the chalk being faded).
   //     Gate: opponent simOwn ≥ 25% (only fade real chalk).
+  //     Take TOP 2 by opponent own (both get primary treatment).
+  //
+  //     EXPOSURE TIERING (v3.24.1): cheap dogs span a huge win-prob range,
+  //     and forcing 35% exposure on a <30% wp longshot is reckless. Tier
+  //     the floor by the gem player's own wp:
+  //       • wp ≥ 30% → min = 35% (flat, high-conviction primary floor)
+  //       • wp < 30% → min = 20% (hedged floor for true longshots)
+  //     Rationale: confirmed w/ user 4/22. Sierra won today at 0% own but
+  //     was a ~27% wp dog — exactly the case this tier protects against.
   // ─────────────────────────────────────────────────────────────────
-  let gemPrimary = null;
-  let gemPrimaryOpp = null;
+  const gemPrimaries = [];  // up to 2 gem primaries
   if (trap) {
     const trapSal = trap.salary || 0;
-    // Collect band candidates (exclude trap itself)
     const inBand = (p, lo, hi) => {
       if (p.name === trap.name) return false;
       const diff = (p.salary || 0) - trapSal;
@@ -2146,30 +2205,35 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     };
     let band = withSal.filter(p => inBand(p, -1000, 300));
     if (band.length === 0) band = withSal.filter(p => inBand(p, -2500, 1000));
-    // For each band player, find opponent and check if opp is chalky + no signal
     const candidates = band.map(bp => {
       const opp = withSal.find(p => p.name === bp.opponent);
       if (!opp) return null;
-      // Opp must pass 25% own gate AND not already have any signal
       if (own(opp.name) < 25) return null;
       const oppCap = caps[opp.name];
       if (oppCap && (oppCap._isTrap || oppCap._isOrTrap)) return null;
       return { bp, opp, oppOwn: own(opp.name) };
     }).filter(Boolean).sort((a, b) => b.oppOwn - a.oppOwn);
-    if (candidates.length > 0) {
-      gemPrimary = candidates[0].bp;
-      gemPrimaryOpp = candidates[0].opp;
+    // Take top 2
+    for (let rank = 0; rank < Math.min(2, candidates.length); rank++) {
+      gemPrimaries.push(candidates[rank]);
     }
   }
-  if (gemPrimary) {
-    const fieldOwn = own(gemPrimary.name);
-    caps[gemPrimary.name] = {
-      min: roundInt(35 * strengthFactor),
-      max: Math.min(100, roundInt(35 * strengthFactor) + 30),
+  gemPrimaries.forEach(({ bp, opp }, rank) => {
+    const fieldOwn = own(bp.name);
+    const gemWp = bp.wp || 0;
+    // Tiered floor: 35% if wp ≥ 30%, else 20% (hedged for longshots)
+    const basePct = gemWp >= 0.30 ? 35 : 20;
+    const minVal = roundInt(basePct * strengthFactor);
+    caps[bp.name] = {
+      min: minVal,
+      max: Math.min(100, minVal + 30),
       _isGem: true, _kind: 'primary',
+      _gemPrimaryRank: rank + 1,
+      _gemPrimaryTier: gemWp >= 0.30 ? 'standard' : 'hedged',
+      _gemPrimaryFadedOpp: opp.name,
       _fieldOwn: Math.round(fieldOwn),
     };
-  }
+  });
 
   // ─────────────────────────────────────────────────────────────────
   // (4) THREE PP PIVOTS — top 3 PP LESS (ppEdge ≤ -2), excluding trap.
