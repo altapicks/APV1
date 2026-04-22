@@ -2558,10 +2558,22 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   const midTierChalk = withSal
     .filter(p => (p.salary || 0) >= 7800 && (p.salary || 0) <= 8900)
     .filter(p => {
+      // Exclude any player who already has ANY active signal — Rule 12
+      // only targets clean mid-salary chalk. Previously excluded just
+      // traps/gems, but v3.24.11 also excludes negative-signal players
+      // like Pivot-Opponent Fade, PP Fade Opp Cap, Hard Fade, etc.
       const c = caps[p.name];
       if (!c) return true;
       if (c._isTrap || c._isOrTrap) return false;
       if (c._isGem) return false;
+      if (c._isPivotOpponent) return false;
+      if (c._isPpFadeOpponent) return false;
+      if (c._isStraightSetsCap) return false;
+      if (c._isValCap) return false;
+      if (c._isValOppBoost) return false;
+      if (c._isHardFade) return false;
+      if (c._isHardFadeOpp) return false;
+      if (c._isCheapCap) return false;
       return true;
     })
     .sort((a, b) => own(b.name) - own(a.name))
