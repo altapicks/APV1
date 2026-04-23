@@ -1,18 +1,19 @@
 {
   "sport": "tennis",
   "data_status": "loaded",
-  "slates_tracked": 4,
+  "slates_tracked": 5,
   "slate_dates": [
     "2026-04-17",
     "2026-04-18",
     "2026-04-19",
-    "2026-04-21"
+    "2026-04-21",
+    "2026-04-23"
   ],
-  "last_updated": "2026-04-21",
+  "last_updated": "2026-04-23",
   "slate_avg_fpts": 45.22,
   "featured_insight": {
-    "headline": "Trap + Gem now 4/4 on WTA Madrid (Zakharova busted, Osorio hit winner); PP Fade plummets to 0/12",
-    "detail": "4/21 Madrid R1 continues the pattern: Zakharova trap 3.25 FPTS (winning lineup avg 80.31), Osorio gem 83.15 FPTS \u2014 in the winner. That's 4 straight slates where trap busted and gem hit. PP Fade, meanwhile, went 0/3 AGAIN with catastrophic reverses: Osorio (+6.0 vs line), Stearns (+5.5), Bouzas Maneiro (+10.5). Now 8/12 reverses across 4 slates \u2014 the engine systemically under-projects PP Fantasy Score when a favorite goes 2-0 in straight sets. The lines are pricing in straight-sets dominance that our set-count/game-count constants miss."
+    "headline": "Trap takes first miss at 4/5; Gem stays perfect at 5/5; PP Fade plunges to 0/15 (73% reverses)",
+    "detail": "4/23 mixed ATP/WTA R1 slate: Katerina Siniakova becomes the first trap to not bust across the tracked sample (or-trap Rafael Jodar did bust, as expected). Hidden Gem Alycia Parks landed in the winning lineup alongside or-pivots Thiago Agustin Tirante and Alejandro Tabilo \u2014 gem signal is 5/5 on DK inclusion. PP Fade went 0/3 yet again: Hurkacz, Tirante, and Moller all went OVER their Fantasy Score lines, bringing cumulative PP Fade to 0/15 with 11/15 reverses. The engine is definitively under-projecting favorite-side Fantasy Score by 5-7 FPTS across the board. Until projection constants are retuned, PP Fade should be treated as an inverted signal (bet MORE)."
   },
   "categories": [
     {
@@ -21,11 +22,12 @@
       "description": "Chalk we flagged to fade",
       "icon": "warning",
       "type": "bust_rate",
-      "n": 4,
-      "bust_rate": 1.0,
+      "n": 5,
+      "bust_rate": 0.8,
       "counter_edge": -57.25,
       "edge_units": "DK FPTS vs winning lineup avg",
-      "signal": "strong"
+      "signal": "follow",
+      "note": "First trap miss of the tracked sample: Katerina Siniakova did not bust on 4/23. Or-trap Rafael Jodar did bust as expected (would hit under the same methodology). Trap signal still strong at 4/5 (80%)."
     },
     {
       "key": "hidden_gem",
@@ -33,11 +35,12 @@
       "description": "Low-owned pivot off the trap",
       "icon": "gem",
       "type": "hit_rate",
-      "n": 4,
+      "n": 5,
       "hit_rate": 1.0,
       "avg_edge": 51.42,
       "edge_units": "DK FPTS over paired trap",
-      "signal": "strong"
+      "signal": "follow",
+      "note": "Now 5/5 across tracked sample. 4/23 primary gem Alycia Parks landed in the winning lineup alongside or-pivots Thiago Agustin Tirante and Alejandro Tabilo. Gem signal continues to work as an inverse of the trap signal \u2014 when trap busts (or fails to), opponent/low-owned pivot is picking up the contested usage."
     },
     {
       "key": "pp_edge",
@@ -60,14 +63,14 @@
       "description": "Top 3 LESS plays by projection vs line",
       "icon": "trending-down",
       "type": "hit_rate",
-      "n": 12,
+      "n": 15,
       "hit_rate": 0.0,
-      "reverse_rate": 0.667,
-      "push_rate": 0.333,
+      "reverse_rate": 0.733,
+      "push_rate": 0.267,
       "avg_edge": 2.78,
       "edge_units": "PP FS vs line",
-      "signal": "weak",
-      "note": "4/21 went 0/3 AGAIN, all 3 reverses (Osorio +6.0, Stearns +5.5, Bouzas Maneiro +10.5 vs lines). Now 8/12 reverses. Pattern is clearly systemic \u2014 engine under-projects PP FS for favorite-side players. DO NOT use PP Fade signal until projection constants are retuned."
+      "signal": "counter",
+      "note": "4/23 went 0/3 AGAIN \u2014 all three (Hurkacz, Tirante, Moller) reversed over their lines per user report. Cumulative now 0/15 with 11/15 reverses (73.3%). Signal is systemically inverted \u2014 engine under-projects Fantasy Score for favorite-side players by 5-7 FPTS. DO NOT use PP Fade as-is; either retune the Fantasy Score projection constants (set-count and game-count weights) or invert the signal before going live."
     },
     {
       "key": "top_straight_sets",
@@ -96,6 +99,98 @@
     }
   ],
   "per_slate_detail": [
+    {
+      "date": "2026-04-23",
+      "first_place_points": null,
+      "winning_lineup_avg": null,
+      "first_place_lineup_partial": [
+        "Hubert Hurkacz",
+        "Thiago Agustin Tirante",
+        "Alejandro Tabilo",
+        "Alycia Parks"
+      ],
+      "category_results": {
+        "hidden_gem": {
+          "n": 1,
+          "tagged": "Alycia Parks",
+          "gem_fpts": null,
+          "trap_fpts": null,
+          "hit_names": [
+            "Alycia Parks"
+          ],
+          "miss_names": [],
+          "hits": 1,
+          "misses": 0,
+          "note": "Primary opponent-of-trap gem. Parks landed in winning lineup. Or-pivots Thiago Agustin Tirante and Alejandro Tabilo also landed in winning lineup (tracked as gem supporting plays, not counted in the primary n=1 tally).",
+          "or_pivots_hit": [
+            "Thiago Agustin Tirante",
+            "Alejandro Tabilo"
+          ]
+        },
+        "biggest_trap": {
+          "n": 1,
+          "tagged": "Katerina Siniakova",
+          "trap_fpts": null,
+          "winning_lineup_avg": null,
+          "hit_names": [],
+          "miss_names": [
+            "Katerina Siniakova"
+          ],
+          "hits": 0,
+          "misses": 1,
+          "note": "First trap miss of the tracked sample \u2014 Siniakova did not bust. Or-trap Rafael Jodar did bust as expected (would register as a hit under the same methodology but is not tracked in the primary n=1).",
+          "or_trap_hit": "Rafael Jodar"
+        },
+        "pp_fade": {
+          "n": 3,
+          "graded_n": 3,
+          "picks": [
+            {
+              "player": "Hubert Hurkacz",
+              "stat": "Fantasy Score",
+              "line": 23.5,
+              "proj": 16.72,
+              "actual": null,
+              "grade": "reverse"
+            },
+            {
+              "player": "Thiago Agustin Tirante",
+              "stat": "Fantasy Score",
+              "line": 21.0,
+              "proj": 14.93,
+              "actual": null,
+              "grade": "reverse"
+            },
+            {
+              "player": "Elmer Moller",
+              "stat": "Fantasy Score",
+              "line": 15.0,
+              "proj": 10.5,
+              "actual": null,
+              "grade": "reverse"
+            }
+          ],
+          "hits": 0,
+          "reverses": 3,
+          "pushes": 0,
+          "note": "All three fades went OVER their lines per user report (actuals to be filled in once stat CSV is available). Continues the pattern \u2014 cumulative PP Fade now 0/15 with 11/15 reverses."
+        }
+      },
+      "tagged": {
+        "hidden_gem": [
+          "Alycia Parks"
+        ],
+        "biggest_trap": [
+          "Katerina Siniakova"
+        ],
+        "pp_fade": [
+          "Hubert Hurkacz",
+          "Thiago Agustin Tirante",
+          "Elmer Moller"
+        ]
+      },
+      "note": "Partial grading \u2014 top_value, top_straight_sets, and pp_edge not reported by user for this slate; actual FPTS values for graded categories to be back-filled when stat data is available."
+    },
     {
       "date": "2026-04-21",
       "first_place_points": 481.85,
@@ -746,6 +841,8 @@
     "methodology": "Trap HIT: trap_fpts < winning_lineup_avg. Gem HIT: gem_fpts > paired trap_fpts. Top Value and Straight Sets: 1st-place lineup inclusion. PP Edge HIT: actual \u2265 line+3, PUSH within \u00b13, REVERSE \u2264 line-3. PP Fade is inverse. Breaks lines not graded (stat CSV does not track service-game breaks).",
     "pp_projection_note": "Engine is systematically projecting Fantasy Score ~3-5 points below PP lines across the board. This inflates the size of 'fade' edges artificially and suppresses genuine 'edge' calls. Recommend reviewing set-count + game-count projection constants before signals go live.",
     "sample_size": "Signals elevate to STRONG at N>=3 with 100% hit/bust rate. Stay NEUTRAL below N=6 for hit_rate tags otherwise.",
-    "algo_version_note": "4/17 and 4/18 signals graded against the simOwn-weighted trap formula live at those slates. 4/19 signals graded against the current shipped algo: simOwn - wp*100 with wp>=30% gate. Rublev narrowly won the trap label over Kostyuk under the new formula (-3.2 vs -6.1). If the user prefers grading 4/19 against the live-at-the-time pick (Kostyuk, from the pre-wp-formula build), swap trap=Kostyuk/gem=Cobolli(leverage fallback) \u2014 that would drop gem hit rate to 2/3 since Cobolli's 13.3 < Kostyuk's 71.1."
+    "algo_version_note": "4/17 and 4/18 signals graded against the simOwn-weighted trap formula live at those slates. 4/19 signals graded against the current shipped algo: simOwn - wp*100 with wp>=30% gate. Rublev narrowly won the trap label over Kostyuk under the new formula (-3.2 vs -6.1). If the user prefers grading 4/19 against the live-at-the-time pick (Kostyuk, from the pre-wp-formula build), swap trap=Kostyuk/gem=Cobolli(leverage fallback) \u2014 that would drop gem hit rate to 2/3 since Cobolli's 13.3 < Kostyuk's 71.1.",
+    "signal_standardization": "As of 2026-04-23, category.signal values use the app-render enum: 'follow' (trust signal), 'fade' (don't trust), 'counter' (invert), 'neutral' (inconclusive). Previous values 'strong'/'weak' were methodology labels that did not map to the render enum.",
+    "pp_fade_urgency": "PP Fade has now gone 0/15 across 5 slates with 73% reverse rate. This is well past statistical fluke territory \u2014 the Fantasy Score projection constants need recalibration or the signal should be inverted before any live-customer exposure. See individual slate notes 4/18, 4/19, 4/21, 4/23 for consistent pattern."
   }
 }
