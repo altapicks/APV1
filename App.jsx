@@ -2625,7 +2625,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (13) LOW-OWN HARD FADE (v3.24.14) — HARD OVERRIDE of min/max only.
+  // (13) LOW-OWN HARD FADE (v3.24.21) — HARD OVERRIDE of min/max only.
   //      Any player with sim own ≤ 0.8% is capped at max 4% exposure.
   //      At this ownership level, the field has fully abandoned them,
   //      and on 16+ match slates, no one at this price point is
@@ -2641,12 +2641,27 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   //
   //      Traps are preserved entirely — their structural-fade cap is
   //      already more restrictive than 4% typically.
+  //
+  //      v3.24.21: GEM OVERRIDE NOW SALARY-GATED.
+  //      The gem override only applies when salary ≤ $5,900. Above
+  //      that threshold, gems are preserved (min floor kept intact).
+  //      Rationale: original intent was to prevent ultra-cheap
+  //      longshot gems like Sierra ($5,000) from getting forced to
+  //      15%+ exposure. But mid-salary strategic gems like Parks
+  //      ($6,300) at 0% field own SHOULD be rostered at their gem
+  //      floor — they're precisely what the Hidden Gem signal targets.
+  //      Sub-$5,900 sub-0.8% gems still get nuked to 4%, mid-salary
+  //      gems preserve their structural floor.
   // ─────────────────────────────────────────────────────────────────
   withSal.forEach(p => {
     if (own(p.name) > 0.8) return;
     const existing = caps[p.name] || {};
     // Preserve traps entirely (their structural caps stay)
     if (existing._isTrap || existing._isOrTrap) return;
+    // v3.24.21: preserve mid-salary gems (>$5,900) — the override only
+    // applies to cheap-salary gems where forced exposure would be reckless.
+    const sal = p.salary || 0;
+    if (existing._isGem && sal > 5900) return;
     const fieldOwn = own(p.name);
     const hardCap = roundInt(4 * strengthFactor);
     caps[p.name] = {
