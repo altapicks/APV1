@@ -2,7 +2,7 @@
   "date": "2026-04-23",
   "slate_type": "classic",
   "tournament": "Mixed ATP/WTA R1 (Madrid + others)",
-  "notes": "17-match mixed ATP/WTA R1 slate. 10 WTA Madrid R1 + 7 ATP R1 matches. ALL matches have real DK odds except where flagged. DERIVED/ESTIMATED odds: (1) Paolini/Siegemund ace milestones not available \u2014 back-solved from 2-ace projections to ace_5plus +1800 each, 10+ defaulted +2500. Breaks/DFs/GW derived from user-provided projections. (2) Tsitsipas/Kypson breaks \u2014 only Set 1 to Break Serve tab was shown (not Total); estimated Tsitsipas line 3.5 over -120, Kypson line 1.5 over -120. (3) Monfils/Ugo Carabelli breaks \u2014 no projections provided; estimated UC ~3.5 breaks (heavy -200 fav) line 3.5 over +120, Monfils ~2.0 line 1.5 over -146. (4) Dimitrov/Vallejo breaks \u2014 no projections; pick'em -110/-110 estimated ~2.7 each, line 2.5 over +100 for both. (5) Baez/Gaubas breaks from user projections (Baez 4.2, Gaubas 2.0). (6) Landaluce/Walton/Opelka/Budkov Kjaer/Cerundolo/Altmaier breaks all derived via Poisson from user projections. Note Bouzkova/Kalinina: DK has Bouzkova -125 favorite despite stale decimal odds showing Kalinina 1.84; DK odds used as source of truth. PP lines: 16 Fantasy Score (all 3x) + 14 Breaks (5 with non-3x multipliers: Siegemund 2.7x, Sabalenka 2.8x, Stearns 3.5x, Jovic 2.6x, Fernandez 3.25x).\n\n[DIAGNOSTIC BUILD 2026-04-23]: SS Proj injected via match.adj_a/adj_b; SaberSims pool exposure injected as dk_players[i].sim_own_override for use by OverOwned Mode. Load in a patched app build that reads sim_own_override; original slate is unchanged for production.",
+  "notes": "17-match mixed ATP/WTA R1 slate. 10 WTA Madrid R1 + 7 ATP R1 matches. ALL matches have real DK odds except where flagged. DERIVED/ESTIMATED odds: (1) Paolini/Siegemund ace milestones not available \u2014 back-solved from 2-ace projections to ace_5plus +1800 each, 10+ defaulted +2500. Breaks/DFs/GW derived from user-provided projections. (2) Tsitsipas/Kypson breaks \u2014 only Set 1 to Break Serve tab was shown (not Total); estimated Tsitsipas line 3.5 over -120, Kypson line 1.5 over -120. (3) Monfils/Ugo Carabelli breaks \u2014 no projections provided; estimated UC ~3.5 breaks (heavy -200 fav) line 3.5 over +120, Monfils ~2.0 line 1.5 over -146. (4) Dimitrov/Vallejo breaks \u2014 no projections; pick'em -110/-110 estimated ~2.7 each, line 2.5 over +100 for both. (5) Baez/Gaubas breaks from user projections (Baez 4.2, Gaubas 2.0). (6) Landaluce/Walton/Opelka/Budkov Kjaer/Cerundolo/Altmaier breaks all derived via Poisson from user projections. Note Bouzkova/Kalinina: DK has Bouzkova -125 favorite despite stale decimal odds showing Kalinina 1.84; DK odds used as source of truth. PP lines: 16 Fantasy Score (all 3x) + 14 Breaks (5 with non-3x multipliers: Siegemund 2.7x, Sabalenka 2.8x, Stearns 3.5x, Jovic 2.6x, Fernandez 3.25x).\n\n[DIAGNOSTIC BUILD 2026-04-23]: SS Proj injected via match.adj_a/adj_b; Pool Own values injected as dk_players[i].ss_pool_own for use by OverOwned Mode. Load in a patched app build that reads ss_pool_own; original slate is unchanged for production.",
   "matches": [
     {
       "player_a": "Iga Swiatek",
@@ -555,238 +555,238 @@
       "id": 42728452,
       "salary": 11200,
       "avg_ppg": 59.16,
-      "sim_own_override": 39.6
+      "ss_pool_own": 39.6
     },
     {
       "name": "Aryna Sabalenka",
       "id": 42728453,
       "salary": 11100,
       "avg_ppg": 73.28,
-      "sim_own_override": 28.3
+      "ss_pool_own": 28.3
     },
     {
       "name": "Mirra Andreeva",
       "id": 42728454,
       "salary": 10800,
       "avg_ppg": 60.39,
-      "sim_own_override": 47.7
+      "ss_pool_own": 47.7
     },
     {
       "name": "Leylah Fernandez",
       "id": 42728455,
       "salary": 10400,
       "avg_ppg": 36.07,
-      "sim_own_override": 17.9
+      "ss_pool_own": 17.9
     },
     {
       "name": "Martin Landaluce",
       "id": 42728456,
       "salary": 10100,
       "avg_ppg": 42.91,
-      "sim_own_override": 14.7
+      "ss_pool_own": 14.7
     },
     {
       "name": "Jasmine Paolini",
       "id": 42728457,
       "salary": 9700,
       "avg_ppg": 48.72,
-      "sim_own_override": 14.4
+      "ss_pool_own": 14.4
     },
     {
       "name": "Stefanos Tsitsipas",
       "id": 42728458,
       "salary": 9300,
       "avg_ppg": 50.8,
-      "sim_own_override": 29.0
+      "ss_pool_own": 29.0
     },
     {
       "name": "Sebastian Baez",
       "id": 42728459,
       "salary": 9200,
       "avg_ppg": 50.15,
-      "sim_own_override": 21.5
+      "ss_pool_own": 21.5
     },
     {
       "name": "Hailey Baptiste",
       "id": 42728460,
       "salary": 9100,
       "avg_ppg": 48.75,
-      "sim_own_override": 11.0
+      "ss_pool_own": 11.0
     },
     {
       "name": "Iva Jovic",
       "id": 42728461,
       "salary": 8800,
       "avg_ppg": 55.83,
-      "sim_own_override": 24.4
+      "ss_pool_own": 24.4
     },
     {
       "name": "Camilo Ugo Carabelli",
       "id": 42728462,
       "salary": 8400,
       "avg_ppg": 45.06,
-      "sim_own_override": 12.8
+      "ss_pool_own": 12.8
     },
     {
       "name": "Juan Manuel Cerundolo",
       "id": 42728463,
       "salary": 8100,
       "avg_ppg": 44.2,
-      "sim_own_override": 15.2
+      "ss_pool_own": 15.2
     },
     {
       "name": "Ann Li",
       "id": 42728464,
       "salary": 8000,
       "avg_ppg": 45.31,
-      "sim_own_override": 11.9
+      "ss_pool_own": 11.9
     },
     {
       "name": "Reilly Opelka",
       "id": 42728465,
       "salary": 7900,
       "avg_ppg": 55.26,
-      "sim_own_override": 39.6
+      "ss_pool_own": 39.6
     },
     {
       "name": "Adolfo Daniel Vallejo",
       "id": 42728466,
       "salary": 7800,
       "avg_ppg": 63.08,
-      "sim_own_override": 10.0
+      "ss_pool_own": 10.0
     },
     {
       "name": "Naomi Osaka",
       "id": 42728467,
       "salary": 7700,
       "avg_ppg": 52.3,
-      "sim_own_override": 19.5
+      "ss_pool_own": 19.5
     },
     {
       "name": "Anhelina Kalinina",
       "id": 42728468,
       "salary": 7500,
       "avg_ppg": 54.52,
-      "sim_own_override": 8.0
+      "ss_pool_own": 8.0
     },
     {
       "name": "Marie Bouzkova",
       "id": 42728469,
       "salary": 7300,
       "avg_ppg": 45.66,
-      "sim_own_override": 24.7
+      "ss_pool_own": 24.7
     },
     {
       "name": "Camila Osorio",
       "id": 42728470,
       "salary": 7100,
       "avg_ppg": 44.59,
-      "sim_own_override": 11.4
+      "ss_pool_own": 11.4
     },
     {
       "name": "Grigor Dimitrov",
       "id": 42728471,
       "salary": 6900,
       "avg_ppg": 35.49,
-      "sim_own_override": 33.5
+      "ss_pool_own": 33.5
     },
     {
       "name": "Nicolai Budkov Kjaer",
       "id": 42728472,
       "salary": 6700,
       "avg_ppg": 42.22,
-      "sim_own_override": 21.9
+      "ss_pool_own": 21.9
     },
     {
       "name": "Alycia Parks",
       "id": 42728473,
       "salary": 6600,
       "avg_ppg": 43.37,
-      "sim_own_override": 22.6
+      "ss_pool_own": 22.6
     },
     {
       "name": "Daniel Altmaier",
       "id": 42728474,
       "salary": 6500,
       "avg_ppg": 36.49,
-      "sim_own_override": 24.2
+      "ss_pool_own": 24.2
     },
     {
       "name": "Gael Monfils",
       "id": 42728475,
       "salary": 6200,
       "avg_ppg": 41.31,
-      "sim_own_override": 28.6
+      "ss_pool_own": 28.6
     },
     {
       "name": "Magda Linette",
       "id": 42728476,
       "salary": 5900,
       "avg_ppg": 47.07,
-      "sim_own_override": 12.2
+      "ss_pool_own": 12.2
     },
     {
       "name": "Kaitlin Quevedo",
       "id": 42728477,
       "salary": 5800,
       "avg_ppg": 48.13,
-      "sim_own_override": 17.9
+      "ss_pool_own": 17.9
     },
     {
       "name": "Vilius Gaubas",
       "id": 42728478,
       "salary": 5500,
       "avg_ppg": 48.02,
-      "sim_own_override": 11.7
+      "ss_pool_own": 11.7
     },
     {
       "name": "Patrick Kypson",
       "id": 42728479,
       "salary": 5200,
       "avg_ppg": 44.14,
-      "sim_own_override": 10.8
+      "ss_pool_own": 10.8
     },
     {
       "name": "Laura Siegemund",
       "id": 42728480,
       "salary": 5000,
       "avg_ppg": 42.54,
-      "sim_own_override": 7.3
+      "ss_pool_own": 7.3
     },
     {
       "name": "Adam Walton",
       "id": 42728481,
       "salary": 4800,
       "avg_ppg": 43.18,
-      "sim_own_override": 7.0
+      "ss_pool_own": 7.0
     },
     {
       "name": "Julia Grabher",
       "id": 42728482,
       "salary": 4600,
       "avg_ppg": 29.48,
-      "sim_own_override": 0.7
+      "ss_pool_own": 0.7
     },
     {
       "name": "Panna Udvardy",
       "id": 42728483,
       "salary": 4400,
       "avg_ppg": 42.83,
-      "sim_own_override": 0.0
+      "ss_pool_own": 0.0
     },
     {
       "name": "Peyton Stearns",
       "id": 42728484,
       "salary": 4200,
       "avg_ppg": 49.7,
-      "sim_own_override": 0.0
+      "ss_pool_own": 0.0
     },
     {
       "name": "Daria Snigur",
       "id": 42728485,
       "salary": 4000,
       "avg_ppg": 60.69,
-      "sim_own_override": 0.0
+      "ss_pool_own": 0.0
     }
   ],
   "pp_lines": [
