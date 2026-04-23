@@ -391,6 +391,9 @@ function buildProjections(data) {
         cpt_id: dk.cpt_id, cpt_salary: dk.cpt_salary,
         acpt_id: dk.acpt_id, acpt_salary: dk.acpt_salary,
         flex_id: dk.flex_id, flex_salary: dk.flex_salary,
+        // v3.25: SaberSims Pool Own replaces Monte Carlo simOwn when shipped
+        // in the slate JSON. Must be manually pasted in during slate build.
+        ss_pool_own: dk.ss_pool_own,
       });
     });
   });
@@ -474,6 +477,9 @@ function buildMMAProjections(data) {
         fightPR5: fighter_a.pR5 + fighter_b.pR5,
         fightPDec: fighter_a.pDec + fighter_b.pDec,
         fightMaxMin: (fight.rounds || 3) * 5,
+        // v3.25: SaberSims Pool Own replaces Monte Carlo simOwn when shipped
+        // in the slate JSON. Must be manually pasted in during slate build.
+        ss_pool_own: dk.ss_pool_own,
       });
     });
   });
@@ -656,6 +662,9 @@ function buildNBAProjections(data) {
       status: stats.status,
       stats,
       startTime: game.tip || '',
+      // v3.25: manual Pool Own replaces Monte Carlo simOwn when shipped in
+      // the slate JSON. Must be manually pasted in during slate build.
+      ss_pool_own: p.ss_pool_own,
     };
   });
 
@@ -747,10 +756,10 @@ function useSort(data, dk = 'val', dd = 'desc') {
   const toggle = useCallback(k => { if (k === sk) setSd(d => d === 'asc' ? 'desc' : 'asc'); else { setSk(k); setSd('desc'); } }, [sk]);
   return { sorted, sortKey: sk, sortDir: sd, toggleSort: toggle };
 }
-function SH({ label, colKey, sortKey, sortDir, onSort, num }) {
+function SH({ label, colKey, sortKey, sortDir, onSort, num, tip }) {
   const a = colKey === sortKey;
   const cls = [a ? 'sorted' : '', num ? 'num' : ''].filter(Boolean).join(' ');
-  return <th className={cls} onClick={() => onSort(colKey)}>{label}{a && <span className="sort-arrow">{sortDir === 'asc' ? '▲' : '▼'}</span>}</th>;
+  return <th className={cls} onClick={() => onSort(colKey)} title={tip}>{label}{a && <span className="sort-arrow">{sortDir === 'asc' ? '▲' : '▼'}</span>}</th>;
 }
 
 // Small inline 🔒 / 🚫 button pair rendered in its own column on DK tabs.
@@ -1521,14 +1530,43 @@ export default function App() {
   // projections, which doesn't change when the user privately edits their own
   // projections, so rawDkPlayers is also the semantically correct input.
   const ownershipData = useMemo(() => {
-    if (rawDkPlayers.length === 0) return { overall: {}, cpt: {} };
-    if (sport === 'tennis') return simulateOwnership(rawDkPlayers);
-    if (sport === 'mma') return simulateMMAOwnership(rawDkPlayers);
-    if (sport === 'nba') return simulateNBAOwnership(rawDkPlayers, data?.slate_type || 'showdown');
-    return { overall: {}, cpt: {} };
+    if (rawDkPlayers.length === 0) return { overall: {}, cpt: {}, missingPoolOwn: [] };
+    // v3.25: manual Pool Own replaces the Monte Carlo simOwn. Users paste
+    // per-player pool ownership values into the slate JSON at build time.
+    // If ANY player on the slate has ss_pool_own, we treat the slate as
+    // "manually owned" and:
+    //   - use ss_pool_own directly for players that have it
+    //   - run Monte Carlo ONLY for players missing the field, as a safety
+    //     net so the app still functions
+    //   - surface missing players via a top banner so the user knows to fix
+    //     the slate before going live
+    const anyHasPoolOwn = rawDkPlayers.some(p => typeof p.ss_pool_own === 'number');
+    if (anyHasPoolOwn) {
+      const missing = rawDkPlayers.filter(p => typeof p.ss_pool_own !== 'number').map(p => p.name);
+      let simmed = { overall: {}, cpt: {} };
+      if (missing.length > 0) {
+        // Fallback sim for the players without provided values
+        if (sport === 'tennis') simmed = simulateOwnership(rawDkPlayers);
+        else if (sport === 'mma') simmed = simulateMMAOwnership(rawDkPlayers);
+        else if (sport === 'nba') simmed = simulateNBAOwnership(rawDkPlayers, data?.slate_type || 'showdown');
+      }
+      const overall = {};
+      for (const p of rawDkPlayers) {
+        overall[p.name] = typeof p.ss_pool_own === 'number'
+          ? p.ss_pool_own
+          : (simmed.overall[p.name] || 0);
+      }
+      return { overall, cpt: simmed.cpt || {}, missingPoolOwn: missing };
+    }
+    // No manual values at all — behave like the original simulation.
+    if (sport === 'tennis') return { ...simulateOwnership(rawDkPlayers), missingPoolOwn: [] };
+    if (sport === 'mma')    return { ...simulateMMAOwnership(rawDkPlayers), missingPoolOwn: [] };
+    if (sport === 'nba')    return { ...simulateNBAOwnership(rawDkPlayers, data?.slate_type || 'showdown'), missingPoolOwn: [] };
+    return { overall: {}, cpt: {}, missingPoolOwn: [] };
   }, [rawDkPlayers, sport, data]);
   const ownership = ownershipData.overall;
   const cptOwnership = ownershipData.cpt;
+  const missingPoolOwn = ownershipData.missingPoolOwn || [];
 
   if (error) {
     const expectedUrl = sport === 'mma' ? './slate-mma.json'
@@ -1906,6 +1944,23 @@ export default function App() {
     `}</style>
     <div className="cursor-glow" aria-hidden="true" />
     <Topbar sport={sport} onSportChange={setSport} data={data} slateDate={slateDate} onSlateDateChange={setSlateDate} manifestSlates={manifestSlates} onLogoClick={() => setTab('dk')} />
+    {missingPoolOwn.length > 0 && (
+      <div style={{
+        padding: '10px 24px', background: 'rgba(245, 158, 11, 0.09)',
+        borderBottom: '1px solid rgba(245, 158, 11, 0.35)',
+        fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.45,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, maxWidth: 1400, margin: '0 auto' }}>
+          <Icon name="warning" size={14} color="var(--amber)"/>
+          <div>
+            <strong style={{ color: 'var(--amber)' }}>Missing Pool Own for {missingPoolOwn.length} player{missingPoolOwn.length === 1 ? '' : 's'}.</strong>
+            {' '}Falling back to the simulated ownership model for{' '}
+            <span style={{ color: 'var(--text)' }}>{missingPoolOwn.slice(0, 6).join(', ')}{missingPoolOwn.length > 6 ? `, +${missingPoolOwn.length - 6} more` : ''}</span>.
+            {' '}Add their Pool Own values to the slate JSON before going live.
+          </div>
+        </div>
+      </div>
+    )}
     <div className="tab-bar">{tabs.map(t => (
       <button key={t.id} className={`tab tab-icon ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)} title={t.l} aria-label={t.l}>
         {t.icon}
@@ -2370,7 +2425,7 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     <SearchBar value={q} onChange={setQ} placeholder="Search players, opponents" total={pw.length} filtered={pwFiltered.length} />
     <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
     <div className="table-wrap"><table><thead><tr>
-      <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num /><S label="Win%" colKey="wp" num /><S label="Proj" colKey="proj" num /><S label="Val" colKey="val" num /><S label="P(2-0)" colKey="pStraight" num /><S label="GW" colKey="gw" num /><S label="GL" colKey="gl" num /><S label="SW" colKey="sw" num /><S label="Aces" colKey="aces" num /><S label="DFs" colKey="dfs" num /><S label="Breaks" colKey="breaks" num /><th>Time</th><th></th>
+      <th>#</th><th></th><S label="Player" colKey="name" /><th>Opp</th><S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num tip="Projected field ownership (imported from Pool Own, or simulated if unavailable)" /><S label="Win%" colKey="wp" num /><S label="Proj" colKey="proj" num /><S label="Val" colKey="val" num /><S label="P(2-0)" colKey="pStraight" num /><S label="GW" colKey="gw" num /><S label="GL" colKey="gl" num /><S label="SW" colKey="sw" num /><S label="Aces" colKey="aces" num /><S label="DFs" colKey="dfs" num /><S label="Breaks" colKey="breaks" num /><th>Time</th><th></th>
     </tr></thead>
     <tbody>{sorted.map((p, i) => {
       const iv = t3v.includes(p.name), is = t3s.includes(p.name);
@@ -3883,7 +3938,7 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
     <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
-      <S label="Player" colKey="name" /><S label="Salary" colKey="salary" num /><S label="Proj" colKey="projection" num /><S label="Value" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num /><S label="Leverage" colKey="lev" num />
+      <S label="Player" colKey="name" /><S label="Salary" colKey="salary" num /><S label="Proj" colKey="projection" num /><S label="Value" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num tip="Projected field ownership (imported from Pool Own, or simulated if unavailable)" /><S label="Leverage" colKey="lev" num />
       {!res.isShowdown && <th title="Filter displayed lineups by this player" style={{ textAlign: 'center' }}>Filter</th>}
     </tr></thead>
     <tbody>{sorted.map(p => {
@@ -4431,7 +4486,7 @@ function MMADKTab({ fighters, fc, own, onOverride, overrides, lockedPlayers = []
     <LockBar lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="name" /><th>Opp</th>
-      <S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num /><S label="Win%" colKey="wp" num />
+      <S label="Sal" colKey="salary" num /><S label="Sim Own" colKey="simOwn" num tip="Projected field ownership (imported from Pool Own, or simulated if unavailable)" /><S label="Win%" colKey="wp" num />
       <S label="Proj" colKey="proj" num /><S label="Ceiling" colKey="ceil" num /><S label="Finish%" colKey="finishProb" />
       <S label="Val" colKey="val" num /><S label="CVal" colKey="cval" num />
       <S label="SS" colKey="sigStr" /><S label="TD" colKey="takedowns" /><S label="CT" colKey="ctMin" />
@@ -5059,7 +5114,7 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
     <div className="section-head" style={{ marginTop: 20 }}><Icon name="chart" size={16} color="#F5C518"/> Exposure</div>
     <SearchBar value={q} onChange={setQ} placeholder="Search exposure" total={expData.length} filtered={expFiltered.length} />
     <div className="table-wrap" style={{ marginBottom: 20 }}><table><thead><tr>
-      <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" num /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num /><S label="Leverage" colKey="lev" num />
+      <S label="Fighter" colKey="name" /><S label="Salary" colKey="salary" num /><S label={mode === 'ceiling' ? 'Ceiling' : 'Proj'} colKey="score" /><S label="Val" colKey="val" num /><S label="Count" colKey="cnt" num /><S label="Exposure" colKey="pct" num /><S label="Sim Own" colKey="simOwn" num tip="Projected field ownership (imported from Pool Own, or simulated if unavailable)" /><S label="Leverage" colKey="lev" num />
       <th title="Filter displayed lineups by this fighter" style={{ textAlign: 'center' }}>Filter</th>
     </tr></thead>
     <tbody>{sorted.map(p => {
@@ -5558,7 +5613,7 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="name" /><th>Team</th><th>Pos</th>
       <S label="Sal" colKey="salary" num />
-      <S label="Sim Own" colKey="simOwn" num />
+      <S label="Sim Own" colKey="simOwn" num tip="Projected field ownership (imported from Pool Own, or simulated if unavailable)" />
       <S label="CPT %" colKey="cptOwnPct" num />
       <S label="Proj" colKey="proj" num /><S label="Ceil" colKey="ceil" num />
       <S label="Val" colKey="val" num /><S label="CVal" colKey="cval" num />
