@@ -2121,7 +2121,7 @@ function PPTab({ rows }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24.10)
+// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24.12)
 // ═══════════════════════════════════════════════════════════════════════
 // Completely isolated from the ≤15 match logic. Deep tennis slates have
 // different structural dynamics — more chalk consolidation, more cheap
@@ -2145,7 +2145,9 @@ function PPTab({ rows }) {
 //                                  candidates excluded from pool if they
 //                                  are the opponent of a top-3 PP fade
 //   (4)  Three PP Pivots           +100% / +90% / +80% leverage (top 3
-//                                  PP fades, ppEdge ≤ -2)
+//                                  PP fades, ppEdge ≤ -2). v3.24.11:
+//                                  no max ceiling — user min overrides
+//                                  are respected.
 //   (5)  Pivot-Opponent Fade       opp of PP Pivot #1 capped at
 //                                  simOwn × (1 - 0.5 × strengthFactor)
 //   (6)  Extended PP Fade Floor    PP Pivots #2 & #3 get min = simOwn +
@@ -2166,7 +2168,19 @@ function PPTab({ rows }) {
 //                                  additively if opp already has signal)
 //   (10) ≤$7,800 + >50% wp Fade    max = 5% + opp boost = oppSimOwn × 1.2
 //                                  HARD OVERRIDE (unless PP Pivot — PP wins)
-//   (11) Strict Leverage Cap       no-signal players capped at simOwn+10pp
+//   (11) Cheap Filler Hard Cap     (v3.24.8) tiered salary caps for
+//                                  no-signal cheap plays:
+//                                     • < $5,000      → max 4%
+//                                     • $5,000-$5,699 → max 8%
+//                                  Skips if player has any signal.
+//   (12) Top 10 Val Tiered Cap     (v3.24.12) HARD OVERRIDE — sort by
+//                                  val DESC, cap top 10 at tier max
+//                                  (5 / 7 / 8 / 9 / 10 for #5-#10);
+//                                  boost opps (if opp.val ≥ 5.50) to
+//                                  tier min (50 / 40 / 37 / 35 / 30 for
+//                                  #5-#10). Gems of any `_isGem` kind
+//                                  bypass — otherwise wins over every
+//                                  earlier rule.
 function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   const withSal = rp.filter(p => p.salary > 0);
   if (withSal.length === 0) return {};
@@ -2335,6 +2349,14 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   //     Boost: #1 = +100%, #2 = +90%, #3 = +80% leverage from simOwn.
   //     v3.24.9: `ppFades` is computed earlier in the function (hoisted
   //     so Rule 3 can exclude their opponents from the gem pool).
+  //     v3.24.11: REMOVED max ceiling (was boostedMin + 30). PP Pivots
+  //     are our conviction plays — we want to run them as hard as the
+  //     user asks. The ceiling was silently clobbering user min overrides
+  //     (e.g. setting min 75% on a PP Pivot was being capped at ~50%
+  //     because effMax = min(userMax, boostedMin+30) won the collision).
+  //     Now PP Pivots set only a min floor; max defaults to 100%, and
+  //     later cap-wins rules (Rule 8 straight sets, Rule 9 val cap,
+  //     etc.) can still override if the player qualifies.
   // ─────────────────────────────────────────────────────────────────
   const pivotBoosts = [1.00, 0.90, 0.80];
   const gemPivots = [];
@@ -2344,16 +2366,21 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     const boostedMin = roundInt(fieldOwn * (1 + boostPct));
     const existing = caps[fade.name] || {};
     const currMax = existing.max !== undefined ? existing.max : 100;
-    caps[fade.name] = {
+    // Preserve any existing max (from rare upstream rule), otherwise
+    // omit the max key entirely so the combining logic defaults to 100.
+    const nextCap = {
       ...existing,
       min: Math.min(boostedMin, currMax),
-      max: existing.max !== undefined ? existing.max : Math.min(100, boostedMin + 30),
       _isGem: true, _kind: 'pivot',
       _ppPivotRank: idx + 1,
       _ppPivotEdge: fade.ppEdge || 0,
       _ppPivotLine: fade.ppLine || 0,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
     };
+    // Spread of `existing` already preserves existing.max if set.
+    // If no existing max, delete the key so effMax defaults to 100 (no cap).
+    if (existing.max === undefined) delete nextCap.max;
+    caps[fade.name] = nextCap;
     gemPivots.push(fade);
   });
 
@@ -2618,6 +2645,69 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
       _isCheapCap: true,
       _cheapCapTier: sal < 5000 ? 'sub-5k' : 'sub-5.7k',
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (12) TOP 10 VAL TIERED CAP + OPP BOOST (v3.24.12) — HARD OVERRIDE.
+  //      Runs LAST so it wins over every other rule except gems.
+  //      Sort all players by val descending, take top 10. For each:
+  //        • Cap the val play at tier max:
+  //            #1 → 5%, #2 → 7%, #3 → 8%, #4 → 9%, #5-#10 → 10%
+  //        • If opp.val ≥ 5.50, boost opp to tier min:
+  //            #1 → 50%, #2 → 40%, #3 → 37%, #4 → 35%, #5-#10 → 30%
+  //      If the val play OR the opp has any `_isGem` signal (primary,
+  //      or-pivot, or PP pivot), skip — gems always win. If opp is
+  //      also in the top 10, skip the opp boost (they'll get their
+  //      own tier cap, avoiding a cyclic min/max contradiction).
+  //      Cap-wins semantics on the val play max (stricter of existing
+  //      or tier max). Floor-wins semantics on opp min (higher of
+  //      existing or tier min); opp max raised to at least tier min
+  //      to prevent contradiction.
+  // ─────────────────────────────────────────────────────────────────
+  const valMaxByRank = [5, 7, 8, 9, 10, 10, 10, 10, 10, 10];
+  const oppMinByRank = [50, 40, 37, 35, 30, 30, 30, 30, 30, 30];
+  const topVal10 = [...withSal]
+    .sort((a, b) => (b.val || 0) - (a.val || 0))
+    .slice(0, 10);
+  const top10Names = new Set(topVal10.map(p => p.name));
+  topVal10.forEach((valPlay, idx) => {
+    const existing = caps[valPlay.name] || {};
+    // Gem protection — skip this val play entirely (rule header)
+    if (existing._isGem) return;
+    const tierMax = valMaxByRank[idx];
+    const existingMax = existing.max !== undefined ? existing.max : 100;
+    const valFieldOwn = own(valPlay.name);
+    caps[valPlay.name] = {
+      ...existing,
+      // Cap-wins: take stricter of existing and tier max.
+      max: Math.min(existingMax, tierMax),
+      // Ensure min doesn't exceed new max (would be infeasible).
+      min: Math.min(existing.min || 0, tierMax),
+      _isTop10Val: true,
+      _top10ValRank: idx + 1,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(valFieldOwn),
+    };
+    // Opp boost — gated by opp.val ≥ 5.50, not a gem, not already top-10.
+    const opp = withSal.find(p => p.name === valPlay.opponent);
+    if (!opp) return;
+    if ((opp.val || 0) < 5.50) return;
+    if (top10Names.has(opp.name)) return;  // avoid cyclic contradiction
+    const oppExisting = caps[opp.name] || {};
+    if (oppExisting._isGem) return;        // gem protection on opp
+    const tierOppMin = oppMinByRank[idx];
+    const oppCurrMin = oppExisting.min || 0;
+    const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
+    const newMin = Math.max(oppCurrMin, tierOppMin);
+    const oppFieldOwn = own(opp.name);
+    caps[opp.name] = {
+      ...oppExisting,
+      min: newMin,
+      // Lift max to at least min so the range is feasible.
+      max: Math.max(oppCurrMax, newMin),
+      _isTop10ValOppBoost: true,
+      _top10ValOppRank: idx + 1,
+      _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
     };
   });
 
@@ -3189,6 +3279,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isHardFadeOpp)   return { label: 'Hard-Fade Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValCap)        return { label: 'Val Cap', icon: 'bomb', color: 'var(--red)' };
+        if (c._isTop10Val)      return { label: `Top Val #${c._top10ValRank || ''} Cap`, icon: 'bomb', color: 'var(--red)' };
+        if (c._isTop10ValOppBoost) return { label: `Top Val #${c._top10ValOppRank || ''} Opp`, icon: 'gem', color: 'var(--green)' };
         if (c._isCheapCap)      return { label: 'Cheap Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
@@ -3206,6 +3298,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isHardFadeOpp)   return { sym: `min ${c.min}% (+${c._hardFadeOppAddedMin || 0}pp)`, bound: c.min };
         if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
         if (c._isValCap)        return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isTop10Val)      return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isTop10ValOppBoost) return { sym: `min ${c.min}%`, bound: c.min };
         if (c._isCheapCap)      return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
