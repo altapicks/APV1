@@ -1,0 +1,1179 @@
+{
+  "date": "2026-04-22",
+  "slate_type": "classic",
+  "tournament": "Mixed ATP/WTA R1",
+  "notes": "24 matches, classic slate ($50K cap). Mixed ATP/WTA R1 across multiple events. ALL 24 MATCHES HAVE REAL DK ODDS \u2014 no placeholders. Break projections derived from set-1 break-serve odds (juice \u2192 base line) + game-spread adjustment for favorite only. Break over-odds calibrated so Poisson-fit lambda \u2248 line. Ace/DF milestones passed raw (engine Poisson-fits from 5+ aces and 3+ DFs). 10+ ace probabilities flow into DK scoring via +2 * p10ace bonus. NOTABLE 10+ ace signals: Hurkacz -225 (+1.38), Tirante -125 (+1.11), Ofner -125 (+1.11), Muller +1000, Jodar +900, Pliskova +700, Struff +225, Faria +200, Basilashvili +275, Krueger +250, Tabilo +250, Royer +225, De Jong +500, Parks +1200, Merida +900, Trungelliti +1200. DF DANGER flags: Faria 3+ -1000 (~5 DFs), Kalieva 3+ -1600 (~5 DFs), Gibson 3+ -2000 (~5 DFs), Pliskova 3+ -2000 (~5 DFs). Ace/DF locked milestones defaulted to +2500.",
+  "matches": [
+    {
+      "player_a": "Alexandre Muller",
+      "player_b": "Jan-Lennard Struff",
+      "start_time": "04/22/2026 07:20AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -150,
+        "ml_b": 120,
+        "set_a_20": 175,
+        "set_a_21": 275,
+        "set_b_20": 275,
+        "set_b_21": 333,
+        "gw_a_line": 12.5,
+        "gw_a_over": -125,
+        "gw_b_line": 12.5,
+        "gw_b_over": 100,
+        "brk_a_line": 3.0,
+        "brk_a_over": -136,
+        "brk_b_line": 2.5,
+        "brk_b_over": 119,
+        "ace_a_5plus": -110,
+        "ace_a_10plus": 1000,
+        "ace_b_5plus": -334,
+        "ace_b_10plus": 225,
+        "df_a_2plus": 137,
+        "df_a_3plus": 400,
+        "df_b_2plus": -550,
+        "df_b_3plus": -200
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Dusan Lajovic",
+      "player_b": "Lorenzo Sonego",
+      "start_time": "04/22/2026 07:20AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -150,
+        "ml_b": 120,
+        "set_a_20": 175,
+        "set_a_21": 260,
+        "set_b_20": 300,
+        "set_b_21": 333,
+        "gw_a_line": 12.5,
+        "gw_a_over": -150,
+        "gw_b_line": 12.5,
+        "gw_b_over": -120,
+        "brk_a_line": 2.5,
+        "brk_a_over": 119,
+        "brk_b_line": 1.5,
+        "brk_b_over": 126,
+        "ace_a_5plus": -120,
+        "ace_a_10plus": 900,
+        "ace_b_5plus": -188,
+        "ace_b_10plus": 450,
+        "df_a_2plus": -138,
+        "df_a_3plus": 225,
+        "df_b_2plus": -350,
+        "df_b_3plus": -125
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Elisabetta Cocciaretto",
+      "player_b": "Alycia Parks",
+      "start_time": "04/22/2026 07:30AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -275,
+        "ml_b": 220,
+        "set_a_20": -110,
+        "set_a_21": 275,
+        "set_b_20": 500,
+        "set_b_21": 500,
+        "gw_a_line": 12.5,
+        "gw_a_over": -110,
+        "gw_b_line": 10.5,
+        "gw_b_over": -120,
+        "brk_a_line": 5.5,
+        "brk_a_over": 112,
+        "brk_b_line": 3.5,
+        "brk_b_over": 116,
+        "ace_a_5plus": 1600,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 120,
+        "ace_b_10plus": 1200,
+        "df_a_2plus": -450,
+        "df_a_3plus": -175,
+        "df_b_2plus": -15000,
+        "df_b_3plus": -2500
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Dayana Yastremska",
+      "player_b": "Solana Sierra",
+      "start_time": "04/22/2026 07:40AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -334,
+        "ml_b": 250,
+        "set_a_20": -138,
+        "set_a_21": 333,
+        "set_b_20": 550,
+        "set_b_21": 550,
+        "gw_a_line": 12.5,
+        "gw_a_over": 120,
+        "gw_b_line": 8.5,
+        "gw_b_over": -120,
+        "brk_a_line": 5.5,
+        "brk_a_over": 112,
+        "brk_b_line": 3.0,
+        "brk_b_over": -136,
+        "ace_a_5plus": 700,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 700,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -700,
+        "df_a_3plus": -275,
+        "df_b_2plus": -4000,
+        "df_b_3plus": -1000
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Tereza Valentova",
+      "player_b": "Yulia Putintseva",
+      "start_time": "04/22/2026 07:40AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -150,
+        "ml_b": 120,
+        "set_a_20": 150,
+        "set_a_21": 300,
+        "set_b_20": 275,
+        "set_b_21": 375,
+        "gw_a_line": 12.5,
+        "gw_a_over": 110,
+        "gw_b_line": 11.5,
+        "gw_b_over": -163,
+        "brk_a_line": 5.5,
+        "brk_a_over": 112,
+        "brk_b_line": 4.0,
+        "brk_b_over": -131,
+        "ace_a_5plus": 350,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 1000,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -450,
+        "df_a_3plus": -163,
+        "df_b_2plus": -163,
+        "df_b_3plus": 162
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Janice Tjen",
+      "player_b": "Alina Charaeva",
+      "start_time": "04/22/2026 08:10AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -150,
+        "ml_b": 120,
+        "set_a_20": 150,
+        "set_a_21": 333,
+        "set_b_20": 250,
+        "set_b_21": 400,
+        "gw_a_line": 12.5,
+        "gw_a_over": 120,
+        "gw_b_line": 11.5,
+        "gw_b_over": -150,
+        "brk_a_line": 5.5,
+        "brk_a_over": 112,
+        "brk_b_line": 4.0,
+        "brk_b_over": -131,
+        "ace_a_5plus": 400,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 400,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -1200,
+        "df_a_3plus": -450,
+        "df_b_2plus": -6600,
+        "df_b_3plus": -1600
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Emiliana Arango",
+      "player_b": "Talia Gibson",
+      "start_time": "04/22/2026 08:10AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -125,
+        "ml_b": 100,
+        "set_a_20": 200,
+        "set_a_21": 333,
+        "set_b_20": 225,
+        "set_b_21": 333,
+        "gw_a_line": 12.5,
+        "gw_a_over": 120,
+        "gw_b_line": 12.5,
+        "gw_b_over": 120,
+        "brk_a_line": 4.5,
+        "brk_a_over": 114,
+        "brk_b_line": 4.5,
+        "brk_b_over": 114,
+        "ace_a_5plus": 275,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 250,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -400,
+        "df_a_3plus": -150,
+        "df_b_2plus": -6600,
+        "df_b_3plus": -2000
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Sebastian Ofner",
+      "player_b": "Nikoloz Basilashvili",
+      "start_time": "04/22/2026 08:30AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -175,
+        "ml_b": 137,
+        "set_a_20": 162,
+        "set_a_21": 250,
+        "set_b_20": 333,
+        "set_b_21": 350,
+        "gw_a_line": 12.5,
+        "gw_a_over": -163,
+        "gw_b_line": 12.5,
+        "gw_b_over": -120,
+        "brk_a_line": 3.0,
+        "brk_a_over": -136,
+        "brk_b_line": 1.5,
+        "brk_b_over": 126,
+        "ace_a_5plus": -900,
+        "ace_a_10plus": -125,
+        "ace_b_5plus": -275,
+        "ace_b_10plus": 275,
+        "df_a_2plus": -275,
+        "df_a_3plus": 100,
+        "df_b_2plus": -3300,
+        "df_b_3plus": -1000
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Elmer Moller",
+      "player_b": "Federico Cina",
+      "start_time": "04/22/2026 08:30AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -138,
+        "ml_b": 110,
+        "set_a_20": 175,
+        "set_a_21": 300,
+        "set_b_20": 250,
+        "set_b_21": 350,
+        "gw_a_line": 12.5,
+        "gw_a_over": -120,
+        "gw_b_line": 12.5,
+        "gw_b_over": -110,
+        "brk_a_line": 2.5,
+        "brk_a_over": 119,
+        "brk_b_line": 1.5,
+        "brk_b_over": 126,
+        "ace_a_5plus": 120,
+        "ace_a_10plus": 1400,
+        "ace_b_5plus": 162,
+        "ace_b_10plus": 2000,
+        "df_a_2plus": -1400,
+        "df_a_3plus": -450,
+        "df_b_2plus": -188,
+        "df_b_3plus": 150
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Thiago Agustin Tirante",
+      "player_b": "Roberto Bautista Agut",
+      "start_time": "04/22/2026 08:40AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -200,
+        "ml_b": 162,
+        "set_a_20": 125,
+        "set_a_21": 260,
+        "set_b_20": 400,
+        "set_b_21": 400,
+        "gw_a_line": 12.5,
+        "gw_a_over": -163,
+        "gw_b_line": 12.5,
+        "gw_b_over": 100,
+        "brk_a_line": 3.0,
+        "brk_a_over": -136,
+        "brk_b_line": 1.5,
+        "brk_b_over": 126,
+        "ace_a_5plus": -1000,
+        "ace_a_10plus": -125,
+        "ace_b_5plus": 225,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -163,
+        "df_a_3plus": 162,
+        "df_b_2plus": 150,
+        "df_b_3plus": 500
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Kamilla Rakhimova",
+      "player_b": "Anhelina Kalinina",
+      "start_time": "04/22/2026 08:40AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": 120,
+        "ml_b": -150,
+        "set_a_20": 250,
+        "set_a_21": 400,
+        "set_b_20": 150,
+        "set_b_21": 333,
+        "gw_a_line": 12.5,
+        "gw_a_over": 125,
+        "gw_b_line": 12.5,
+        "gw_b_over": 125,
+        "brk_a_line": 4.0,
+        "brk_a_over": -131,
+        "brk_b_line": 5.5,
+        "brk_b_over": 112,
+        "ace_a_5plus": 900,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 250,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -3300,
+        "df_a_3plus": -900,
+        "df_b_2plus": -250,
+        "df_b_3plus": 110
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Tomas Machac",
+      "player_b": "Francisco Comesana",
+      "start_time": "04/22/2026 08:50AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -225,
+        "ml_b": 175,
+        "set_a_20": 120,
+        "set_a_21": 260,
+        "set_b_20": 400,
+        "set_b_21": 400,
+        "gw_a_line": 12.5,
+        "gw_a_over": -150,
+        "gw_b_line": 11.5,
+        "gw_b_over": -150,
+        "brk_a_line": 3.5,
+        "brk_a_over": 116,
+        "brk_b_line": 1.5,
+        "brk_b_over": 126,
+        "ace_a_5plus": 110,
+        "ace_a_10plus": 1400,
+        "ace_b_5plus": -175,
+        "ace_b_10plus": 500,
+        "df_a_2plus": -163,
+        "df_a_3plus": 162,
+        "df_b_2plus": -225,
+        "df_b_3plus": 125
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Ashlyn Krueger",
+      "player_b": "Sofia Kenin",
+      "start_time": "04/22/2026 08:50AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -125,
+        "ml_b": 100,
+        "set_a_20": 175,
+        "set_a_21": 333,
+        "set_b_20": 240,
+        "set_b_21": 350,
+        "gw_a_line": 12.5,
+        "gw_a_over": 110,
+        "gw_b_line": 12.5,
+        "gw_b_over": 120,
+        "brk_a_line": 4.5,
+        "brk_a_over": 114,
+        "brk_b_line": 4.0,
+        "brk_b_over": -131,
+        "ace_a_5plus": -300,
+        "ace_a_10plus": 250,
+        "ace_b_5plus": 700,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -2000,
+        "df_a_3plus": -600,
+        "df_b_2plus": -1000,
+        "df_b_3plus": -350
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Hubert Hurkacz",
+      "player_b": "Jaime Faria",
+      "start_time": "04/22/2026 09:20AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -275,
+        "ml_b": 220,
+        "set_a_20": 100,
+        "set_a_21": 275,
+        "set_b_20": 450,
+        "set_b_21": 450,
+        "gw_a_line": 12.5,
+        "gw_a_over": -150,
+        "gw_b_line": 11.5,
+        "gw_b_over": -125,
+        "brk_a_line": 3.5,
+        "brk_a_over": 116,
+        "brk_b_line": 1.0,
+        "brk_b_over": -172,
+        "ace_a_5plus": -2000,
+        "ace_a_10plus": -225,
+        "ace_b_5plus": -334,
+        "ace_b_10plus": 200,
+        "df_a_2plus": -120,
+        "df_a_3plus": 240,
+        "df_b_2plus": -4000,
+        "df_b_3plus": -1000
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Oleksandra Oliynykova",
+      "player_b": "Simona Waltert",
+      "start_time": "04/22/2026 09:20AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -125,
+        "ml_b": 100,
+        "set_a_20": 200,
+        "set_a_21": 300,
+        "set_b_20": 250,
+        "set_b_21": 333,
+        "gw_a_line": 12.5,
+        "gw_a_over": 100,
+        "gw_b_line": 12.5,
+        "gw_b_over": 110,
+        "brk_a_line": 4.0,
+        "brk_a_over": -131,
+        "brk_b_line": 4.0,
+        "brk_b_over": -131,
+        "ace_a_5plus": 2500,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 1400,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -225,
+        "df_a_3plus": 125,
+        "df_b_2plus": -900,
+        "df_b_3plus": -300
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Marco Trungelliti",
+      "player_b": "Daniel Merida",
+      "start_time": "04/23/2026 09:40AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": 110,
+        "ml_b": -138,
+        "set_a_20": 275,
+        "set_a_21": 300,
+        "set_b_20": 200,
+        "set_b_21": 275,
+        "gw_a_line": 12.5,
+        "gw_a_over": -120,
+        "gw_b_line": 12.5,
+        "gw_b_over": -138,
+        "brk_a_line": 1.5,
+        "brk_a_over": 126,
+        "brk_b_line": 2.5,
+        "brk_b_over": 119,
+        "ace_a_5plus": 110,
+        "ace_a_10plus": 1200,
+        "ace_b_5plus": -120,
+        "ace_b_10plus": 900,
+        "df_a_2plus": -700,
+        "df_a_3plus": -250,
+        "df_b_2plus": -400,
+        "df_b_3plus": -138
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Leolia Jeanjean",
+      "player_b": "Oksana Selekhmeteva",
+      "start_time": "04/22/2026 09:50AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": 130,
+        "ml_b": -163,
+        "set_a_20": 275,
+        "set_a_21": 400,
+        "set_b_20": 137,
+        "set_b_21": 333,
+        "gw_a_line": 11.5,
+        "gw_a_over": -150,
+        "gw_b_line": 12.5,
+        "gw_b_over": 110,
+        "brk_a_line": 4.0,
+        "brk_a_over": -131,
+        "brk_b_line": 5.5,
+        "brk_b_over": 112,
+        "ace_a_5plus": 500,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 500,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -1600,
+        "df_a_3plus": -500,
+        "df_b_2plus": -2500,
+        "df_b_3plus": -900
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Alejandro Tabilo",
+      "player_b": "Valentin Royer",
+      "start_time": "04/22/2026 10:00AM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -250,
+        "ml_b": 200,
+        "set_a_20": 110,
+        "set_a_21": 260,
+        "set_b_20": 450,
+        "set_b_21": 450,
+        "gw_a_line": 13.5,
+        "gw_a_over": 125,
+        "gw_b_line": 11.5,
+        "gw_b_over": -138,
+        "brk_a_line": 2.5,
+        "brk_a_over": 119,
+        "brk_b_line": 1.0,
+        "brk_b_over": -172,
+        "ace_a_5plus": -334,
+        "ace_a_10plus": 250,
+        "ace_b_5plus": -300,
+        "ace_b_10plus": 225,
+        "df_a_2plus": 120,
+        "df_a_3plus": 350,
+        "df_b_2plus": -125,
+        "df_b_3plus": 240
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Caty McNally",
+      "player_b": "Katie Volynets",
+      "start_time": "04/22/2026 10:00AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -138,
+        "ml_b": 110,
+        "set_a_20": 162,
+        "set_a_21": 350,
+        "set_b_20": 240,
+        "set_b_21": 375,
+        "gw_a_line": 12.5,
+        "gw_a_over": 125,
+        "gw_b_line": 11.5,
+        "gw_b_over": -175,
+        "brk_a_line": 5.0,
+        "brk_a_over": -127,
+        "brk_b_line": 4.0,
+        "brk_b_over": -131,
+        "ace_a_5plus": 1600,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 1600,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -450,
+        "df_a_3plus": -163,
+        "df_b_2plus": 150,
+        "df_b_3plus": 450
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Elvina Kalieva",
+      "player_b": "Katerina Siniakova",
+      "start_time": "04/22/2026 10:30AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": 175,
+        "ml_b": -225,
+        "set_a_20": 350,
+        "set_a_21": 450,
+        "set_b_20": 100,
+        "set_b_21": 333,
+        "gw_a_line": 10.5,
+        "gw_a_over": -120,
+        "gw_b_line": 12.5,
+        "gw_b_over": 120,
+        "brk_a_line": 4.0,
+        "brk_a_over": -131,
+        "brk_b_line": 5.5,
+        "brk_b_over": 112,
+        "ace_a_5plus": 300,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 900,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -6600,
+        "df_a_3plus": -1600,
+        "df_b_2plus": -1400,
+        "df_b_3plus": -450
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Taylor Townsend",
+      "player_b": "Katie Boulter",
+      "start_time": "04/22/2026 10:30AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -125,
+        "ml_b": 100,
+        "set_a_20": 200,
+        "set_a_21": 333,
+        "set_b_20": 225,
+        "set_b_21": 333,
+        "gw_a_line": 12.5,
+        "gw_a_over": 120,
+        "gw_b_line": 12.5,
+        "gw_b_over": 120,
+        "brk_a_line": 5.0,
+        "brk_a_over": -127,
+        "brk_b_line": 4.5,
+        "brk_b_over": 114,
+        "ace_a_5plus": 150,
+        "ace_a_10plus": 1800,
+        "ace_b_5plus": 275,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -250,
+        "df_a_3plus": 110,
+        "df_b_2plus": -5000,
+        "df_b_3plus": -1200
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Elsa Jacquemot",
+      "player_b": "Tyra Caterina Grant",
+      "start_time": "04/22/2026 11:00AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": -110,
+        "ml_b": -110,
+        "set_a_20": 225,
+        "set_a_21": 300,
+        "set_b_20": 225,
+        "set_b_21": 300,
+        "gw_a_line": 12.5,
+        "gw_a_over": 110,
+        "gw_b_line": 12.5,
+        "gw_b_over": 110,
+        "brk_a_line": 4.5,
+        "brk_a_over": 114,
+        "brk_b_line": 4.0,
+        "brk_b_over": -131,
+        "ace_a_5plus": 240,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": 500,
+        "ace_b_10plus": 2500,
+        "df_a_2plus": -4000,
+        "df_a_3plus": -1200,
+        "df_b_2plus": -1600,
+        "df_b_3plus": -500
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Sinja Kraus",
+      "player_b": "Karolina Pliskova",
+      "start_time": "04/22/2026 11:00AM",
+      "tournament": "WTA R1",
+      "odds": {
+        "ml_a": 130,
+        "ml_b": -163,
+        "set_a_20": 300,
+        "set_a_21": 350,
+        "set_b_20": 162,
+        "set_b_21": 275,
+        "gw_a_line": 11.5,
+        "gw_a_over": -163,
+        "gw_b_line": 12.5,
+        "gw_b_over": -110,
+        "brk_a_line": 4.0,
+        "brk_a_over": -131,
+        "brk_b_line": 5.5,
+        "brk_b_over": 112,
+        "ace_a_5plus": 500,
+        "ace_a_10plus": 2500,
+        "ace_b_5plus": -138,
+        "ace_b_10plus": 700,
+        "df_a_2plus": -700,
+        "df_a_3plus": -250,
+        "df_b_2plus": -8000,
+        "df_b_3plus": -2000
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    },
+    {
+      "player_a": "Rafael Jodar",
+      "player_b": "Jesper De Jong",
+      "start_time": "04/22/2026 12:10PM",
+      "tournament": "ATP R1",
+      "odds": {
+        "ml_a": -600,
+        "ml_b": 400,
+        "set_a_20": -175,
+        "set_a_21": 275,
+        "set_b_20": 900,
+        "set_b_21": 700,
+        "gw_a_line": 12.5,
+        "gw_a_over": -125,
+        "gw_b_line": 8.5,
+        "gw_b_over": -138,
+        "brk_a_line": 5.0,
+        "brk_a_over": -127,
+        "brk_b_line": 1.0,
+        "brk_b_over": -172,
+        "ace_a_5plus": -125,
+        "ace_a_10plus": 900,
+        "ace_b_5plus": -150,
+        "ace_b_10plus": 500,
+        "df_a_2plus": 100,
+        "df_a_3plus": 300,
+        "df_b_2plus": -400,
+        "df_b_3plus": -138
+      },
+      "adj_a": 0,
+      "adj_b": 0
+    }
+  ],
+  "dk_players": [
+    {
+      "name": "Rafael Jodar",
+      "id": 42719804,
+      "salary": 10500,
+      "avg_ppg": 56.38
+    },
+    {
+      "name": "Dayana Yastremska",
+      "id": 42719805,
+      "salary": 10300,
+      "avg_ppg": 37.21
+    },
+    {
+      "name": "Alejandro Tabilo",
+      "id": 42719806,
+      "salary": 10100,
+      "avg_ppg": 56.31
+    },
+    {
+      "name": "Hubert Hurkacz",
+      "id": 42719807,
+      "salary": 10000,
+      "avg_ppg": 49.53
+    },
+    {
+      "name": "Tomas Machac",
+      "id": 42719808,
+      "salary": 9900,
+      "avg_ppg": 49.16
+    },
+    {
+      "name": "Thiago Agustin Tirante",
+      "id": 42719809,
+      "salary": 9800,
+      "avg_ppg": 52.84
+    },
+    {
+      "name": "Janice Tjen",
+      "id": 42719810,
+      "salary": 9700,
+      "avg_ppg": 34.04
+    },
+    {
+      "name": "Sebastian Ofner",
+      "id": 42719811,
+      "salary": 9600,
+      "avg_ppg": 54.84
+    },
+    {
+      "name": "Caty McNally",
+      "id": 42719812,
+      "salary": 9400,
+      "avg_ppg": 42.04
+    },
+    {
+      "name": "Elvina Kalieva",
+      "id": 42719813,
+      "salary": 9200,
+      "avg_ppg": 25.44
+    },
+    {
+      "name": "Tereza Valentova",
+      "id": 42719814,
+      "salary": 9000,
+      "avg_ppg": 39.94
+    },
+    {
+      "name": "Elisabetta Cocciaretto",
+      "id": 42719815,
+      "salary": 8900,
+      "avg_ppg": 58.17
+    },
+    {
+      "name": "Alexandre Muller",
+      "id": 42719816,
+      "salary": 8800,
+      "avg_ppg": 37.76
+    },
+    {
+      "name": "Marco Trungelliti",
+      "id": 42719817,
+      "salary": 8700,
+      "avg_ppg": 51.47
+    },
+    {
+      "name": "Elsa Jacquemot",
+      "id": 42719818,
+      "salary": 8600,
+      "avg_ppg": 20.93
+    },
+    {
+      "name": "Sinja Kraus",
+      "id": 42719819,
+      "salary": 8500,
+      "avg_ppg": 30.36
+    },
+    {
+      "name": "Dusan Lajovic",
+      "id": 42719820,
+      "salary": 8400,
+      "avg_ppg": 41.38
+    },
+    {
+      "name": "Elmer Moller",
+      "id": 42719821,
+      "salary": 8300,
+      "avg_ppg": 23.6
+    },
+    {
+      "name": "Ashlyn Krueger",
+      "id": 42719822,
+      "salary": 8200,
+      "avg_ppg": 44.39
+    },
+    {
+      "name": "Taylor Townsend",
+      "id": 42719823,
+      "salary": 8100,
+      "avg_ppg": 52.67
+    },
+    {
+      "name": "Emiliana Arango",
+      "id": 42719824,
+      "salary": 8000,
+      "avg_ppg": 36.66
+    },
+    {
+      "name": "Leolia Jeanjean",
+      "id": 42719825,
+      "salary": 7900,
+      "avg_ppg": 13.12
+    },
+    {
+      "name": "Oleksandra Oliynykova",
+      "id": 42719826,
+      "salary": 7800,
+      "avg_ppg": 48.61
+    },
+    {
+      "name": "Kamilla Rakhimova",
+      "id": 42719827,
+      "salary": 7700,
+      "avg_ppg": 37.58
+    },
+    {
+      "name": "Anhelina Kalinina",
+      "id": 42719828,
+      "salary": 7600,
+      "avg_ppg": 49.1
+    },
+    {
+      "name": "Simona Waltert",
+      "id": 42719829,
+      "salary": 7500,
+      "avg_ppg": 23.26
+    },
+    {
+      "name": "Oksana Selekhmeteva",
+      "id": 42719830,
+      "salary": 7400,
+      "avg_ppg": 40.84
+    },
+    {
+      "name": "Talia Gibson",
+      "id": 42719831,
+      "salary": 7300,
+      "avg_ppg": 50.67
+    },
+    {
+      "name": "Katie Boulter",
+      "id": 42719832,
+      "salary": 7200,
+      "avg_ppg": 52.5
+    },
+    {
+      "name": "Sofia Kenin",
+      "id": 42719833,
+      "salary": 7100,
+      "avg_ppg": 25.99
+    },
+    {
+      "name": "Federico Cina",
+      "id": 42719834,
+      "salary": 7000,
+      "avg_ppg": 54.62
+    },
+    {
+      "name": "Lorenzo Sonego",
+      "id": 42719835,
+      "salary": 6900,
+      "avg_ppg": 43.71
+    },
+    {
+      "name": "Karolina Pliskova",
+      "id": 42719836,
+      "salary": 6800,
+      "avg_ppg": 50.5
+    },
+    {
+      "name": "Tyra Caterina Grant",
+      "id": 42719837,
+      "salary": 6700,
+      "avg_ppg": 0.0
+    },
+    {
+      "name": "Daniel Merida",
+      "id": 42719838,
+      "salary": 6600,
+      "avg_ppg": 53.55
+    },
+    {
+      "name": "Jan-Lennard Struff",
+      "id": 42719839,
+      "salary": 6400,
+      "avg_ppg": 40.07
+    },
+    {
+      "name": "Alycia Parks",
+      "id": 42719840,
+      "salary": 6300,
+      "avg_ppg": 41.64
+    },
+    {
+      "name": "Yulia Putintseva",
+      "id": 42719841,
+      "salary": 6100,
+      "avg_ppg": 49.1
+    },
+    {
+      "name": "Katerina Siniakova",
+      "id": 42719842,
+      "salary": 6000,
+      "avg_ppg": 43.35
+    },
+    {
+      "name": "Katie Volynets",
+      "id": 42719843,
+      "salary": 5900,
+      "avg_ppg": 42.22
+    },
+    {
+      "name": "Nikoloz Basilashvili",
+      "id": 42719844,
+      "salary": 5800,
+      "avg_ppg": 31.34
+    },
+    {
+      "name": "Alina Charaeva",
+      "id": 42719845,
+      "salary": 5700,
+      "avg_ppg": 24.9
+    },
+    {
+      "name": "Roberto Bautista Agut",
+      "id": 42719846,
+      "salary": 5600,
+      "avg_ppg": 35.15
+    },
+    {
+      "name": "Francisco Comesana",
+      "id": 42719847,
+      "salary": 5500,
+      "avg_ppg": 36.15
+    },
+    {
+      "name": "Jaime Faria",
+      "id": 42719848,
+      "salary": 5400,
+      "avg_ppg": 51.68
+    },
+    {
+      "name": "Valentin Royer",
+      "id": 42719849,
+      "salary": 5300,
+      "avg_ppg": 41.89
+    },
+    {
+      "name": "Solana Sierra",
+      "id": 42719850,
+      "salary": 5000,
+      "avg_ppg": 23.31
+    },
+    {
+      "name": "Jesper De Jong",
+      "id": 42719851,
+      "salary": 4800,
+      "avg_ppg": 42.47
+    }
+  ],
+  "pp_lines": [
+    {
+      "player": "Alejandro Tabilo",
+      "stat": "Fantasy Score",
+      "line": 18
+    },
+    {
+      "player": "Alexandre Muller",
+      "stat": "Fantasy Score",
+      "line": 14
+    },
+    {
+      "player": "Ashlyn Krueger",
+      "stat": "Fantasy Score",
+      "line": 13
+    },
+    {
+      "player": "Dayana Yastremska",
+      "stat": "Fantasy Score",
+      "line": 19.5
+    },
+    {
+      "player": "Dusan Lajovic",
+      "stat": "Fantasy Score",
+      "line": 14
+    },
+    {
+      "player": "Elmer Moller",
+      "stat": "Fantasy Score",
+      "line": 15
+    },
+    {
+      "player": "Emiliana Arango",
+      "stat": "Fantasy Score",
+      "line": 11
+    },
+    {
+      "player": "Hubert Hurkacz",
+      "stat": "Fantasy Score",
+      "line": 23.5
+    },
+    {
+      "player": "Rafael Jodar",
+      "stat": "Fantasy Score",
+      "line": 22
+    },
+    {
+      "player": "Sebastian Ofner",
+      "stat": "Fantasy Score",
+      "line": 16.5
+    },
+    {
+      "player": "Taylor Townsend",
+      "stat": "Fantasy Score",
+      "line": 12.5
+    },
+    {
+      "player": "Tereza Valentova",
+      "stat": "Fantasy Score",
+      "line": 15.5
+    },
+    {
+      "player": "Thiago Agustin Tirante",
+      "stat": "Fantasy Score",
+      "line": 21
+    },
+    {
+      "player": "Tomas Machac",
+      "stat": "Fantasy Score",
+      "line": 17.5
+    },
+    {
+      "player": "Alejandro Tabilo",
+      "stat": "Breaks",
+      "line": 2.5
+    },
+    {
+      "player": "Ashlyn Krueger",
+      "stat": "Breaks",
+      "line": 4.5
+    },
+    {
+      "player": "Dayana Yastremska",
+      "stat": "Breaks",
+      "line": 5
+    },
+    {
+      "player": "Emiliana Arango",
+      "stat": "Breaks",
+      "line": 4.5
+    },
+    {
+      "player": "Rafael Jodar",
+      "stat": "Breaks",
+      "line": 3.5
+    },
+    {
+      "player": "Taylor Townsend",
+      "stat": "Breaks",
+      "line": 4
+    },
+    {
+      "player": "Thiago Agustin Tirante",
+      "stat": "Breaks",
+      "line": 3
+    },
+    {
+      "player": "Tomas Machac",
+      "stat": "Breaks",
+      "line": 3
+    }
+  ],
+  "last_updated": "2026-04-22 AM MT"
+}
