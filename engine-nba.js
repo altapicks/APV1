@@ -210,8 +210,11 @@ export function buildPlayerStats(player, /* ctx */ _ctx = {}) {
   const pts       = readProp('points');
   let   reb       = readProp('rebounds');
   let   ast       = readProp('assists');
-  const threesM   = readProp('threes');
-  const stlBlkSum = readProp('stls_blks');
+  let   threesM   = readProp('threes');
+  // Steals/blocks are NOT devigged from DK's stls_blks market anymore.
+  // DK's combined line forces a position-based 55/45-ish split that loses
+  // accuracy vs a per-player projection. We read player.stl / player.blk
+  // from the slate directly (typically supplied by a projection CSV).
   const pra       = readProp('pra');      // DK Points+Rebounds+Assists market
 
   // ─────────────────────────────────────────────────────────────────────
@@ -244,13 +247,33 @@ export function buildPlayerStats(player, /* ctx */ _ctx = {}) {
     // most precise numbers. PRA just confirms the sum roughly matches.
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // CSV FALLBACK — fill any stat that DK didn't price (and PRA back-calc
+  // couldn't derive) from the projection CSV. Preference order:
+  //   1. DK direct market (most accurate for that specific stat)
+  //   2. DK PRA back-calc (derived from DK composite — still DK-sourced)
+  //   3. CSV projection (fallback when DK doesn't price the market)
+  // Without this step, players DK only prices for Points + Threes (e.g.
+  // Booker, Green, Brooks on PHX@OKC) project at 0 for reb/ast and get
+  // near-zero exposure despite being obvious core plays.
+  // ─────────────────────────────────────────────────────────────────────
+  let rebFromCsv = false, astFromCsv = false, threesFromCsv = false;
+  if (reb     == null && player.reb    != null) { reb     = Number(player.reb);    rebFromCsv    = true; }
+  if (ast     == null && player.ast    != null) { ast     = Number(player.ast);    astFromCsv    = true; }
+  if (threesM == null && player.threes != null) { threesM = Number(player.threes); threesFromCsv = true; }
+
   const hasStatData = {
     points:    pts       != null,
     rebounds:  reb       != null,
     assists:   ast       != null,
     threes:    threesM   != null,
-    stls_blks: stlBlkSum != null,
+    // stls_blks = "do we have stl+blk values for this player" — now sourced
+    // from the projection CSV (player.stl / player.blk) instead of DK's
+    // combined market. Kept under the legacy key so the UI's stat-coverage
+    // badge keeps working.
+    stls_blks: (player.stl != null) || (player.blk != null),
     rebFromPra, astFromPra,
+    rebFromCsv, astFromCsv, threesFromCsv,
     pra:       pra       != null,
   };
 
@@ -293,10 +316,12 @@ export function buildPlayerStats(player, /* ctx */ _ctx = {}) {
 
   // Projectable via DK props.
 
-  // Position-aware steal/block split from the sum
-  const { stlPct, blkPct } = stlBlkSplit(player.positions);
-  const stl = (stlBlkSum || 0) * stlPct;
-  const blk = (stlBlkSum || 0) * blkPct;
+  // Steals and blocks come straight from the slate (supplied by the projection
+  // CSV). We no longer split a devigged DK stls_blks sum by position —
+  // per-player projections from a stats model are more accurate than an
+  // archetype split of a combined market.
+  const stl = (player.stl != null) ? Number(player.stl) : 0;
+  const blk = (player.blk != null) ? Number(player.blk) : 0;
 
   // Turnovers: prefer explicit per-player value from the slate (user-supplied
   // rotation data); fall back to the creation-load estimator when absent.
