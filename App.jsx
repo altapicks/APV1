@@ -913,6 +913,13 @@ function BuildAnimation({ count, label = 'Building', unit = 'lineups' }) {
           background: rgba(245, 197, 24, 0.14);
           border-radius: 2px;
         }
+        @media (max-width: 768px) {
+          .build-anim-wrap { min-height: 240px; }
+          .build-anim-caption { left: 14px; top: 14px; font-size: 9px; letter-spacing: 1.2px; }
+          .build-anim-count { right: 14px; top: 14px; font-size: 10px; }
+          .build-anim-row { left: 14px; right: 14px; gap: 6px; height: 16px; }
+          .build-anim-slot { height: 7px; }
+        }
       `}</style>
       <div className="build-anim-wrap">
         <div className="build-anim-caption"><span className="dot"></span>{label}</div>
