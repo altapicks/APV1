@@ -2413,16 +2413,15 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   //     • Boost their opponents conditionally:
   //       - Gate: opp val must be ≥ 5.0 (weak-val opps skipped — the
   //         pivot isn't meaningful if the opp can't deliver upside)
-  //       - min = max(15%, oppSimOwn × 1.35) → floor OR +35% leverage,
+  //       - min = max(20%, oppSimOwn × 1.35) → floor OR +35% leverage,
   //         whichever higher. Floor kicks in for low-owned opps
-  //         (McNally at 1% → 15%). Leverage kicks in for higher-owned
+  //         (McNally at 1% → 20%). Leverage kicks in for higher-owned
   //         opps (Tabilo at 19.9% → 27%).
   //
-  //     v3.24.20: replaced proportional (+oppSimOwn × 0.5) with val-gated
-  //     floor+leverage combo. Old proportional boost gave near-zero lift
-  //     to low-owned opponents (McNally at 1% own → only +0.5pp), leaving
-  //     structurally-important pivots at field-level exposure despite
-  //     Rule 9 explicitly targeting them.
+  //     v3.24.22: floor raised 15% → 20%. At 15%, McNally's contrarian
+  //     score (+14) produced +8.4% proj boost — not enough to flip her
+  //     ahead of Machac (no-signal, 55.07 raw). 20% floor gives score
+  //     +19 → +11.4% boost at base weight, clearing Machac reliably.
   //
   //     Intent: cheap high-val dogs are where DK prices the "field
   //     trap" on the LOW side — the field happily rosters them at
@@ -2460,8 +2459,13 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     const oppFieldOwn = own(opp.name);
     const oppCurrMin = oppExisting.min || 0;
     const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
-    // min = max(15% floor, oppSimOwn × 1.35 leverage) — floor-wins, cap-wins
-    const flatFloor = roundInt(15 * strengthFactor);
+    // v3.24.22: min = max(20% floor, oppSimOwn × 1.35 leverage)
+    // Floor bumped from 15% → 20% so McNally-style (1% sim own) gets
+    // pushed meaningfully ahead of unflagged mid-salary players like
+    // Machac. At 20% min, contrarian score becomes +19 for McNally,
+    // which at base weight 0.6 gives +11.4% proj boost — enough to
+    // flip projection-close ties between her (48.83) and Machac (55.07).
+    const flatFloor = roundInt(20 * strengthFactor);
     const leverageBoost = roundInt(oppFieldOwn * (1 + scaledBoostPct(0.35)));
     const targetMin = Math.max(flatFloor, leverageBoost);
     const newMin = Math.min(Math.max(oppCurrMin, targetMin), oppCurrMax);
@@ -2691,55 +2695,18 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 //   contrarianOn: used to modulate subtitle
 //   strength:    contrarian strength (display only)
 //   isContrarian: truthy when contrarian pipeline is active (adds rules line)
-function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, poolSize = 0, buildStage = 0 }) {
-  // ETA estimate by match count — empirically calibrated to browser builds
-  const estSeconds = useMemo(() => {
-    if (mc >= 24) return 28;
-    if (mc >= 20) return 20;
-    if (mc >= 18) return 14;
-    if (mc >= 16) return 10;
-    if (mc >= 14) return 7;
-    if (mc >= 10) return 5;
-    return 3;
-  }, [mc]);
-
-  // Track progress tick — updates every 100ms to animate stat counters.
-  // NOTE: while optimize() blocks the JS thread, this interval won't fire,
-  // so between setBuildStage() calls the counters freeze. The chunked yield
-  // pattern in runBuild() ensures the animation re-paints between stages.
-  const [tick, setTick] = useState(0);
-  const startRef = useRef(Date.now());
-  useEffect(() => {
-    startRef.current = Date.now();
-    const iv = setInterval(() => setTick(t => t + 1), 100);
-    return () => clearInterval(iv);
-  }, []);
-
-  const elapsed = (Date.now() - startRef.current) / 1000;
-  const progress = Math.min(1, elapsed / estSeconds);
-  const etaRemaining = Math.max(0, estSeconds - elapsed);
-
-  // v3.24.19: stage label driven by buildStage prop (set by chunked runBuild),
-  // NOT by elapsed-time estimation. This way the stage advances as real work
-  // completes, not based on a guess. Fall back to elapsed estimation if
-  // buildStage isn't updating (strength=0 or contrarian off paths).
+function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, buildStage = 0 }) {
+  // v3.24.23: simplified — removed all live-numeric counters (pool count,
+  // rules applied, ETA) which were freezing during the main JS-blocking
+  // optimize() call. Replaced with CSS-driven pipeline checklist +
+  // shimmering progress bar. Both are GPU/CSS-animated so they remain
+  // visually active even when the main thread blocks.
+  //
+  // Pipeline steps update at setBuildStage() checkpoints in the chunked
+  // runBuild pipeline. Active step pulses, done steps show a green check,
+  // pending steps stay dim.
   const stageNames = ['Preparing pool', 'Applying contrarian rules', 'Enumerating lineups', 'Ranking + polishing'];
   const currentStage = stageNames[Math.min(3, buildStage)];
-  // Rules applied counter also driven by stage — stages 1+ = applying rules,
-  // reaches 13 by stage 3 (polishing done).
-  const rulesApplied = buildStage === 0 ? 0
-                     : buildStage === 1 ? Math.min(13, Math.floor(progress * 13 + 1))
-                     : buildStage === 2 ? 13
-                     : 13;
-
-  // v3.24.19: Scanning pool counter — stage-driven (was elapsed-driven).
-  // Each stage represents a discrete chunk of the pool being processed:
-  //   Stage 0 (preparing)    → 10% (initial scan, looks non-zero immediately)
-  //   Stage 1 (applying)     → 40% (pool being caveated by rules)
-  //   Stage 2 (enumerating)  → 80% (main enumeration)
-  //   Stage 3 (polishing)    → 100% (full pool scanned)
-  const stageFill = [0.1, 0.4, 0.8, 1.0][Math.min(3, buildStage)];
-  const displayedPool = Math.round(poolSize * stageFill);
 
   return (
     <>
@@ -2748,6 +2715,9 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
         @keyframes br-blip { 0% { opacity: 0; transform: scale(0.5); } 10% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.8); } }
         @keyframes br-pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,24,0.5); } 50% { box-shadow: 0 0 20px 4px rgba(245,197,24,0.2); } }
         @keyframes br-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes br-ellipsis-pulse { 0%, 20% { opacity: 0.15; } 50% { opacity: 1; } 100% { opacity: 0.15; } }
+        @keyframes br-step-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,24,0.5); } 50% { box-shadow: 0 0 0 5px rgba(245,197,24,0); } }
+        @keyframes br-shimmer-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
         .br-container { animation: br-fade-in 0.3s ease-out; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px; margin-top: 20px; }
         .br-layout { display: flex; align-items: center; gap: 32px; }
         .br-court { width: 220px; height: 220px; position: relative; flex-shrink: 0; animation: br-pulse-glow 3s ease-in-out infinite; border-radius: 50%; }
@@ -2755,22 +2725,30 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
         .br-sweep { transform-origin: 110px 110px; animation: br-sweep 2.8s linear infinite; }
         .br-info { flex: 1; min-width: 0; }
         .br-stage-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 6px; }
-        .br-stage-value { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 18px; }
-        .br-metric-row { display: flex; gap: 28px; margin-bottom: 16px; }
-        .br-metric { flex: 1; }
-        .br-metric-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 4px; }
-        .br-metric-value { font-size: 22px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; font-family: ui-monospace, monospace; }
-        .br-metric-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-        .br-progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 6px; }
-        .br-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--primary-glow)); transition: width 0.3s ease-out; border-radius: 2px; }
+        .br-stage-value { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 18px; display: inline-flex; align-items: center; }
+        .br-ellipsis { display: inline-flex; margin-left: 2px; }
+        .br-ellipsis span { animation: br-ellipsis-pulse 1.4s ease-in-out infinite; }
+        .br-ellipsis span:nth-child(2) { animation-delay: 0.2s; }
+        .br-ellipsis span:nth-child(3) { animation-delay: 0.4s; }
+        .br-pipeline { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+        .br-step { display: flex; align-items: center; gap: 10px; font-size: 13px; transition: color 0.3s ease; }
+        .br-step-pending { color: var(--text-dim); }
+        .br-step-active { color: var(--primary); font-weight: 500; }
+        .br-step-done { color: var(--green); }
+        .br-step-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .br-step-pending .br-step-dot { background: transparent; border: 1.5px solid var(--border-light); }
+        .br-step-active .br-step-dot { background: var(--primary); box-shadow: 0 0 0 0 rgba(245,197,24,0.5); animation: br-step-pulse 1.8s ease-in-out infinite; }
+        .br-step-done .br-step-dot { background: var(--green); color: #0A1628; }
+        .br-shimmer-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; position: relative; margin-top: 4px; }
+        .br-shimmer-track { position: absolute; top: 0; left: 0; height: 100%; width: 40%; background: linear-gradient(90deg, transparent, var(--primary-glow), var(--primary), var(--primary-glow), transparent); animation: br-shimmer-slide 1.8s ease-in-out infinite; }
         .br-sub { font-size: 12px; color: var(--text-muted); margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
         .br-sub-strength { color: var(--primary); font-weight: 600; }
         @media (max-width: 640px) {
           .br-layout { flex-direction: column; gap: 20px; }
           .br-court { width: 180px; height: 180px; }
           .br-sweep { transform-origin: 90px 90px; }
-          .br-metric-row { gap: 16px; }
-          .br-metric-value { font-size: 18px; }
+          .br-stage-value { font-size: 17px; }
+          .br-step { font-size: 12px; }
         }
       `}</style>
       <div className="br-container">
@@ -2818,31 +2796,31 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
             </svg>
           </div>
           <div className="br-info">
-            <div className="br-stage-label">Current stage</div>
-            <div className="br-stage-value">{currentStage}</div>
-            <div className="br-metric-row">
-              <div className="br-metric">
-                <div className="br-metric-label">Scanning pool</div>
-                <div className="br-metric-value">{displayedPool.toLocaleString()}</div>
-                <div className="br-metric-sub">valid lineups · {mc} matches</div>
-              </div>
-              <div className="br-metric">
-                <div className="br-metric-label">{contrarianOn ? 'Applied rules' : 'Target lineups'}</div>
-                <div className="br-metric-value">{contrarianOn ? `${rulesApplied} / 13` : nL}</div>
-                <div className="br-metric-sub">{contrarianOn ? 'contrarian pipeline' : 'optimizer top-N'}</div>
-              </div>
-              <div className="br-metric">
-                <div className="br-metric-label">Est. remaining</div>
-                <div className="br-metric-value">~{Math.ceil(etaRemaining)}s</div>
-                <div className="br-metric-sub">approx · varies by device</div>
-              </div>
+            <div className="br-stage-label">Status</div>
+            <div className="br-stage-value">{currentStage}<span className="br-ellipsis"><span>.</span><span>.</span><span>.</span></span></div>
+            <div className="br-pipeline">
+              {stageNames.map((label, i) => {
+                const state = i < buildStage ? 'done' : i === buildStage ? 'active' : 'pending';
+                return (
+                  <div key={i} className={`br-step br-step-${state}`}>
+                    <div className="br-step-dot">
+                      {state === 'done' && (
+                        <svg viewBox="0 0 12 12" width="10" height="10">
+                          <path d="M 2 6 L 5 9 L 10 3" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div className="br-step-label">{label}</div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="br-progress-bar">
-              <div className="br-progress-fill" style={{ width: `${Math.round(stageFill * 100)}%` }}/>
+            <div className="br-shimmer-bar">
+              <div className="br-shimmer-track"/>
             </div>
             <div className="br-sub">
               {contrarianOn ? (
-                <>Building with <span className="br-sub-strength">OverOwned {strength.toFixed(1)}</span> {mc >= 16 ? ' · 16+ deep-slate ruleset active' : ''}</>
+                <>Building with <span className="br-sub-strength">OverOwned {strength.toFixed(1)}</span> {mc >= 16 ? ' · Deep-slate ruleset active' : ''}</>
               ) : (
                 <>Building {nL} lineups from top projections</>
               )}
@@ -3626,7 +3604,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} poolSize={buildPoolSize} buildStage={buildStage} />}
+    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} buildStage={buildStage} />}
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
