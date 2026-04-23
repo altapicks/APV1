@@ -1,7 +1,7 @@
 {
   "date": "2026-04-22",
   "slate_type": "showdown",
-  "notes": "PHX@OKC showdown. DK props devigged for pts/3s/reb/ast; stl/blk/TO/minutes from projection CSV. No-DK-line + SS Proj > 3 uses manual_proj = SS Proj * 0.8. Total 216.5, OKC -17.5.",
+  "notes": "PHX@OKC showdown. DK props devigged for pts/3s/reb/ast (DK is source of truth when priced); stl/blk/TO/minutes always from projection CSV; CSV also fills reb/ast/threes when DK doesn't price the market (Booker/Green/Brooks/O'Neale/Gillespie/Ighodaro). No-DK-line + SS Proj > 3 uses manual_proj = SS Proj * 0.8. Total 216.5, OKC -17.5.",
   "game": {
     "away": "PHX",
     "home": "OKC",
@@ -65,6 +65,9 @@
       "turnovers": 2.68,
       "stl": 1.32,
       "blk": 0.66,
+      "reb": 3.67,
+      "ast": 6.43,
+      "threes": 1.56,
       "dd_odds": 587
     },
     {
@@ -104,7 +107,10 @@
       },
       "turnovers": 2.95,
       "stl": 0.85,
-      "blk": 0.44
+      "blk": 0.44,
+      "reb": 3.89,
+      "ast": 4.67,
+      "threes": 2.03
     },
     {
       "name": "Jalen Green",
@@ -142,7 +148,10 @@
       },
       "turnovers": 2.37,
       "stl": 0.94,
-      "blk": 0.6
+      "blk": 0.6,
+      "reb": 4.87,
+      "ast": 2.75,
+      "threes": 2.3
     },
     {
       "name": "Jalen Williams",
@@ -191,6 +200,9 @@
       "turnovers": 1.71,
       "stl": 1.08,
       "blk": 0.39,
+      "reb": 4.29,
+      "ast": 4.79,
+      "threes": 1.2,
       "dd_odds": 690
     },
     {
@@ -240,6 +252,9 @@
       "turnovers": 1.6,
       "stl": 0.63,
       "blk": 1.49,
+      "reb": 8.78,
+      "ast": 1.86,
+      "threes": 1.58,
       "dd_odds": 143
     },
     {
@@ -278,7 +293,10 @@
       },
       "turnovers": 1.32,
       "stl": 0.82,
-      "blk": 0.29
+      "blk": 0.29,
+      "reb": 4.16,
+      "ast": 1.91,
+      "threes": 2.09
     },
     {
       "name": "Isaiah Hartenstein",
@@ -322,6 +340,9 @@
       "turnovers": 1.09,
       "stl": 0.7,
       "blk": 0.83,
+      "reb": 8.81,
+      "ast": 2.07,
+      "threes": 0.21,
       "dd_odds": 486
     },
     {
@@ -351,6 +372,9 @@
       "turnovers": 0.67,
       "stl": 0.56,
       "blk": 0.2,
+      "reb": 1.69,
+      "ast": 1.05,
+      "threes": 1.24,
       "manual_proj": 9.08
     },
     {
@@ -380,6 +404,9 @@
       "turnovers": 1.63,
       "stl": 1.52,
       "blk": 0.44,
+      "reb": 6.06,
+      "ast": 2.25,
+      "threes": 1.11,
       "manual_proj": 18.14
     },
     {
@@ -452,7 +479,10 @@
       },
       "turnovers": 1.26,
       "stl": 0.69,
-      "blk": 0.19
+      "blk": 0.19,
+      "reb": 2.79,
+      "ast": 1.31,
+      "threes": 0.98
     },
     {
       "name": "Oso Ighodaro",
@@ -485,7 +515,10 @@
       },
       "turnovers": 1.26,
       "stl": 0.83,
-      "blk": 0.85
+      "blk": 0.85,
+      "reb": 6.57,
+      "ast": 1.91,
+      "threes": 0.31
     },
     {
       "name": "Royce O'Neale",
@@ -523,7 +556,10 @@
       },
       "turnovers": 0.9,
       "stl": 0.69,
-      "blk": 0.49
+      "blk": 0.49,
+      "reb": 4.07,
+      "ast": 1.78,
+      "threes": 1.6
     },
     {
       "name": "Cason Wallace",
@@ -572,7 +608,10 @@
       },
       "turnovers": 0.71,
       "stl": 1.19,
-      "blk": 0.44
+      "blk": 0.44,
+      "reb": 2.0,
+      "ast": 1.39,
+      "threes": 1.04
     },
     {
       "name": "Collin Gillespie",
@@ -605,7 +644,10 @@
       },
       "turnovers": 1.0,
       "stl": 0.91,
-      "blk": 0.22
+      "blk": 0.22,
+      "reb": 2.39,
+      "ast": 2.8,
+      "threes": 1.26
     },
     {
       "name": "Luguentz Dort",
@@ -654,6 +696,9 @@
       "turnovers": 0.69,
       "stl": 0.76,
       "blk": 0.41,
+      "reb": 2.77,
+      "ast": 1.05,
+      "threes": 1.44,
       "dd_odds": 7900
     },
     {
@@ -702,7 +747,10 @@
       },
       "turnovers": 0.57,
       "stl": 0.58,
-      "blk": 0.12
+      "blk": 0.12,
+      "reb": 2.14,
+      "ast": 1.4,
+      "threes": 1.93
     },
     {
       "name": "Alex Caruso",
@@ -751,7 +799,10 @@
       },
       "turnovers": 0.74,
       "stl": 0.81,
-      "blk": 0.48
+      "blk": 0.48,
+      "reb": 1.94,
+      "ast": 2.22,
+      "threes": 1.1
     },
     {
       "name": "Jaylin Williams",
@@ -779,6 +830,9 @@
       "turnovers": 0.54,
       "stl": 0.44,
       "blk": 0.34,
+      "reb": 3.58,
+      "ast": 1.77,
+      "threes": 0.77,
       "manual_proj": 9.63
     },
     {
@@ -807,6 +861,9 @@
       "turnovers": 0.31,
       "stl": 0.36,
       "blk": 0.37,
+      "reb": 1.91,
+      "ast": 1.17,
+      "threes": 0.62,
       "manual_proj": 6.7
     },
     {
@@ -835,6 +892,9 @@
       "turnovers": 0.32,
       "stl": 0.26,
       "blk": 0.1,
+      "reb": 1.15,
+      "ast": 0.74,
+      "threes": 0.27,
       "manual_proj": 4.26
     },
     {
@@ -863,6 +923,9 @@
       "turnovers": 0.26,
       "stl": 0.36,
       "blk": 0.23,
+      "reb": 1.98,
+      "ast": 0.59,
+      "threes": 0.4,
       "manual_proj": 5.26
     },
     {
@@ -892,6 +955,9 @@
       "turnovers": 0.29,
       "stl": 0.36,
       "blk": 0.17,
+      "reb": 1.06,
+      "ast": 0.69,
+      "threes": 0.26,
       "manual_proj": 4.13
     },
     {
@@ -921,6 +987,9 @@
       "turnovers": 0.21,
       "stl": 0.13,
       "blk": 0.04,
+      "reb": 1.07,
+      "ast": 0.64,
+      "threes": 0.25,
       "manual_proj": 3.05
     },
     {
@@ -950,6 +1019,9 @@
       "turnovers": 0.21,
       "stl": 0.09,
       "blk": 0.05,
+      "reb": 0.83,
+      "ast": 0.41,
+      "threes": 0.23,
       "manual_proj": 2.74
     },
     {
@@ -979,6 +1051,9 @@
       "turnovers": 0.26,
       "stl": 0.1,
       "blk": 0.06,
+      "reb": 0.86,
+      "ast": 0.61,
+      "threes": 0.26,
       "manual_proj": 3.21
     },
     {
