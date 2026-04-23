@@ -2403,14 +2403,26 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (9) TOP 3 VAL ≤$5,900 — CAP + OPP BOOST (v3.24.5)
+  // (9) TOP 3 VAL ≤$5,900 — CAP + OPP BOOST (v3.24.20)
   //     Find top 3 players by val with salary ≤ $5,900, EXCLUDING any
   //     player already flagged as a trap, gem primary, or or-pivot
   //     (traps and gems always have priority — their caps are the
   //     structural play, and Rule 9 shouldn't touch them).
   //
   //     • Cap the 3 value plays at max 1% (force the pivot to their opp)
-  //     • Boost their opponents: min += oppSimOwn × 0.5 (additive stack)
+  //     • Boost their opponents conditionally:
+  //       - Gate: opp val must be ≥ 5.0 (weak-val opps skipped — the
+  //         pivot isn't meaningful if the opp can't deliver upside)
+  //       - min = max(15%, oppSimOwn × 1.35) → floor OR +35% leverage,
+  //         whichever higher. Floor kicks in for low-owned opps
+  //         (McNally at 1% → 15%). Leverage kicks in for higher-owned
+  //         opps (Tabilo at 19.9% → 27%).
+  //
+  //     v3.24.20: replaced proportional (+oppSimOwn × 0.5) with val-gated
+  //     floor+leverage combo. Old proportional boost gave near-zero lift
+  //     to low-owned opponents (McNally at 1% own → only +0.5pp), leaving
+  //     structurally-important pivots at field-level exposure despite
+  //     Rule 9 explicitly targeting them.
   //
   //     Intent: cheap high-val dogs are where DK prices the "field
   //     trap" on the LOW side — the field happily rosters them at
@@ -2429,7 +2441,6 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     })
     .sort((a, b) => (b.val || 0) - (a.val || 0))
     .slice(0, 3);
-  const valOppBoost = scaledBoostPct(0.50);
   topVal.forEach(valPlay => {
     // Cap the value play at max 1%
     const existing = caps[valPlay.name] || {};
@@ -2441,18 +2452,22 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
       _isValCap: true,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(valFieldOwn),
     };
-    // Boost the opponent
+    // Boost the opponent — only if opp val ≥ 5.0
     const opp = withSal.find(p => p.name === valPlay.opponent);
     if (!opp) return;
+    if ((opp.val || 0) < 5.0) return;  // gate: weak-val pivots skipped
     const oppExisting = caps[opp.name] || {};
     const oppFieldOwn = own(opp.name);
     const oppCurrMin = oppExisting.min || 0;
     const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
-    const addedMin = Math.round(oppFieldOwn * valOppBoost);
-    const newMin = Math.min(oppCurrMin + addedMin, oppCurrMax);
+    // min = max(15% floor, oppSimOwn × 1.35 leverage) — floor-wins, cap-wins
+    const flatFloor = roundInt(15 * strengthFactor);
+    const leverageBoost = roundInt(oppFieldOwn * (1 + scaledBoostPct(0.35)));
+    const targetMin = Math.max(flatFloor, leverageBoost);
+    const newMin = Math.min(Math.max(oppCurrMin, targetMin), oppCurrMax);
     caps[opp.name] = {
       ...oppExisting,
-      min: Math.max(oppCurrMin, newMin),
+      min: newMin,
       _isValOppBoost: true,
       _valOppBoostAddedMin: newMin - oppCurrMin,
       _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
