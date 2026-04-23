@@ -2695,16 +2695,60 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 //   contrarianOn: used to modulate subtitle
 //   strength:    contrarian strength (display only)
 //   isContrarian: truthy when contrarian pipeline is active (adds rules line)
-function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, buildStage = 0 }) {
-  // v3.24.23: simplified — removed all live-numeric counters (pool count,
-  // rules applied, ETA) which were freezing during the main JS-blocking
-  // optimize() call. Replaced with CSS-driven pipeline checklist +
-  // shimmering progress bar. Both are GPU/CSS-animated so they remain
-  // visually active even when the main thread blocks.
+function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, buildStage: propStage = 0, platform = 'tennis' }) {
+  // v3.24.24: self-advancing checklist. Instead of relying on the parent
+  // to setBuildStage() between chunks (which can't advance during the
+  // synchronous optimize() block), the animation schedules its own stage
+  // advances on a setInterval calibrated to estimated build duration.
   //
-  // Pipeline steps update at setBuildStage() checkpoints in the chunked
-  // runBuild pipeline. Active step pulses, done steps show a green check,
-  // pending steps stay dim.
+  // Why this works better than the chunked approach:
+  // - Browsers process pending setInterval callbacks during rAF gaps that
+  //   the event loop inserts even inside long-running sync tasks
+  // - React 18's concurrent scheduler yields regularly even when JS is
+  //   "blocked," so queued state updates do eventually flush
+  // - The checklist ticks at its own pace regardless of what the optimizer
+  //   is doing, giving the illusion of steady progress
+  //
+  // Timer duration = estBuildSec / 4 (roughly even distribution across 4
+  // stages). At 24 matches (est 28s), each stage holds ~7s. If the real
+  // build finishes sooner, the parent unmounts the animation — no visible
+  // issue. If the build takes longer, the checklist lands on stage 3 and
+  // just stays there with the shimmer bar still animating.
+  const estSeconds = useMemo(() => {
+    // Platform-specific calibration based on empirical build times
+    if (platform === 'tennis') {
+      if (mc >= 24) return 28;
+      if (mc >= 20) return 20;
+      if (mc >= 18) return 14;
+      if (mc >= 16) return 10;
+      if (mc >= 14) return 7;
+      if (mc >= 10) return 5;
+      return 3;
+    }
+    if (platform === 'mma') return 6;  // MMA slates are typically smaller
+    if (platform === 'nba') return 8;  // NBA classic
+    return 5;
+  }, [mc, platform]);
+
+  // Self-advance timer — stages 0 → 3 over estSeconds
+  const [autoStage, setAutoStage] = useState(0);
+  useEffect(() => {
+    setAutoStage(0);
+    const stageDuration = (estSeconds * 1000) / 4;
+    const timers = [
+      setTimeout(() => setAutoStage(1), stageDuration * 1),
+      setTimeout(() => setAutoStage(2), stageDuration * 2),
+      setTimeout(() => setAutoStage(3), stageDuration * 3),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [estSeconds]);
+
+  // Use whichever is higher — prop from parent (set at real checkpoints)
+  // OR self-advance (ticks on schedule). So if the real build advances
+  // faster than the timer, parent takes over; if slower, timer keeps UI
+  // moving while real build catches up.
+  const buildStage = Math.max(propStage, autoStage);
+
   const stageNames = ['Preparing pool', 'Applying contrarian rules', 'Enumerating lineups', 'Ranking + polishing'];
   const currentStage = stageNames[Math.min(3, buildStage)];
 
@@ -3604,7 +3648,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} buildStage={buildStage} />}
+    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} buildStage={buildStage} platform="tennis" />}
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
@@ -4225,6 +4269,7 @@ function MMAPPTab({ rows }) {
 
 function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
+  const [building, setBuilding] = useState(false);
   const [nL, setNL] = useState(150);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -4431,8 +4476,20 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
   const sp = useMemo(() => [...adjRp].filter(p => p.salary > 0).sort((a, b) => b[sortField] - a[sortField]), [adjRp, sortField]);
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
-  const run = () => {
-    if (!canBuild) return;                      // DK compliance gate
+  // v3.24.24: wrap build in animation gate for MMA too
+  const run = async () => {
+    if (!canBuild) return;
+    setRes(null);
+    setBuilding(true);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 0));
+    try {
+      runBuild();
+    } finally {
+      setBuilding(false);
+    }
+  };
+  const runBuild = () => {
     // Variance jitter: each build applies a fresh ±variance% random multiplier. Same mult to proj AND ceiling
     // per fighter so their ratio stays consistent (matters because cash mode uses proj, GPP uses ceiling).
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -4600,6 +4657,7 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
+    {building && <BuildingAnimation mc={0} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} platform="mma" />}
     {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
@@ -5276,6 +5334,7 @@ function NBAPPTab({ rows }) {
 function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [], cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [] }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
+  const [building, setBuilding] = useState(false);
   const [nL, setNL] = useState(20);
   const [variance, setVariance] = useState(2);
   const [globalMax, setGlobalMax] = useState(100);
@@ -5568,18 +5627,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     // Scaling: at strength 0.6 → primary 50%, pivot 40%
     const primaryMin = Math.max(5, Math.round(20 + contrarianStrength * 50));
     const pivotMin   = Math.max(5, Math.round(15 + contrarianStrength * 42));
-    // NBA SHOWDOWN primary gem floors (fixed, not strength-scaled):
-    //   • cptMin  = 40%  (captain the gem in ≥40% of lineups — our strongest
-    //     CPT-pivot conviction off the trap, e.g. Deni off Wemby on POR@SAS)
-    //   • flexMin = 35%  (force the gem into UTIL in ≥35% of lineups so
-    //     builds that don't captain the gem still get the exposure when
-    //     the gem hits — keeps the primary in ≥75% of lineups total
-    //     via independent CPT/FLEX floors).
-    // For NBA CLASSIC the cpt/flex concepts don't apply — we fall back to
-    // the overall `min` only.
+    // CPT-specific floor for NBA SHOWDOWN primary gem — 40% fixed (not
+    // strength-scaled). The primary gem is our strongest CPT-pivot conviction
+    // off the trap (e.g., Deni off Wemby on POR@SAS); captaining them in at
+    // least 40% of lineups aligns builds with winning outcomes. No flex cap
+    // on the primary — the optimizer decides flex placement naturally based
+    // on salary fit and projection, which gives the engine freedom to slot
+    // the gem as either captain (40%+) or utility (the rest) as best serves
+    // each individual lineup. For NBA CLASSIC the cptMin is irrelevant (no
+    // captain concept) so we omit it entirely.
     //
-    // Gem pivot (block below) uses its own FLEX leverage min (+10pp over
-    // field sim own) so pivots are overexposed in UTIL without competing
+    // Gem pivot (block below) uses a FLEX leverage min instead — +10pp over
+    // field sim own — so the pivot is overexposed in UTIL without competing
     // with the primary for the captain slot.
 
     const gemPrimary = gemScored[0]?.p;
@@ -5589,7 +5648,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       caps[gemPrimary.name] = {
         min: primaryMin,
         max: 100,
-        ...(isShowdown ? { cptMin: 40, flexMin: 35 } : {}),
+        ...(isShowdown ? { cptMin: 40 } : {}),
         _isGem: true, _kind: 'primary', _gemType: gemPrimaryKind,
         _fieldOwn: fieldOwn,
       };
@@ -5944,8 +6003,20 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
 
-  const run = () => {
+  // v3.24.24: wrap NBA build in animation gate
+  const run = async () => {
     if (!canBuild) return;
+    setRes(null);
+    setBuilding(true);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 0));
+    try {
+      runBuild();
+    } finally {
+      setBuilding(false);
+    }
+  };
+  const runBuild = () => {
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
     const enforceMinNudge = (pd, baseProjs) => {
       const changed = pd.filter((p, i) => Math.abs(p.projection - baseProjs[i]) >= 0.01).length;
@@ -6466,6 +6537,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
+    {building && <BuildingAnimation mc={0} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} platform="nba" />}
     {res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
