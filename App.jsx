@@ -5568,18 +5568,18 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     // Scaling: at strength 0.6 → primary 50%, pivot 40%
     const primaryMin = Math.max(5, Math.round(20 + contrarianStrength * 50));
     const pivotMin   = Math.max(5, Math.round(15 + contrarianStrength * 42));
-    // NBA SHOWDOWN primary gem floors (fixed, not strength-scaled):
-    //   • cptMin  = 40%  (captain the gem in ≥40% of lineups — our strongest
-    //     CPT-pivot conviction off the trap, e.g. Deni off Wemby on POR@SAS)
-    //   • flexMin = 35%  (force the gem into UTIL in ≥35% of lineups so
-    //     builds that don't captain the gem still get the exposure when
-    //     the gem hits — keeps the primary in ≥75% of lineups total
-    //     via independent CPT/FLEX floors).
-    // For NBA CLASSIC the cpt/flex concepts don't apply — we fall back to
-    // the overall `min` only.
+    // CPT-specific floor for NBA SHOWDOWN primary gem — 40% fixed (not
+    // strength-scaled). The primary gem is our strongest CPT-pivot conviction
+    // off the trap (e.g., Deni off Wemby on POR@SAS); captaining them in at
+    // least 40% of lineups aligns builds with winning outcomes. No flex cap
+    // on the primary — the optimizer decides flex placement naturally based
+    // on salary fit and projection, which gives the engine freedom to slot
+    // the gem as either captain (40%+) or utility (the rest) as best serves
+    // each individual lineup. For NBA CLASSIC the cptMin is irrelevant (no
+    // captain concept) so we omit it entirely.
     //
-    // Gem pivot (block below) uses its own FLEX leverage min (+10pp over
-    // field sim own) so pivots are overexposed in UTIL without competing
+    // Gem pivot (block below) uses a FLEX leverage min instead — +10pp over
+    // field sim own — so the pivot is overexposed in UTIL without competing
     // with the primary for the captain slot.
 
     const gemPrimary = gemScored[0]?.p;
@@ -5589,7 +5589,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       caps[gemPrimary.name] = {
         min: primaryMin,
         max: 100,
-        ...(isShowdown ? { cptMin: 40, flexMin: 35 } : {}),
+        ...(isShowdown ? { cptMin: 40 } : {}),
         _isGem: true, _kind: 'primary', _gemType: gemPrimaryKind,
         _fieldOwn: fieldOwn,
       };
