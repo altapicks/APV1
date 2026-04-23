@@ -378,38 +378,6 @@
       "manual_proj": 9.08
     },
     {
-      "name": "Jordan Goodwin",
-      "team": "PHX",
-      "opponent": "OKC",
-      "positions_str": "SG/SF",
-      "positions": [
-        "SG",
-        "SF"
-      ],
-      "util_id": 42713600,
-      "util_salary": 6400,
-      "cpt_id": 42713636,
-      "cpt_salary": 9600,
-      "salary": 6400,
-      "id": 42713600,
-      "avg_ppg": 21.85,
-      "status": "Q",
-      "mins": {
-        "L3": null,
-        "L5": null,
-        "L10": null,
-        "All": 24.64
-      },
-      "dk_props": {},
-      "turnovers": 1.63,
-      "stl": 1.52,
-      "blk": 0.44,
-      "reb": 6.06,
-      "ast": 2.25,
-      "threes": 1.11,
-      "manual_proj": 18.14
-    },
-    {
       "name": "Mark Williams",
       "team": "PHX",
       "opponent": "OKC",
@@ -1122,12 +1090,6 @@
       "player": "Isaiah Hartenstein",
       "stat": "Fantasy Score",
       "line": 23.5,
-      "mult": "normal"
-    },
-    {
-      "player": "Jordan Goodwin",
-      "stat": "Fantasy Score",
-      "line": 21.0,
       "mult": "normal"
     },
     {
