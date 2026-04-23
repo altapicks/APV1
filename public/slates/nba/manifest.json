@@ -2,6 +2,16 @@
   "sport": "nba",
   "slates": [
     {
+      "date": "2026-04-22-phx-okc",
+      "label": "4/22 PHX @ OKC",
+      "matchup": "PHX @ OKC",
+      "tip_time": "9:30pm ET",
+      "tip_time_24": "21:30",
+      "event": "Suns @ Thunder (showdown)",
+      "graded": false,
+      "live": true
+    },
+    {
       "date": "2026-04-21-phi-bos",
       "label": "4/21 PHI @ BOS",
       "matchup": "PHI @ BOS",
