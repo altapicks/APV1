@@ -812,6 +812,125 @@ const fmt = (n, d = 1) => typeof n === 'number' ? n.toFixed(d) : '-';
 const fmtPct = n => typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '-';
 const fmtSal = n => '$' + n.toLocaleString();
 const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(AM|PM)/i); if (m) { let h = parseInt(m[4]); const ap = m[6].toUpperCase(); if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return (h > 12 ? h - 12 : h || 12) + ':' + m[5] + ' ' + ap; } try { const d = new Date(s); if (!isNaN(d)) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch {} return s; };
+
+// ═══════════════════════════════════════════════════════════════════════
+// BUILD ANIMATION (v3.24.13) — "Lineup Ticker" loading state shown in
+// place of ExposureResults while the optimizer is running. CSS-only
+// keyframe animation on opacity + transform so the compositor keeps it
+// smooth even while the main thread is blocked by the optimize call.
+// Usage (per builder tab):
+//   const [isBuilding, setIsBuilding] = useState(false);
+//   // wrap run() body so isBuilding flips true → work → min-duration → false
+//   {isBuilding ? <BuildAnimation count={nL} /> : res && <ExposureResults …/>}
+// ═══════════════════════════════════════════════════════════════════════
+function BuildAnimation({ count, label = 'Building', unit = 'lineups' }) {
+  // Six rows of varying slot widths so each row reads differently —
+  // evokes lineup structure without committing to a specific roster shape.
+  const rows = [
+    [22, 18, 12, 16, 10, 14],
+    [16, 14, 22, 12, 18],
+    [14, 10, 18, 22, 12, 14],
+    [18, 22, 14, 10, 16],
+    [12, 18, 14, 22, 10, 16],
+    [16, 12, 22, 14, 18],
+  ];
+  return (
+    <>
+      <style>{`
+        @keyframes build-anim-row-in {
+          0%   { opacity: 0; transform: translateX(-8px); }
+          10%  { opacity: 1; transform: translateX(0); }
+          70%  { opacity: 1; }
+          85%  { opacity: 0.32; }
+          100% { opacity: 0.32; }
+        }
+        @keyframes build-anim-dot {
+          0%, 100% { opacity: 0.25; }
+          50%      { opacity: 1; }
+        }
+        .build-anim-wrap {
+          background: var(--card, #0F1D33);
+          border: 1px solid var(--border, #1E2D4A);
+          border-radius: 10px;
+          padding: 0;
+          min-height: 260px;
+          position: relative;
+          overflow: hidden;
+        }
+        .build-anim-caption {
+          position: absolute;
+          left: 20px;
+          top: 18px;
+          font-size: 10px;
+          color: var(--text-muted, #8B9ABA);
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .build-anim-caption .dot {
+          display: inline-block;
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: var(--primary, #F5C518);
+          animation: build-anim-dot 1.2s ease-in-out infinite;
+        }
+        .build-anim-count {
+          position: absolute;
+          right: 20px;
+          top: 18px;
+          font-size: 11px;
+          color: var(--primary, #F5C518);
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+          letter-spacing: 0.4px;
+        }
+        .build-anim-row {
+          position: absolute;
+          left: 20px;
+          right: 20px;
+          height: 18px;
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          opacity: 0;
+          animation: build-anim-row-in 2.8s ease-in-out infinite;
+          transform-origin: left center;
+        }
+        .build-anim-row::before {
+          content: '';
+          width: 3px;
+          height: 100%;
+          background: var(--primary, #F5C518);
+          flex: 0 0 auto;
+          border-radius: 1px;
+        }
+        .build-anim-slot {
+          height: 8px;
+          background: rgba(245, 197, 24, 0.14);
+          border-radius: 2px;
+        }
+      `}</style>
+      <div className="build-anim-wrap">
+        <div className="build-anim-caption"><span className="dot"></span>{label}</div>
+        <div className="build-anim-count">{count ? `${count} ${unit}` : ''}</div>
+        {rows.map((widths, i) => (
+          <div
+            key={i}
+            className="build-anim-row"
+            style={{ top: `${58 + i * 28}px`, animationDelay: `${i * 0.22}s` }}
+          >
+            {widths.map((w, j) => <span key={j} className="build-anim-slot" style={{ width: `${w}%` }} />)}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function Icon({ name, size = 14, color, style, className }) {
   const commonStyle = { width: size, height: size, flexShrink: 0, verticalAlign: '-0.15em', display: 'inline-block', ...style };
   const p = { viewBox: '0 0 24 24', fill: 'none', stroke: color || 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', style: commonStyle, className };
@@ -2719,6 +2838,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 // ═══════════════════════════════════════════════════════════════════════
 function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0 }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
+  const [isBuilding, setIsBuilding] = useState(false);       // v3.24.13: build animation gate
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -3134,7 +3254,19 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const isShowdown = useMemo(() => sp.some(p => p.cpt_salary != null), [sp]);
   const run = () => {
-    if (!canBuild) return;                      // DK compliance gate — user must edit ≥2 projections
+    if (!canBuild || isBuilding) return;         // DK compliance gate — user must edit ≥2 projections
+    // v3.24.13: surface build animation in the exposure-results slot.
+    // CSS keyframes run on the compositor thread, so they stay smooth
+    // even while `optimize()` blocks the main thread below.
+    setIsBuilding(true);
+    const start = performance.now();
+    const finish = () => {
+      const elapsed = performance.now() - start;
+      const MIN_MS = 1400;                       // animation floor so fast slates don't flash
+      setTimeout(() => setIsBuilding(false), Math.max(0, MIN_MS - elapsed));
+    };
+    // Yield two frames so the animation paints before we block on optimize.
+    setTimeout(() => { try {
     // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
     // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -3207,6 +3339,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     const mergedCounts = new Array(pd.length).fill(0);
     for (const lu of merged) { lu.players.forEach(i => mergedCounts[i]++); }
     setRes({ ...r, lineups: merged, counts: mergedCounts, pData: pd, isShowdown: false });
+    } finally { finish(); } }, 32);
   };
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
   const exportDK = () => {
@@ -3354,12 +3487,13 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     </div>
     <SearchBar value={poolQ} onChange={setPoolQ} placeholder="Search pool by player or opponent" total={sp.length} filtered={sp.filter(p => matchesSearch(p, poolQ)).length} />
     <div className="builder-controls">{sp.filter(p => matchesSearch(p, poolQ)).map(p => <div className="ctrl-row" key={p.name}><span className="ctrl-name" style={{ flex: '1 1 0', minWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span><span style={{ color: 'var(--text-dim)', fontSize: 11, width: 48, flexShrink: 0 }}>{fmtSal(p.salary)}</span><span className="ctrl-proj" style={{ flexShrink: 0, width: 38, textAlign: 'right' }}>{fmt(p.proj, 1)}</span><input type="number" min="0" max="100" step="1" value={exp[p.name]?.min ?? globalMin} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'min', ''); else sE(p.name, 'min', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'min', globalMin); }} title="Min %" style={{ width: 32, flexShrink: 0 }} /><input type="number" min="0" max="100" step="1" value={exp[p.name]?.max ?? globalMax} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'max', ''); else sE(p.name, 'max', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'max', globalMax); }} title="Max %" style={{ width: 32, flexShrink: 0 }} /></div>)}</div>
-    <button className="btn btn-primary" onClick={run} disabled={!canBuild}
+    <button className="btn btn-primary" onClick={run} disabled={!canBuild || isBuilding}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
-      style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
+      style={(!canBuild || isBuilding) ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
+    {isBuilding && <BuildAnimation count={nL} />}
+    {!isBuilding && res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
 
@@ -3979,6 +4113,7 @@ function MMAPPTab({ rows }) {
 
 function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
+  const [isBuilding, setIsBuilding] = useState(false);       // v3.24.13: build animation gate
   const [nL, setNL] = useState(150);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -4186,7 +4321,16 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const run = () => {
-    if (!canBuild) return;                      // DK compliance gate
+    if (!canBuild || isBuilding) return;         // DK compliance gate
+    // v3.24.13: build animation — see tennis run() comment for details.
+    setIsBuilding(true);
+    const start = performance.now();
+    const finish = () => {
+      const elapsed = performance.now() - start;
+      const MIN_MS = 1400;
+      setTimeout(() => setIsBuilding(false), Math.max(0, MIN_MS - elapsed));
+    };
+    setTimeout(() => { try {
     // Variance jitter: each build applies a fresh ±variance% random multiplier. Same mult to proj AND ceiling
     // per fighter so their ratio stays consistent (matters because cash mode uses proj, GPP uses ceiling).
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -4233,6 +4377,7 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
     const mergedCounts = new Array(pd.length).fill(0);
     for (const lu of merged) { lu.players.forEach(i => mergedCounts[i]++); }
     setRes({ ...r, lineups: merged, counts: mergedCounts, pData: pd, mode });
+    } finally { finish(); } }, 32);
   };
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
@@ -4349,12 +4494,13 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       <input type="number" min="0" max="100" step="1" value={exp[p.name]?.min ?? globalMin} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'min', ''); else sE(p.name, 'min', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'min', globalMin); }} title="Min %" style={{ width: 32, flexShrink: 0 }} />
       <input type="number" min="0" max="100" step="1" value={exp[p.name]?.max ?? globalMax} onChange={e => { const v = e.target.value; if (v === '') sE(p.name, 'max', ''); else sE(p.name, 'max', Math.max(0, Math.min(100, parseInt(v, 10) || 0))); }} onBlur={e => { if (e.target.value === '') sE(p.name, 'max', globalMax); }} title="Max %" style={{ width: 32, flexShrink: 0 }} />
     </div>)}</div>
-    <button className="btn btn-primary" onClick={run} disabled={!canBuild}
+    <button className="btn btn-primary" onClick={run} disabled={!canBuild || isBuilding}
       title={canBuild ? '' : `Edit at least 2 projections on the DK Projections tab first (${overrideCount}/2 changed)`}
-      style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
+      style={(!canBuild || isBuilding) ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
+    {isBuilding && <BuildAnimation count={nL} />}
+    {!isBuilding && res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
 
@@ -5030,6 +5176,7 @@ function NBAPPTab({ rows }) {
 function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [], cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [] }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
+  const [isBuilding, setIsBuilding] = useState(false);       // v3.24.13: build animation gate
   const [nL, setNL] = useState(20);
   const [variance, setVariance] = useState(2);
   const [globalMax, setGlobalMax] = useState(100);
@@ -5699,7 +5846,16 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
 
   const run = () => {
-    if (!canBuild) return;
+    if (!canBuild || isBuilding) return;
+    // v3.24.13: build animation — see tennis run() comment for details.
+    setIsBuilding(true);
+    const start = performance.now();
+    const finish = () => {
+      const elapsed = performance.now() - start;
+      const MIN_MS = 1400;
+      setTimeout(() => setIsBuilding(false), Math.max(0, MIN_MS - elapsed));
+    };
+    setTimeout(() => { try {
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
     const enforceMinNudge = (pd, baseProjs) => {
       const changed = pd.filter((p, i) => Math.abs(p.projection - baseProjs[i]) >= 0.01).length;
@@ -5820,6 +5976,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     const mergedCountsC = new Array(pd.length).fill(0);
     for (const lu of mergedC) { lu.players.forEach(i => mergedCountsC[i]++); }
     setRes({ ...r, lineups: mergedC, counts: mergedCountsC, pData: pd, isShowdown: false });
+    } finally { finish(); } }, 32);
   };
 
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
@@ -6215,12 +6372,13 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         </span>
       )}
     </div>
-    <button className="btn btn-primary" onClick={run} disabled={!canBuild}
+    <button className="btn btn-primary" onClick={run} disabled={!canBuild || isBuilding}
       title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
-      style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
+      style={(!canBuild || isBuilding) ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
+    {isBuilding && <BuildAnimation count={nL} />}
+    {!isBuilding && res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
 
