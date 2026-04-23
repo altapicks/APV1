@@ -2412,8 +2412,8 @@ function PPTab({ rows }) {
     <SearchBar value={q} onChange={setQ} placeholder="Search plays, players, stats" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><S label="Stat" colKey="stat" />
-      <S label="PP Line" colKey="line" num /><S label="Projected" colKey="projected" />
-      <S label="Edge" colKey="ev" /><S label="Play" colKey="direction" />
+      <S label="PP Line" colKey="line" num /><S label="Projected" colKey="projected" num />
+      <S label="Edge" colKey="ev" num /><S label="Play" colKey="direction" />
       <th>Mult</th><S label="Win%" colKey="wp" num /><S label="Opp" colKey="opponent" />
     </tr></thead>
     <tbody>{sorted.map((r, i) => {
@@ -4448,8 +4448,8 @@ function MMAPPTab({ rows }) {
     <SearchBar value={q} onChange={setQ} placeholder="Search plays, fighters, stats" total={rows.length} filtered={rowsFiltered.length} />
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Fighter" colKey="player" /><S label="Stat" colKey="stat" />
-      <S label="PP Line" colKey="line" num /><S label="Projected" colKey="projected" />
-      <S label="Edge" colKey="ev" /><S label="Play" colKey="direction" />
+      <S label="PP Line" colKey="line" num /><S label="Projected" colKey="projected" num />
+      <S label="Edge" colKey="ev" num /><S label="Play" colKey="direction" />
       <th>Mult</th><S label="Win%" colKey="wp" num /><S label="Opp" colKey="opponent" />
     </tr></thead>
     <tbody>{sorted.map((r, i) => {
@@ -5590,7 +5590,7 @@ function NBAPPTab({ rows }) {
     <div className="table-wrap"><table><thead><tr>
       <th>#</th><th></th><S label="Player" colKey="player" /><th>Team</th>
       <S label="PP Line" colKey="line" num />
-      <S label="Our Proj" colKey="projected" /><S label="Edge" colKey="ev" />
+      <S label="Our Proj" colKey="projected" num /><S label="Edge" colKey="ev" num />
       <S label="Play" colKey="direction" />
     </tr></thead>
     <tbody>{sorted.map((r, i) => {
