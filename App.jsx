@@ -131,7 +131,33 @@ function applyContrarian(proj, ownership, strength, fairOwn = 20, value = null, 
   return proj * (1 + strength * clampedDelta * baseScale * valueWeight);
 }
 
+// v3.24.14: one-line definitions for OverOwned Mode signal badges. Used
+// as `title` attributes on badge spans so hovering reveals what the
+// signal means without opening the full explainer modal.
+const SIGNAL_TOOLTIPS = {
+  'Trap': 'TRAP — Highly owned but win-probability does not justify the price. Field piles in; OverOwned fades.',
+  'Or Trap': 'OR TRAP — Alternative trap candidate when the primary trap is locked or excluded.',
+  'Gem': 'HIDDEN GEM — Underowned relative to win equity, often the trap\'s opponent. OverOwned floors exposure above field.',
+  'Pivot': 'PIVOT — Secondary gem, typically emerging from a PrizePicks line the DFS field has not pricing in yet.',
+  'Or Pivot': 'OR PIVOT — Salary-equivalent alternative to the primary gem. Diversifies the contrarian stack.',
+  'PP Fade': 'PP FADE — PrizePicks market is flagging this player to miss their line by a clear margin. Cross-market signal.',
+  'PP Fade Opp': 'PP FADE OPPONENT — Opponent of a PP fade. When the fade misses, their opponent is more likely to win.',
+  'Gem Opp': 'GEM OPPONENT — Opponent of a Hidden Gem. Field over-rosters this player to block the gem; OverOwned fades that block.',
+  'Straight Sets': 'STRAIGHT-SETS CAP — Top favorite most likely to win without dropping a set. Capped to avoid cash-lineup overlap.',
+  'Top Val': 'TOP VALUE CAP — One of the slate\'s top 10 by value. Capped hard on 16+ match slates to prevent same-core overlap.',
+  'Top Val Opp': 'TOP VALUE OPPONENT — Opponent of a high-value chalk play. Boosted when the chalk has equity-undermining win rate.',
+  'Mid Fade': 'MID-TIER FADE — High-ownership salary-band winner. Capped below field to force diversity on deep slates.',
+  'Mid Pivot': 'MID-TIER PIVOT — Second-highest mid-tier. Floored above its own simulated ownership as a mid-salary leverage play.',
+};
+const signalTooltip = (label) => {
+  if (!label) return '';
+  // Pivot #1, Pivot #2 etc. — strip trailing rank for lookup
+  const key = label.replace(/\s*#\d+$/, '').trim();
+  return SIGNAL_TOOLTIPS[key] || SIGNAL_TOOLTIPS[label] || '';
+};
+
 function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
+  const [showHelp, setShowHelp] = useState(false);          // v3.24.14: explainer modal
   return (
     <div style={{
       background: 'linear-gradient(135deg, rgba(245,197,24,0.08), rgba(245,197,24,0.02))',
@@ -139,9 +165,23 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
       padding: '14px 18px', marginBottom: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enabled ? 12 : 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>
-          <Icon name="swords" size={15} color="#F5C518"/> OverOwned Mode
-          <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 500, marginLeft: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon name="swords" size={15} color="#F5C518"/>
+          <span>OverOwned Mode</span>
+          <button
+            onClick={() => setShowHelp(true)}
+            aria-label="What does OverOwned Mode do?"
+            title="What does OverOwned Mode do?"
+            style={{
+              width: 18, height: 18, padding: 0, borderRadius: '50%',
+              background: 'rgba(245,197,24,0.12)',
+              border: '1px solid rgba(245,197,24,0.35)',
+              color: 'var(--primary)', fontSize: 11, fontWeight: 700,
+              cursor: 'pointer', lineHeight: '15px', textAlign: 'center',
+              fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >?</button>
+          <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 500, marginLeft: 4 }}>
             (fade chalk, force leverage)
           </span>
         </div>
@@ -174,6 +214,88 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
           OverOwned Mode is a formula derived from thousands of studied samples — it fades the chalk and forces the lower-owned ceiling into lineups.
         </div>
       </>)}
+      {showHelp && <OverOwnedHelpModal onClose={() => setShowHelp(false)} />}
+    </div>
+  );
+}
+
+// v3.24.14: OverOwned Mode explainer modal. Opened from the "?" icon next
+// to the toggle. Covers: what the mode does mechanically, what each signal
+// badge means, and when to dial strength up vs. down. Tennis-centric
+// because the rule pipeline is tennis-specific (16+ match slates).
+function OverOwnedHelpModal({ onClose }) {
+  useEffect(() => {
+    const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onEsc);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onEsc); document.body.style.overflow = ''; };
+  }, [onClose]);
+  const Row = ({ badge, color, children }) => (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+      <span style={{
+        flex: '0 0 auto', padding: '2px 8px', borderRadius: 4,
+        background: `${color}22`, border: `1px solid ${color}66`,
+        color, fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
+        textTransform: 'uppercase', minWidth: 62, textAlign: 'center',
+        fontVariantCaps: 'all-small-caps'
+      }}>{badge}</span>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.55, flex: 1 }}>{children}</div>
+    </div>
+  );
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(10,22,40,0.7)',
+        backdropFilter: 'blur(4px)', zIndex: 200,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20, animation: 'oo-modal-in 0.18s ease-out',
+      }}
+    >
+      <style>{`@keyframes oo-modal-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }`}</style>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--card)', borderRadius: 12, padding: '22px 24px',
+          maxWidth: 560, width: '100%', maxHeight: '85vh', overflow: 'auto',
+          border: '1px solid var(--border-light)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="swords" size={18} color="#F5C518"/>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>OverOwned Mode — what it does</h2>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            background: 'transparent', border: 'none', color: 'var(--text-muted)',
+            fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '0 4px',
+          }}>×</button>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>
+          OverOwned Mode rewrites per-player exposure caps to fade the chalk the field is about to over-roster and boost the hidden leverage plays the field will under-roster. It's the difference between an optimizer that builds the field's lineups and one that builds <em>around</em> the field's lineups.
+        </p>
+        <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>When OverOwned is ON</div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <li>Trap player's exposure is <strong style={{ color: 'var(--red)' }}>capped</strong> well below their projected field ownership</li>
+            <li>Hidden Gem's exposure is <strong style={{ color: 'var(--green)' }}>floored</strong> well above their field ownership</li>
+            <li>PP Fade opponents and gem opponents get secondary caps so you don't leak back into the chalk through the side door</li>
+            <li>On 10+ match slates, mid-tier and top-value plays also get tiered caps to prevent structural salary-filler overlap</li>
+          </ul>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: 0.3, textTransform: 'uppercase', fontSize: 10, color: 'var(--text-dim)' }}>Signal glossary</div>
+        <Row badge="Trap" color="#EF4444">Highly projected, highly owned, but win-probability doesn't justify the price. Field piles in; you fade.</Row>
+        <Row badge="Gem" color="#4ADE80">Opponent of the Trap (or the best salary-band value if opponent doesn't qualify). Underowned relative to their win equity — boost hard.</Row>
+        <Row badge="Pivot" color="#4ADE80">A secondary gem the field also misses. Typically emerges from PP line comparisons when the PP market is flagging an edge the DFS field hasn't caught up to.</Row>
+        <Row badge="Or Pivot" color="#4ADE80">A "pivot off the gem" — same slot, lower ownership, similar projection ceiling. Diversifies your contrarian stack.</Row>
+        <Row badge="PP Fade" color="#EF4444">Player the PrizePicks market has flagged as a fade (projected to miss their line by a clear margin). Cross-market signal the DFS field is ignoring.</Row>
+        <Row badge="PP Fade Opp" color="#F59E0B">Opponent of a PP fade. When the fade is likely to miss, their opponent is more likely to win — secondary leverage.</Row>
+        <Row badge="Gem Opp" color="#F59E0B">Opponent of a Hidden Gem. Field over-rosters the gem's opponent to block them; you fade those blockers.</Row>
+        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 14, marginBottom: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
+          Strength controls how aggressive the caps are: 60% (the default) is calibrated to the long-run hit rate on a 16+ match slate. Push higher on large-field GPPs where leverage pays more, lower on cash/small-field where variance hurts more than it helps.
+        </p>
+      </div>
     </div>
   );
 }
@@ -823,6 +945,28 @@ const fmtTime = s => { if (!s) return '-'; const m = s.match(/(\d{1,2})\/(\d{1,2
 //   // wrap run() body so isBuilding flips true → work → min-duration → false
 //   {isBuilding ? <BuildAnimation count={nL} /> : res && <ExposureResults …/>}
 // ═══════════════════════════════════════════════════════════════════════
+// v3.24.14: keyboard shortcuts for builder tabs. B and R both trigger
+// build/rebuild (single action since the builder has no separate "rebuild"
+// entry point). Ignored while user is typing in any input/textarea/select
+// and while a modifier is held (so Cmd+R / Ctrl+R browser reload still
+// works). Call from inside a builder tab.
+function useBuilderShortcuts({ run, canBuild, isBuilding }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key?.toLowerCase();
+      if ((k === 'b' || k === 'r') && canBuild && !isBuilding) {
+        e.preventDefault();
+        run();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [run, canBuild, isBuilding]);
+}
+
 function BuildAnimation({ count, label = 'Building', unit = 'lineups' }) {
   // Six rows of varying slot widths so each row reads differently —
   // evokes lineup structure without committing to a specific roster shape.
@@ -966,9 +1110,14 @@ function Icon({ name, size = 14, color, style, className }) {
     default: return null;
   }
 }
-function Tip({ icon, emoji, label, size = 14 }) {
+function Tip({ icon, emoji, label, size = 14, desc }) {
   const [s, setS] = useState(false);
-  return <span style={{ position: 'relative', cursor: 'help', display: 'inline-flex', alignItems: 'center' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{icon ? <Icon name={icon} size={size}/> : emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#E2E8F0', whiteSpace: 'nowrap', zIndex: 999, fontWeight: 500 }}>{label}</span>}</span>;
+  // v3.24.14: auto-lookup a one-line definition for known OverOwned signal
+  // labels so hovering Trap/Gem/Pivot/etc. reveals what they mean without
+  // needing to open the full explainer modal.
+  const autoDesc = typeof signalTooltip === 'function' ? signalTooltip(label) : '';
+  const description = desc || autoDesc;
+  return <span style={{ position: 'relative', cursor: 'help', display: 'inline-flex', alignItems: 'center' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{icon ? <Icon name={icon} size={size}/> : emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: description ? '8px 12px' : '6px 10px', fontSize: 11, color: '#E2E8F0', zIndex: 999, fontWeight: 500, whiteSpace: description ? 'normal' : 'nowrap', width: description ? 260 : 'auto', textAlign: description ? 'left' : 'center', lineHeight: description ? 1.4 : 1 }}><span style={{ fontWeight: 700, display: 'block' }}>{label}</span>{description && <span style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)', fontWeight: 400, fontSize: 10.5 }}>{description}</span>}</span>}</span>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1152,9 +1301,29 @@ export default function App() {
     window.addEventListener('hashchange', sync);
     return () => window.removeEventListener('hashchange', sync);
   }, []);
+  // v3.24.14: clean up unknown hashes on mount so bookmarked/shared deep
+  // links (like /#lineup) don't leave the user on a confusing blank state.
+  // Only #signin is a real route; anything else gets stripped so the app
+  // renders its default home instead.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const h = window.location.hash;
+    if (h && h !== '#signin' && h !== '') {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
   if (showSignIn) return <SignInPrompt />;
 
-  const [sport, setSportRaw] = useState('tennis');
+  // v3.24.14: persist last sport to localStorage. DFS users typically
+  // stick with one sport — forcing Tennis on every reload is annoying
+  // for MMA/NBA regulars.
+  const [sport, setSportRaw] = useState(() => {
+    try {
+      const saved = typeof window !== 'undefined' && localStorage.getItem('oo_last_sport');
+      if (saved === 'tennis' || saved === 'mma' || saved === 'nba') return saved;
+    } catch {}
+    return 'tennis';
+  });
   const [slateDate, setSlateDate] = useState('live'); // 'live' or YYYY-MM-DD
   // Atomic sport switch — resets slateDate to 'live' in the SAME render as
   // the sport change. Without this, useSlateData would fire one extra fetch
@@ -1165,6 +1334,7 @@ export default function App() {
   const setSport = useCallback((nextSport) => {
     setSportRaw(nextSport);
     setSlateDate('live');
+    try { if (typeof window !== 'undefined') localStorage.setItem('oo_last_sport', nextSport); } catch {}
   }, []);
   const { data, error } = useSlateData(sport, slateDate);
   const manifestSlates = useSlateManifest(sport);
@@ -1696,21 +1866,21 @@ export default function App() {
       {sport === 'tennis' && (<>
         {tab === 'dk' && <DKTab players={dkPlayers} mc={data.matches?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
         {tab === 'pp' && <PPTab rows={ppRows} />}
-        {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} mc={data.matches?.length || 0} />}
+        {tab === 'build' && <BuilderTab players={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} mc={data.matches?.length || 0} onGoToProjections={() => setTab('dk')} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'mma' && (<>
         {tab === 'dk' && <MMADKTab fighters={dkPlayers} fc={data.fights?.length || 0} own={ownership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} />}
         {tab === 'pp' && <MMAPPTab rows={ppRows} />}
-        {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} />}
+        {tab === 'build' && <MMABuilderTab fighters={dkPlayers} ownership={ownership} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onGoToProjections={() => setTab('dk')} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
       {sport === 'nba' && (<>
         {tab === 'dk' && <NBADKTab players={dkPlayers} gameInfo={data.game} own={ownership} cptOwn={cptOwnership} onOverride={onOverrideProj} overrides={projOverrides} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} onToggleLock={onToggleLock} onToggleExclude={onToggleExclude} onClearLocks={onClearLocks} onClearExcludes={onClearExcludes} cptLockedPlayers={cptLockedPlayers} flexLockedPlayers={flexLockedPlayers} cptExcludedPlayers={cptExcludedPlayers} flexExcludedPlayers={flexExcludedPlayers} onToggleCptLock={onToggleCptLock} onToggleCptExclude={onToggleCptExclude} onToggleFlexLock={onToggleFlexLock} onToggleFlexExclude={onToggleFlexExclude} />}
         {tab === 'pp' && <NBAPPTab rows={ppRows} />}
-        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} cptLockedPlayers={cptLockedPlayers} flexLockedPlayers={flexLockedPlayers} cptExcludedPlayers={cptExcludedPlayers} flexExcludedPlayers={flexExcludedPlayers} />}
+        {tab === 'build' && <NBABuilderTab players={dkPlayers} ownership={ownership} cptOwnership={cptOwnership} slateType={data.slate_type || 'showdown'} gameInfo={data.game} lockedPlayers={lockedPlayers} excludedPlayers={excludedPlayers} cptLockedPlayers={cptLockedPlayers} flexLockedPlayers={flexLockedPlayers} cptExcludedPlayers={cptExcludedPlayers} flexExcludedPlayers={flexExcludedPlayers} onGoToProjections={() => setTab('dk')} />}
         {tab === 'leverage' && <LeverageTab players={dkPlayers} />}
         {tab === 'record' && <TrackRecordTab sport={sport} />}
       </>)}
@@ -1825,6 +1995,27 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
           : sport === 'mma' ? `${data.fights?.length || 0} fights`
           : `${data.matches?.length || 0} matches`
         }</span>
+        {/* v3.24.14: stale-slate indicator. When the user selected "Live" but
+            the data.date is 2+ days old, warn that there's no current slate
+            and they're viewing the most recent one. Prevents the "looks
+            broken" misread. */}
+        {(() => {
+          if (slateDate !== 'live' || !data.date) return null;
+          const parsed = new Date(data.date + 'T00:00:00');
+          if (isNaN(parsed)) return null;
+          const today = new Date(); today.setHours(0, 0, 0, 0);
+          const daysOld = Math.round((today - parsed) / 86400000);
+          if (daysOld < 2) return null;
+          return <span style={{
+            marginLeft: 8, padding: '2px 8px', borderRadius: 4,
+            background: 'rgba(245, 158, 11, 0.14)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            color: 'var(--amber)', fontSize: 11, fontWeight: 600,
+            letterSpacing: 0.3, whiteSpace: 'nowrap'
+          }} title={`No live slate — showing the most recent available slate (${daysOld} days old)`}>
+            No live slate · showing most recent
+          </span>;
+        })()}
         {data.last_updated && <span className="topbar-date-updated"> · <span style={{color:'var(--green)',fontSize:12}}>Updated {data.last_updated}</span></span>}
       </div>}
       <a href="https://x.com/OverOwnedDFS" target="_blank" rel="noopener noreferrer" className="twitter-btn" title="@OverOwnedDFS">
@@ -2843,8 +3034,9 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
 // ═══════════════════════════════════════════════════════════════════════
 // TENNIS BUILDER — surgical additive change for contrarian mode
 // ═══════════════════════════════════════════════════════════════════════
-function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0 }) {
+function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0, onGoToProjections }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
+  const [prevRes, setPrevRes] = useState(null);              // v3.24.14: undo support for Rebuild
   const [isBuilding, setIsBuilding] = useState(false);       // v3.24.13: build animation gate
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
@@ -3266,6 +3458,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
     // CSS keyframes run on the compositor thread, so they stay smooth
     // even while `optimize()` blocks the main thread below.
     setIsBuilding(true);
+    // v3.24.14: stash current res so the user can undo a Rebuild.
+    if (res) setPrevRes(res);
     const start = performance.now();
     const finish = () => {
       const elapsed = performance.now() - start;
@@ -3382,6 +3576,32 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   const exportProjections = () => { let c = 'Player,Salary,Win%,Proj,Value,GW,GL,SW,Aces,DFs,Breaks,P(2-0),Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.val},${fmt(p.gw)},${fmt(p.gl)},${fmt(p.sw)},${fmt(p.aces)},${fmt(p.dfs)},${fmt(p.breaks)},${fmtPct(p.pStraight)},${p.opponent}\n`; }); dl(c, 'projections.csv'); };
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
+  useBuilderShortcuts({ run, canBuild, isBuilding }); // v3.24.14: B/R to build/rebuild
+  // v3.24.14: empty state for malformed/empty slates. sp is the list of
+  // players with salary>0 — if it's empty the builder panels render as
+  // an empty ghost grid. This message makes the failure mode explicit.
+  if (sp.length === 0) {
+    return <>
+      <div className="section-hero">
+        <div className="section-hero-icon-wrap">
+          <svg className="section-hero-icon" viewBox="0 0 24 24" fill="#F5C518" stroke="none">
+            <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+          </svg>
+        </div>
+        <div className="section-hero-text">
+          <h2 className="section-hero-title">Lineup Builder</h2>
+          <div className="section-hero-sub">Set exposure %, build optimized lineups, export to DK</div>
+        </div>
+      </div>
+      <div className="empty" style={{ padding: '60px 24px', background: 'var(--card)', border: '1px dashed var(--border-light)', borderRadius: 12 }}>
+        <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.4 }}>🎾</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>No players on this slate yet</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 420, margin: '0 auto' }}>
+          The current slate has no priced players. Check back closer to lock, switch to a recent archive slate, or try a different sport.
+        </p>
+      </div>
+    </>;
+  }
   return (<>
     <div className="section-hero">
       <div className="section-hero-icon-wrap">
@@ -3402,6 +3622,20 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
           Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and edit at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong> by any amount — this proves the lineups are your own work, not a shared export.
           <span style={{ color: 'var(--text-dim)' }}> Currently changed: <strong style={{ color: overrideCount >= 2 ? 'var(--green)' : 'var(--red)' }}>{overrideCount}</strong>/2</span>
         </div>
+        {onGoToProjections && (
+          <button
+            onClick={onGoToProjections}
+            style={{
+              marginTop: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600,
+              background: 'var(--primary)', color: '#0A1628', border: 'none',
+              borderRadius: 6, cursor: 'pointer', display: 'inline-flex',
+              alignItems: 'center', gap: 6
+            }}
+          >
+            Jump to DK Projections
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        )}
       </div>
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
@@ -3464,7 +3698,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>Top 5 Exposure Changes</span>
           {top5.map(({ name, lbl, desc, field }) => (
-            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span key={name} title={signalTooltip(lbl.label)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'help' }}>
               <Icon name={lbl.icon} size={12} color={lbl.color}/>
               <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
               <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
@@ -3500,12 +3734,31 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
     {isBuilding && <BuildAnimation count={nL} />}
-    {!isBuilding && res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
+    {!isBuilding && res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} prevRes={prevRes} onRestorePrev={() => { setRes(prevRes); setPrevRes(null); }} />}
   </>);
 }
 
-function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild = true, overrideCount = 2, favoriteLineups = [], onToggleFavorite }) {
+function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, canBuild = true, overrideCount = 2, favoriteLineups = [], onToggleFavorite, prevRes, onRestorePrev }) {
   const [q, setQ] = useState('');
+  // v3.24.14: MME-style metrics — lineup-set health stats that beginners
+  // miss but power players optimize for. Median/stdev of cumulative
+  // ownership quantifies how tightly clustered the set is around the
+  // field consensus; unique-player count reveals if you're over-fitting
+  // to the same 6-8 players across the full 45 lineups.
+  const setMetrics = useMemo(() => {
+    if (!res.lineups.length || !res.pData) return null;
+    const cumOwns = res.lineups.map(lu =>
+      lu.players.reduce((s, i) => s + (ownership[res.pData[i].name] || 0), 0)
+    );
+    const sorted = [...cumOwns].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    const mean = cumOwns.reduce((s, v) => s + v, 0) / cumOwns.length;
+    const variance = cumOwns.reduce((s, v) => s + (v - mean) ** 2, 0) / cumOwns.length;
+    const stdev = Math.sqrt(variance);
+    const uniqueCount = new Set(res.lineups.flatMap(lu => lu.players)).size;
+    return { median, stdev, uniqueCount, mean };
+  }, [res, ownership]);
   // Favorites + filter (classic-only; showdown branch below skips these controls)
   const favoriteKeySet = useMemo(() => {
     const s = new Set();
@@ -3538,11 +3791,35 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
   const { sorted, sortKey, sortDir, toggleSort } = useSort(expFiltered, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Salary: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></div>
+    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+      <span><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid</span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span></span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></span>
+      {setMetrics && <>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Median of sum-of-player-ownership across the lineup set. Lower = more contrarian field positioning.">Median Own: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.median.toFixed(0)}%</span></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Standard deviation of cumulative ownership across the set. Higher = more diverse range of contrarian-to-chalky lineups.">Stdev: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.stdev.toFixed(1)}</span></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Count of distinct players used across all lineups. Higher = broader exposure; lower = same core group recycled.">Unique: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.uniqueCount}</span></span>
+      </>}
+    </div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
         title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
         style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
+      {prevRes && onRestorePrev && <button
+        onClick={onRestorePrev}
+        title="Restore the previous lineup set (undo Rebuild)"
+        style={{ flex: '0 1 auto', padding: '10px 18px', fontSize: 13, fontWeight: 600,
+          background: 'var(--card)', color: 'var(--text-muted)',
+          border: '1px solid var(--border-light)', borderRadius: 8, cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+        Restore previous
+      </button>}
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
@@ -3674,6 +3951,13 @@ function TrackRecordTab({ sport }) {
     return c.hit_rate ?? 0;
   };
   const sorted = [...(data.categories || [])].sort((a, b) => rateFor(b) - rateFor(a));
+  // v3.24.14: hide the Edge column entirely when every category reports
+  // edge=0 or null. Showing "+0.00" on every row reads as broken, not as
+  // "not yet computed". When real values exist, the column appears.
+  const hasAnyEdge = sorted.some(c => {
+    const e = c.counter_edge != null ? c.counter_edge : c.avg_edge;
+    return typeof e === 'number' && e !== 0;
+  });
   const sigColor = s => s === 'follow' ? 'var(--green-text)' : s === 'fade' ? 'var(--red-text)' : s === 'counter' ? 'var(--amber-text)' : 'var(--text-muted)';
   const sigBg = s => s === 'follow' ? 'rgba(74,222,128,0.12)' : s === 'fade' ? 'rgba(248,113,113,0.12)' : s === 'counter' ? 'rgba(251,191,36,0.12)' : 'rgba(156,163,175,0.1)';
   const sigLabel = s => s === 'follow' ? 'FOLLOW' : s === 'fade' ? 'FADE' : s === 'counter' ? 'COUNTER' : 'NEUTRAL';
@@ -3704,7 +3988,7 @@ function TrackRecordTab({ sport }) {
             <th>Tag</th>
             <th className="num">N</th>
             <th className="num">Rate</th>
-            <th className="num">Edge</th>
+            {hasAnyEdge && <th className="num">Edge</th>}
             <th>Signal</th>
           </tr>
         </thead>
@@ -3737,12 +4021,12 @@ function TrackRecordTab({ sport }) {
                     </div>
                   )}
                 </td>
-                <td className="num">
+                {hasAnyEdge && <td className="num">
                   <span style={{ fontWeight: 600, color: edge > 0 ? 'var(--green-text)' : edge < 0 ? 'var(--red-text)' : 'var(--text-muted)' }}>
                     {edge > 0 ? '+' : ''}{edge.toFixed(Math.abs(edge) < 1 ? 2 : 1)}
                   </span>
                   <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 400, marginTop: 2 }}>{edgeLbl}</div>
-                </td>
+                </td>}
                 <td>
                   <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: sigColor(cat.signal), background: sigBg(cat.signal), border: `1px solid ${sigColor(cat.signal)}` }}>
                     {sigLabel(cat.signal)}
@@ -3755,6 +4039,64 @@ function TrackRecordTab({ sport }) {
       </table>
     </div>
   </>);
+}
+
+// v3.24.14: polished file-drop zone for Live Leverage. Supports click-
+// to-browse AND drag-and-drop, shows clear validation state, and
+// previews the uploaded filename + count. Replaces the bare
+// <input type="file"> that was dropping quality vs. the rest of the app.
+function CsvDropZone({ label, hint, onFile, filled, count, countLabel = 'players', sampleHref, sampleFilename }) {
+  const inputRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
+  const handleFiles = (files) => {
+    if (!files || !files.length) return;
+    const f = files[0];
+    if (!f.name.toLowerCase().endsWith('.csv')) return; // silent reject; parser will report
+    // Synthesize an event-shape the existing parsers expect
+    onFile({ target: { files: [f] } });
+  };
+  const onDrop = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    setDragOver(false);
+    handleFiles(e.dataTransfer.files);
+  };
+  return (
+    <div
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+      onDrop={onDrop}
+      style={{
+        flex: 1, minWidth: 250,
+        background: filled ? 'rgba(74,222,128,0.06)' : dragOver ? 'rgba(245,197,24,0.10)' : 'var(--card)',
+        border: `1px ${dragOver ? 'solid' : 'dashed'} ${filled ? 'var(--green)' : dragOver ? 'var(--primary)' : 'var(--border-light)'}`,
+        borderRadius: 10, padding: '16px 18px', cursor: 'pointer',
+        transition: 'background 0.15s, border-color 0.15s',
+        display: 'flex', flexDirection: 'column', gap: 6,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="metric-label" style={{ color: filled ? 'var(--green)' : 'var(--text-muted)' }}>{label}</div>
+        {sampleHref && <a
+          href={sampleHref}
+          download={sampleFilename}
+          onClick={(e) => e.stopPropagation()}
+          style={{ fontSize: 10, color: 'var(--text-dim)', textDecoration: 'underline', textDecorationColor: 'var(--border-light)' }}
+        >Sample CSV</a>}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{hint}</div>
+      {!filled && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 12, color: dragOver ? 'var(--primary)' : 'var(--text-dim)', fontWeight: 500 }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          {dragOver ? 'Drop to upload' : 'Click to choose a file or drag & drop'}
+        </div>
+      )}
+      {filled && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Icon name="check" size={12} color="var(--green)"/> {count} {countLabel}
+      </div>}
+      <input ref={inputRef} type="file" accept=".csv" onChange={onFile} style={{ display: 'none' }} />
+    </div>
+  );
 }
 
 function LeverageTab({ players: rp }) {
@@ -3865,8 +4207,22 @@ function LeverageTab({ players: rp }) {
       </div>
     </div>
     <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-      <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 1: Contest CSV</div><div className="metric-sub" style={{ marginTop: 4 }}>DK contest file after lock</div><input type="file" accept=".csv" onChange={handleContest} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{cd && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={12} color="var(--green)"/> {Object.keys(cd).length} players</div>}</div>
-      <div className="metric" style={{ flex: 1, minWidth: 250 }}><div className="metric-label">Step 2: Your Lineups</div><div className="metric-sub" style={{ marginTop: 4 }}>Your DK upload or readable CSV</div><input type="file" accept=".csv" onChange={handleUser} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }} />{ul && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={12} color="var(--green)"/> {ul.total} lineups</div>}</div>
+      <CsvDropZone
+        label="Step 1: Contest CSV"
+        hint="DK contest file after lock"
+        onFile={handleContest}
+        filled={!!cd}
+        count={cd ? Object.keys(cd).length : 0}
+        countLabel="players"
+      />
+      <CsvDropZone
+        label="Step 2: Your Lineups"
+        hint="Your DK upload or readable CSV"
+        onFile={handleUser}
+        filled={!!ul}
+        count={ul ? ul.total : 0}
+        countLabel="lineups"
+      />
     </div>
     {err && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="warning" size={14} color="var(--red)"/> {err}</div>}
     {ld.length > 0 && <>
@@ -4118,8 +4474,9 @@ function MMAPPTab({ rows }) {
   </>);
 }
 
-function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
+function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPlayers = [], onGoToProjections }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
+  const [prevRes, setPrevRes] = useState(null);              // v3.24.14: undo support for Rebuild
   const [isBuilding, setIsBuilding] = useState(false);       // v3.24.13: build animation gate
   const [nL, setNL] = useState(150);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build
@@ -4331,6 +4688,7 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
     if (!canBuild || isBuilding) return;         // DK compliance gate
     // v3.24.13: build animation — see tennis run() comment for details.
     setIsBuilding(true);
+    if (res) setPrevRes(res);                    // v3.24.14: stash prev res for undo
     const start = performance.now();
     const finish = () => {
       const elapsed = performance.now() - start;
@@ -4388,11 +4746,35 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
   };
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
+  useBuilderShortcuts({ run, canBuild, isBuilding }); // v3.24.14: B/R to build/rebuild
   const dl = (c, f) => { const b = new Blob([c], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f; a.click(); URL.revokeObjectURL(a.href); };
   const exportDK = () => { if (!res) return; let c = 'F,F,F,F,F,F\n'; res.lineups.forEach(lu => { const ps = lu.players.map(i => res.pData[i]).sort((a, b) => b.salary - a.salary); c += ps.map(p => p.id).join(',') + '\n'; }); dl(c, 'dk_upload_ufc.csv'); };
   const exportReadable = () => { if (!res) return; let c = 'Rank,Score,Salary,F1,F2,F3,F4,F5,F6\n'; res.lineups.forEach((lu, i) => { const ps = lu.players.map(j => res.pData[j]).sort((a, b) => b.salary - a.salary); c += `${i + 1},${lu.proj},${lu.sal},${ps.map(p => p.name).join(',')}\n`; }); dl(c, 'lineups_ufc.csv'); };
   const exportProjections = () => { let c = 'Fighter,Salary,Win%,Median,Ceiling,Val,CVal,Finish%,SigStr,TDs,CT,Opp\n'; sp.forEach(p => { c += `${p.name},${p.salary},${(p.wp * 100).toFixed(0)}%,${p.proj},${p.ceil},${p.val},${p.cval},${(p.finishProb*100).toFixed(0)}%,${fmt(p.sigStr)},${fmt(p.takedowns)},${fmt(p.ctMin)},${p.opponent}\n`; }); dl(c, 'projections_ufc.csv'); };
 
+  // v3.24.14: empty state for 0-fighter slates
+  if (sp.length === 0) {
+    return <>
+      <div className="section-hero">
+        <div className="section-hero-icon-wrap">
+          <svg className="section-hero-icon" viewBox="0 0 24 24" fill="#F5C518" stroke="none">
+            <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+          </svg>
+        </div>
+        <div className="section-hero-text">
+          <h2 className="section-hero-title">Lineup Builder</h2>
+          <div className="section-hero-sub">Set exposure %, build optimized lineups, export to DK</div>
+        </div>
+      </div>
+      <div className="empty" style={{ padding: '60px 24px', background: 'var(--card)', border: '1px dashed var(--border-light)', borderRadius: 12 }}>
+        <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.4 }}>🥊</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>No fighters on this slate yet</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 420, margin: '0 auto' }}>
+          The current card has no priced fighters. Check back closer to lock, or switch to a different slate.
+        </p>
+      </div>
+    </>;
+  }
   return (<>
     <div className="section-hero">
       <div className="section-hero-icon-wrap">
@@ -4414,6 +4796,20 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
           Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and edit at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong> by any amount — this proves the lineups are your own work, not a shared export.
           <span style={{ color: 'var(--text-dim)' }}> Currently changed: <strong style={{ color: overrideCount >= 2 ? 'var(--green)' : 'var(--red)' }}>{overrideCount}</strong>/2</span>
         </div>
+        {onGoToProjections && (
+          <button
+            onClick={onGoToProjections}
+            style={{
+              marginTop: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600,
+              background: 'var(--primary)', color: '#0A1628', border: 'none',
+              borderRadius: 6, cursor: 'pointer', display: 'inline-flex',
+              alignItems: 'center', gap: 6
+            }}
+          >
+            Jump to DK Projections
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        )}
       </div>
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
@@ -4454,7 +4850,7 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         <div style={{ marginTop: -12, marginBottom: 16, padding: '10px 14px', background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>Top 5 Exposure Changes</span>
           {top5.map(({ name, lbl, desc, field }) => (
-            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span key={name} title={signalTooltip(lbl.label)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'help' }}>
               <Icon name={lbl.icon} size={12} color={lbl.color}/>
               <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
               <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
@@ -4507,12 +4903,26 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       <Icon name="bolt" size={14}/> Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
     {isBuilding && <BuildAnimation count={nL} />}
-    {!isBuilding && res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
+    {!isBuilding && res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} prevRes={prevRes} onRestorePrev={() => { setRes(prevRes); setPrevRes(null); }} />}
   </>);
 }
 
-function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode, canBuild = true, overrideCount = 2, favoriteLineups = [], onToggleFavorite }) {
+function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadable, nL, mode, canBuild = true, overrideCount = 2, favoriteLineups = [], onToggleFavorite, prevRes, onRestorePrev }) {
   const [q, setQ] = useState('');
+  // v3.24.14: MME set metrics — median/stdev cumulative ownership + unique players
+  const setMetrics = useMemo(() => {
+    if (!res.lineups.length || !res.pData) return null;
+    const cumOwns = res.lineups.map(lu =>
+      lu.players.reduce((s, i) => s + (ownership[res.pData[i].name] || 0), 0)
+    );
+    const sorted = [...cumOwns].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    const mean = cumOwns.reduce((s, v) => s + v, 0) / cumOwns.length;
+    const stdev = Math.sqrt(cumOwns.reduce((s, v) => s + (v - mean) ** 2, 0) / cumOwns.length);
+    const uniqueCount = new Set(res.lineups.flatMap(lu => lu.players)).size;
+    return { median, stdev, uniqueCount };
+  }, [res, ownership]);
   // Favorites + filter (MMA is classic-only)
   const favoriteKeySet = useMemo(() => {
     const s = new Set();
@@ -4549,13 +4959,37 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
   const { sorted, sortKey, sortDir, toggleSort } = useSort(expFiltered, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-      <Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
+    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+      <span><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid</span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span></span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span></span>
+      {setMetrics && <>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Median of sum-of-fighter-ownership across the lineup set">Median Own: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.median.toFixed(0)}%</span></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Stdev of cumulative ownership across the set">Stdev: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.stdev.toFixed(1)}</span></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Distinct fighters used across all lineups">Unique: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.uniqueCount}</span></span>
+      </>}
     </div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
         title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
         style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
+      {prevRes && onRestorePrev && <button
+        onClick={onRestorePrev}
+        title="Restore the previous lineup set (undo Rebuild)"
+        style={{ flex: '0 1 auto', padding: '10px 18px', fontSize: 13, fontWeight: 600,
+          background: 'var(--card)', color: 'var(--text-muted)',
+          border: '1px solid var(--border-light)', borderRadius: 8, cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+        Restore previous
+      </button>}
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
@@ -5169,7 +5603,6 @@ function NBAPPTab({ rows }) {
         <td>{isBest ? <Tip icon="flame" label="Best edge" /> : isWorst ? <Tip icon="trending-down" label="Fade" /> : ''}</td>
         <td className="name">{r.player}</td>
         <td>{r.team ? <TeamBadge team={r.team} /> : ''}</td>
-        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.stat}</td>
         <td className="num">{fmt(r.line, 1)}</td>
         <td className="num"><span className="cell-proj">{fmt(r.projected, 2)}</span></td>
         <td className="num"><span className={isBest ? 'cell-ev-top' : isWorst ? 'cell-ev-worst' : pushZone ? 'cell-ev-push' : r.ev > 0 ? 'cell-ev-pos' : 'cell-ev-neg'} style={pushZone ? { color: 'var(--amber-text)' } : undefined}>{r.ev > 0 ? '+' : ''}{fmt(r.ev, 2)}</span></td>
@@ -5180,9 +5613,10 @@ function NBAPPTab({ rows }) {
 }
 
 // NBA Builder Tab — contrarian lineup building for showdown or classic
-function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [], cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [] }) {
+function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [], cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [], onGoToProjections }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
+  const [prevRes, setPrevRes] = useState(null);              // v3.24.14: undo support for Rebuild
   const [isBuilding, setIsBuilding] = useState(false);       // v3.24.13: build animation gate
   const [nL, setNL] = useState(20);
   const [variance, setVariance] = useState(2);
@@ -5856,6 +6290,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
     if (!canBuild || isBuilding) return;
     // v3.24.13: build animation — see tennis run() comment for details.
     setIsBuilding(true);
+    if (res) setPrevRes(res);                    // v3.24.14: stash prev res for undo
     const start = performance.now();
     const finish = () => {
       const elapsed = performance.now() - start;
@@ -6036,6 +6471,31 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
 
   const overrideCount = useMemo(() => rp.filter(p => p._overridden).length, [rp]);
   const canBuild = overrideCount >= 2;
+  useBuilderShortcuts({ run, canBuild, isBuilding }); // v3.24.14: B/R to build/rebuild
+
+  // v3.24.14: empty state for 0-player slates
+  if (sp.length === 0) {
+    return <>
+      <div className="section-hero">
+        <div className="section-hero-icon-wrap">
+          <svg className="section-hero-icon" viewBox="0 0 24 24" fill="#F5C518" stroke="none">
+            <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+          </svg>
+        </div>
+        <div className="section-hero-text">
+          <h2 className="section-hero-title">Lineup Builder</h2>
+          <div className="section-hero-sub">Set exposure %, build optimized lineups, export to DK</div>
+        </div>
+      </div>
+      <div className="empty" style={{ padding: '60px 24px', background: 'var(--card)', border: '1px dashed var(--border-light)', borderRadius: 12 }}>
+        <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.4 }}>🏀</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>No players on this slate yet</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 420, margin: '0 auto' }}>
+          The current slate has no priced players. Check back closer to lock, or switch to a different slate.
+        </p>
+      </div>
+    </>;
+  }
 
   return (<>
     <div className="section-hero">
@@ -6056,6 +6516,20 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
           DraftKings requires you to edit our default projections before building. Head to the <strong style={{ color: 'var(--text)' }}>DK Projections</strong> tab and change at least <strong style={{ color: 'var(--primary)' }}>2 projections</strong>.
           <span style={{ color: 'var(--text-dim)' }}> Currently changed: <strong style={{ color: overrideCount >= 2 ? 'var(--green)' : 'var(--red)' }}>{overrideCount}</strong>/2</span>
         </div>
+        {onGoToProjections && (
+          <button
+            onClick={onGoToProjections}
+            style={{
+              marginTop: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600,
+              background: 'var(--primary)', color: '#0A1628', border: 'none',
+              borderRadius: 6, cursor: 'pointer', display: 'inline-flex',
+              alignItems: 'center', gap: 6
+            }}
+          >
+            Jump to DK Projections
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        )}
       </div>
     )}
     <ContrarianPanel enabled={contrarianOn} onToggle={setContrarianOn} strength={contrarianStrength} onStrengthChange={setContrarianStrength} />
@@ -6153,7 +6627,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
             const displayField = fieldRef === 'cpt' ? ((cptOwnership || {})[name] || 0) : field;
             const fieldLabel = fieldRef === 'cpt' ? 'cpt own' : 'field';
             return (
-              <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span key={name} title={signalTooltip(lbl.label)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'help' }}>
                 <Icon name={lbl.icon} size={12} color={lbl.color}/>
                 <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lbl.label}:</span>
                 <span style={{ color: lbl.color, fontWeight: 600 }}>{name}</span>
@@ -6385,14 +6859,36 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
     {isBuilding && <BuildAnimation count={nL} />}
-    {!isBuilding && res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
+    {!isBuilding && res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} prevRes={prevRes} onRestorePrev={() => { setRes(prevRes); setPrevRes(null); }} />}
   </>);
 }
 
-function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount, favoriteLineups = [], onToggleFavorite }) {
+function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onExportDK, onExportReadable, nL, canBuild, overrideCount, favoriteLineups = [], onToggleFavorite, prevRes, onRestorePrev }) {
   const isShowdown = res.isShowdown;
   const [view, setView] = useState('all');   // 'all' | 'cpt' | 'flex'
   const [q, setQ] = useState('');
+  // v3.24.14: MME set metrics — median/stdev cumulative ownership + unique players
+  const setMetrics = useMemo(() => {
+    if (!res.lineups.length || !res.pData) return null;
+    const cumOwns = res.lineups.map(lu => {
+      if (isShowdown) {
+        const cptOwn = cptOwnership[res.pData[lu.cpt].name] || 0;
+        const utilSum = lu.utils.reduce((s, i) => s + (ownership[res.pData[i].name] || 0), 0);
+        return cptOwn + utilSum;
+      }
+      return lu.players.reduce((s, i) => s + (ownership[res.pData[i].name] || 0), 0);
+    });
+    const sorted = [...cumOwns].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    const mean = cumOwns.reduce((s, v) => s + v, 0) / cumOwns.length;
+    const stdev = Math.sqrt(cumOwns.reduce((s, v) => s + (v - mean) ** 2, 0) / cumOwns.length);
+    const playerIdxs = isShowdown
+      ? res.lineups.flatMap(lu => [lu.cpt, ...lu.utils])
+      : res.lineups.flatMap(lu => lu.players);
+    const uniqueCount = new Set(playerIdxs).size;
+    return { median, stdev, uniqueCount };
+  }, [res, ownership, cptOwnership, isShowdown]);
 
   // Favorites are managed by the parent (NBABuilderTab) so they persist across
   // Build clicks. Here we derive the set of favorited lineup hashes for quick
@@ -6520,11 +7016,35 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
   });
 
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-      <Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid · Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span> · Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span> · Avg Own: <span style={{ color: avgOwn > 35 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span>
+    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+      <span><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid</span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span></span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></span>
+      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span>Avg Own: <span style={{ color: avgOwn > 35 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span></span>
+      {setMetrics && <>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Median of sum-of-player-ownership across the lineup set">Median Own: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.median.toFixed(0)}%</span></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Stdev of cumulative ownership across the set">Stdev: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.stdev.toFixed(1)}</span></span>
+        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span title="Distinct players used across all lineups">Unique: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.uniqueCount}</span></span>
+      </>}
     </div>
     <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild} style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
+      {prevRes && onRestorePrev && <button
+        onClick={onRestorePrev}
+        title="Restore the previous lineup set (undo Rebuild)"
+        style={{ flex: '0 1 auto', padding: '10px 18px', fontSize: 13, fontWeight: 600,
+          background: 'var(--card)', color: 'var(--text-muted)',
+          border: '1px solid var(--border-light)', borderRadius: 8, cursor: 'pointer',
+          display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+        Restore previous
+      </button>}
       {onExportDK && <button className="btn btn-primary" onClick={onExportDK} style={{ flex: '1 1 auto', width: 'auto', background: 'linear-gradient(135deg, #15803D, #22C55E)' }}><Icon name="download" size={14}/> Download DK Upload CSV</button>}
       {onExportReadable && <button className="btn btn-outline" onClick={onExportReadable} style={{ flex: '1 1 auto', width: 'auto', marginTop: 0 }}><Icon name="download" size={14}/> Readable CSV</button>}
     </div>
