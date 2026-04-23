@@ -1838,6 +1838,17 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
     let primaries = [];        // v3.24.3: Hidden Gem primaries (band players from Biggest Trap band)
     let orPivotOpps = [];      // v3.24.3: Or Pivot opponents (from Or Trap band)
 
+    // v3.24.9: Pre-compute top-3 PP fade opponent names so the gem
+    // candidate pool can exclude them (tennis 16+ only). Mirrors the
+    // same filter applied in computeContrarianCaps16Plus — keeps the
+    // DK-tab display aligned with the OverOwned caps logic.
+    const ppFadesForFilter = pw
+      .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+      .filter(p => p.name !== trap)
+      .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+      .slice(0, 3);
+    const ppFadeOppNames = new Set(ppFadesForFilter.map(f => f.opponent).filter(Boolean));
+
     // Helper: run band search for a trap, return top 2 {bp, opp} by opp.val
     const findGemPairs = (trapName) => {
       const trapP = pw.find(p => p.name === trapName);
@@ -1856,6 +1867,8 @@ function DKTab({ players, mc, own, onOverride, overrides, lockedPlayers = [], ex
       if (orTrap) otherTraps.add(orTrap);
       otherTraps.delete(trapName);  // own trap is already excluded via inBand
       const pairs = band.map(bp => {
+        // v3.24.9: exclude band player whose name is a top-3 PP fade's opp
+        if ((mc || 0) >= 16 && ppFadeOppNames.has(bp.name)) return null;
         const opp = pw.find(p => p.name === bp.opponent);
         if (!opp) return null;
         if (otherTraps.has(opp.name)) return null;
