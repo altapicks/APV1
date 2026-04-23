@@ -2121,7 +2121,7 @@ function PPTab({ rows }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24.9)
+// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24.10)
 // ═══════════════════════════════════════════════════════════════════════
 // Completely isolated from the ≤15 match logic. Deep tennis slates have
 // different structural dynamics — more chalk consolidation, more cheap
@@ -2153,6 +2153,11 @@ function PPTab({ rows }) {
 //   (7)  PP Fade Opponent Cap      opps of top 3 PP fades capped at
 //                                  simOwn × (1 - 0.4 × strengthFactor),
 //                                  only if opp has no existing signal
+//   (7a) Gem Opp Fade              opps of Hidden Gem Primaries #1 & #2
+//                                  capped at simOwn × (1 - 0.4 ×
+//                                  strengthFactor) — closes the leak
+//                                  where gem's opp (band chalk) was
+//                                  falling through to Rule 11 (v3.24.10)
 //   (8)  Top 3 Straight Sets       tiered fade by simOwn (v3.24.9): top
 //                                  3 by pStraight, re-sorted simOwn
 //                                  DESC, #1 max = simOwn × 0.20, #2 =
@@ -2411,6 +2416,37 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
       ...existing,
       max: Math.min(currMax, oppMax),
       _isPpFadeOpponent: true,
+      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(oppFieldOwn),
+    };
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  // (7a) GEM OPP FADE (v3.24.10) — opponents of Hidden Gem Primaries.
+  //      Cap: simOwn × (1 - 0.4 × strengthFactor), same strength as
+  //      Rule 7. Skip if opp already has a signal so PP-related fades
+  //      (Rule 5 at -0.50, Rule 7 at -0.40) always win on overlap.
+  //
+  //      Rationale: Rule 3 boosts the gem to min 35%, but the gem's
+  //      opponent (the overbought chalk in the band) was otherwise
+  //      falling through to Rule 11 (simOwn+10pp cap) and appearing
+  //      in ~half of builds. Explicit fade closes that leak so the
+  //      leverage Rule 3 was pricing in actually materializes.
+  //      Applies to both Hidden Gem #1 and #2.
+  // ─────────────────────────────────────────────────────────────────
+  const gemOppFadeMult = scaledFadePct(0.40);
+  gemPrimaries.forEach(({ opp }) => {
+    if (!opp) return;
+    const existing = caps[opp.name] || {};
+    const hasSignal = existing._isTrap || existing._isOrTrap || existing._isGem
+                    || existing._isPivotOpponent || existing._isPpFadeOpponent;
+    if (hasSignal) return;
+    const oppFieldOwn = own(opp.name);
+    const oppMax = roundInt(oppFieldOwn * (1 - gemOppFadeMult));
+    const currMax = existing.max !== undefined ? existing.max : 100;
+    caps[opp.name] = {
+      ...existing,
+      max: Math.min(currMax, oppMax),
+      _isGemOpponent: true,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(oppFieldOwn),
     };
   });
@@ -3148,6 +3184,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isGem && c._kind === 'or-pivot') return { label: 'Or Pivot', icon: 'gem',   color: 'var(--green)' };
         if (c._isGem && c._kind === 'pivot')   return { label: `Pivot${c._ppPivotRank ? ' #' + c._ppPivotRank : ''}`, icon: 'gem', color: 'var(--green)' };
         if (c._isPivotOpponent) return { label: 'Pivot Opp', icon: 'bomb', color: 'var(--amber)' };
+        if (c._isGemOpponent)   return { label: 'Gem Opp',   icon: 'bomb', color: 'var(--amber)' };
         if (c._isHardFade)      return { label: 'Hard Fade',  icon: 'bomb', color: 'var(--red)' };
         if (c._isHardFadeOpp)   return { label: 'Hard-Fade Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
@@ -3164,6 +3201,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isTrap || c._isOrTrap)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isGem)    return { sym: `min ${c.min}%`, bound: c.min };
         if (c._isPivotOpponent) return { sym: `max ${c.max}%`, bound: c.max };
+        if (c._isGemOpponent)   return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isHardFade)      return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isHardFadeOpp)   return { sym: `min ${c.min}% (+${c._hardFadeOppAddedMin || 0}pp)`, bound: c.min };
         if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
