@@ -172,6 +172,7 @@ function ContrarianPanel({ enabled, onToggle, strength, onStrengthChange }) {
             onClick={() => setShowHelp(true)}
             aria-label="What does OverOwned Mode do?"
             title="What does OverOwned Mode do?"
+            className="oo-help-toggle"
             style={{
               width: 18, height: 18, padding: 0, borderRadius: '50%',
               background: 'rgba(245,197,24,0.12)',
@@ -231,8 +232,8 @@ function OverOwnedHelpModal({ onClose }) {
     return () => { window.removeEventListener('keydown', onEsc); document.body.style.overflow = ''; };
   }, [onClose]);
   const Row = ({ badge, color, children }) => (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{
+    <div className="oo-help-glossary-row" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+      <span className="oo-help-badge" style={{
         flex: '0 0 auto', padding: '2px 8px', borderRadius: 4,
         background: `${color}22`, border: `1px solid ${color}66`,
         color, fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
@@ -249,11 +250,24 @@ function OverOwnedHelpModal({ onClose }) {
         position: 'fixed', inset: 0, background: 'rgba(10,22,40,0.7)',
         backdropFilter: 'blur(4px)', zIndex: 200,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 20, animation: 'oo-modal-in 0.18s ease-out',
+        padding: 'clamp(8px, 3vw, 20px)', animation: 'oo-modal-in 0.18s ease-out',
       }}
     >
-      <style>{`@keyframes oo-modal-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }`}</style>
+      <style>{`
+        @keyframes oo-modal-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+        @media (max-width: 640px) {
+          .oo-help-modal { padding: 16px 16px !important; max-height: 92vh !important; }
+          .oo-help-modal h2 { font-size: 16px !important; }
+          .oo-help-modal .oo-help-lede { font-size: 12px !important; }
+          .oo-help-modal .oo-help-mechanics { padding: 10px 12px !important; }
+          .oo-help-modal .oo-help-mechanics li { font-size: 11.5px !important; }
+          .oo-help-modal .oo-help-glossary-row { padding: 7px 0 !important; gap: 10px !important; }
+          .oo-help-modal .oo-help-badge { min-width: 54px !important; font-size: 9px !important; padding: 2px 6px !important; }
+          .oo-help-modal .oo-help-footer { font-size: 10.5px !important; }
+        }
+      `}</style>
       <div
+        className="oo-help-modal"
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--card)', borderRadius: 12, padding: '22px 24px',
@@ -269,13 +283,14 @@ function OverOwnedHelpModal({ onClose }) {
           </div>
           <button onClick={onClose} aria-label="Close" style={{
             background: 'transparent', border: 'none', color: 'var(--text-muted)',
-            fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '0 4px',
+            fontSize: 26, cursor: 'pointer', lineHeight: 1, padding: '0 8px',
+            minWidth: 36, minHeight: 36,  // iOS tap target
           }}>×</button>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>
+        <p className="oo-help-lede" style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 }}>
           OverOwned Mode rewrites per-player exposure caps to fade the chalk the field is about to over-roster and boost the hidden leverage plays the field will under-roster. It's the difference between an optimizer that builds the field's lineups and one that builds <em>around</em> the field's lineups.
         </p>
-        <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, border: '1px solid var(--border)' }}>
+        <div className="oo-help-mechanics" style={{ background: 'var(--bg)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, border: '1px solid var(--border)' }}>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>When OverOwned is ON</div>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
             <li>Trap player's exposure is <strong style={{ color: 'var(--red)' }}>capped</strong> well below their projected field ownership</li>
@@ -284,7 +299,7 @@ function OverOwnedHelpModal({ onClose }) {
             <li>On 10+ match slates, mid-tier and top-value plays also get tiered caps to prevent structural salary-filler overlap</li>
           </ul>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: 0.3, textTransform: 'uppercase', fontSize: 10, color: 'var(--text-dim)' }}>Signal glossary</div>
+        <div style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>Signal glossary</div>
         <Row badge="Trap" color="#EF4444">Highly projected, highly owned, but win-probability doesn't justify the price. Field piles in; you fade.</Row>
         <Row badge="Gem" color="#4ADE80">Opponent of the Trap (or the best salary-band value if opponent doesn't qualify). Underowned relative to their win equity — boost hard.</Row>
         <Row badge="Pivot" color="#4ADE80">A secondary gem the field also misses. Typically emerges from PP line comparisons when the PP market is flagging an edge the DFS field hasn't caught up to.</Row>
@@ -292,7 +307,7 @@ function OverOwnedHelpModal({ onClose }) {
         <Row badge="PP Fade" color="#EF4444">Player the PrizePicks market has flagged as a fade (projected to miss their line by a clear margin). Cross-market signal the DFS field is ignoring.</Row>
         <Row badge="PP Fade Opp" color="#F59E0B">Opponent of a PP fade. When the fade is likely to miss, their opponent is more likely to win — secondary leverage.</Row>
         <Row badge="Gem Opp" color="#F59E0B">Opponent of a Hidden Gem. Field over-rosters the gem's opponent to block them; you fade those blockers.</Row>
-        <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 14, marginBottom: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
+        <p className="oo-help-footer" style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 14, marginBottom: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
           Strength controls how aggressive the caps are: 60% (the default) is calibrated to the long-run hit rate on a 16+ match slate. Push higher on large-field GPPs where leverage pays more, lower on cash/small-field where variance hurts more than it helps.
         </p>
       </div>
@@ -1117,7 +1132,32 @@ function Tip({ icon, emoji, label, size = 14, desc }) {
   // needing to open the full explainer modal.
   const autoDesc = typeof signalTooltip === 'function' ? signalTooltip(label) : '';
   const description = desc || autoDesc;
-  return <span style={{ position: 'relative', cursor: 'help', display: 'inline-flex', alignItems: 'center' }} onMouseEnter={() => setS(true)} onMouseLeave={() => setS(false)}>{icon ? <Icon name={icon} size={size}/> : emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: description ? '8px 12px' : '6px 10px', fontSize: 11, color: '#E2E8F0', zIndex: 999, fontWeight: 500, whiteSpace: description ? 'normal' : 'nowrap', width: description ? 260 : 'auto', textAlign: description ? 'left' : 'center', lineHeight: description ? 1.4 : 1 }}><span style={{ fontWeight: 700, display: 'block' }}>{label}</span>{description && <span style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)', fontWeight: 400, fontSize: 10.5 }}>{description}</span>}</span>}</span>;
+  // v3.24.15: mobile support. onMouseEnter/Leave don't fire on touch
+  // devices, so taps did nothing. Add onClick to toggle; outside tap
+  // closes via window listener while open. stopPropagation so tapping
+  // the badge doesn't fire parent row handlers.
+  useEffect(() => {
+    if (!s) return;
+    const onAway = () => setS(false);
+    // Defer one frame so the same tap that opened doesn't immediately close
+    const id = setTimeout(() => {
+      window.addEventListener('click', onAway);
+      window.addEventListener('touchstart', onAway);
+      window.addEventListener('scroll', onAway, true);
+    }, 0);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('click', onAway);
+      window.removeEventListener('touchstart', onAway);
+      window.removeEventListener('scroll', onAway, true);
+    };
+  }, [s]);
+  return <span
+    style={{ position: 'relative', cursor: 'help', display: 'inline-flex', alignItems: 'center' }}
+    onMouseEnter={() => setS(true)}
+    onMouseLeave={() => setS(false)}
+    onClick={(e) => { e.stopPropagation(); setS(v => !v); }}
+  >{icon ? <Icon name={icon} size={size}/> : emoji}{s && <span style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#1E2433', border: '1px solid #2A3040', borderRadius: 6, padding: description ? '8px 12px' : '6px 10px', fontSize: 11, color: '#E2E8F0', zIndex: 999, fontWeight: 500, whiteSpace: description ? 'normal' : 'nowrap', width: description ? 260 : 'auto', maxWidth: description ? 'min(260px, calc(100vw - 24px))' : 'none', textAlign: description ? 'left' : 'center', lineHeight: description ? 1.4 : 1, pointerEvents: 'none' }}><span style={{ fontWeight: 700, display: 'block' }}>{label}</span>{description && <span style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)', fontWeight: 400, fontSize: 10.5 }}>{description}</span>}</span>}</span>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1580,6 +1620,21 @@ export default function App() {
       .proj-edit.overridden { color: var(--primary) !important; font-weight: 700; }
       .proj-edit::-webkit-outer-spin-button, .proj-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .proj-edit { -moz-appearance: textfield; }
+
+      /* v3.24.15: mobile tweaks for the builder summary bar, topbar stale-slate
+         pill, and post-build action row. Paired classes are set inline on those
+         elements. Desktop layout is unchanged. */
+      @media (max-width: 640px) {
+        .oo-summary-bar { font-size: 11.5px !important; padding: 10px 12px !important; gap: 4px 8px !important; }
+        .oo-summary-bar .oo-sum-sep { display: none !important; }
+        .oo-summary-bar > span { flex: 0 1 auto; }
+        .oo-action-row { gap: 8px !important; }
+        .oo-action-row > .btn { flex: 1 1 100% !important; }
+        .oo-restore-btn { flex: 1 1 100% !important; justify-content: center !important; padding: 12px 14px !important; font-size: 12px !important; }
+        .oo-stale-pill { font-size: 10px !important; padding: 2px 6px !important; margin-left: 6px !important; letter-spacing: 0.1px !important; }
+        .oo-jump-btn { padding: 10px 14px !important; font-size: 12px !important; width: 100% !important; justify-content: center !important; }
+        .oo-help-toggle { width: 22px !important; height: 22px !important; }
+      }
       /* Icon-only tabs — compact square buttons with hover tooltip (native title attr handles the label).
          CRITICAL: active/inactive states MUST have identical box dimensions.
          We achieve this by (a) pinning width/padding/margin on all states and
@@ -2006,7 +2061,7 @@ function Topbar({ sport, onSportChange, data, slateDate = 'live', onSlateDateCha
           const today = new Date(); today.setHours(0, 0, 0, 0);
           const daysOld = Math.round((today - parsed) / 86400000);
           if (daysOld < 2) return null;
-          return <span style={{
+          return <span className="oo-stale-pill" style={{
             marginLeft: 8, padding: '2px 8px', borderRadius: 4,
             background: 'rgba(245, 158, 11, 0.14)',
             border: '1px solid rgba(245, 158, 11, 0.4)',
@@ -3625,6 +3680,7 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         {onGoToProjections && (
           <button
             onClick={onGoToProjections}
+            className="oo-jump-btn"
             style={{
               marginTop: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600,
               background: 'var(--primary)', color: '#0A1628', border: 'none',
@@ -3791,27 +3847,28 @@ function ExposureResults({ res, ownership, onRebuild, onExportDK, onExportReadab
   const { sorted, sortKey, sortDir, toggleSort } = useSort(expFiltered, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+    <div className="oo-summary-bar" style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
       <span><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid</span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span></span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></span>
       {setMetrics && <>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Median of sum-of-player-ownership across the lineup set. Lower = more contrarian field positioning.">Median Own: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.median.toFixed(0)}%</span></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Standard deviation of cumulative ownership across the set. Higher = more diverse range of contrarian-to-chalky lineups.">Stdev: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.stdev.toFixed(1)}</span></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Count of distinct players used across all lineups. Higher = broader exposure; lower = same core group recycled.">Unique: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.uniqueCount}</span></span>
       </>}
     </div>
-    <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+    <div className="oo-action-row" style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
         title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
         style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
       {prevRes && onRestorePrev && <button
         onClick={onRestorePrev}
+        className="oo-restore-btn"
         title="Restore the previous lineup set (undo Rebuild)"
         style={{ flex: '0 1 auto', padding: '10px 18px', fontSize: 13, fontWeight: 600,
           background: 'var(--card)', color: 'var(--text-muted)',
@@ -4048,6 +4105,9 @@ function TrackRecordTab({ sport }) {
 function CsvDropZone({ label, hint, onFile, filled, count, countLabel = 'players', sampleHref, sampleFilename }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  // v3.24.15: detect coarse-pointer devices so the prompt says "Tap" not
+  // "Click" and doesn't promise drag-and-drop that touchscreens can't do.
+  const isTouch = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: none)').matches;
   const handleFiles = (files) => {
     if (!files || !files.length) return;
     const f = files[0];
@@ -4067,15 +4127,16 @@ function CsvDropZone({ label, hint, onFile, filled, count, countLabel = 'players
       onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
       onDrop={onDrop}
       style={{
-        flex: 1, minWidth: 250,
+        flex: '1 1 240px', minWidth: 200, minHeight: 90,
         background: filled ? 'rgba(74,222,128,0.06)' : dragOver ? 'rgba(245,197,24,0.10)' : 'var(--card)',
         border: `1px ${dragOver ? 'solid' : 'dashed'} ${filled ? 'var(--green)' : dragOver ? 'var(--primary)' : 'var(--border-light)'}`,
         borderRadius: 10, padding: '16px 18px', cursor: 'pointer',
         transition: 'background 0.15s, border-color 0.15s',
         display: 'flex', flexDirection: 'column', gap: 6,
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <div className="metric-label" style={{ color: filled ? 'var(--green)' : 'var(--text-muted)' }}>{label}</div>
         {sampleHref && <a
           href={sampleHref}
@@ -4088,7 +4149,7 @@ function CsvDropZone({ label, hint, onFile, filled, count, countLabel = 'players
       {!filled && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 12, color: dragOver ? 'var(--primary)' : 'var(--text-dim)', fontWeight: 500 }}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {dragOver ? 'Drop to upload' : 'Click to choose a file or drag & drop'}
+          {dragOver ? 'Drop to upload' : isTouch ? 'Tap to choose a CSV file' : 'Click to choose a file or drag & drop'}
         </div>
       )}
       {filled && <div style={{ color: 'var(--green)', fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -4799,6 +4860,7 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
         {onGoToProjections && (
           <button
             onClick={onGoToProjections}
+            className="oo-jump-btn"
             style={{
               marginTop: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600,
               background: 'var(--primary)', color: '#0A1628', border: 'none',
@@ -4959,29 +5021,30 @@ function MMAExposureResults({ res, ownership, onRebuild, onExportDK, onExportRea
   const { sorted, sortKey, sortDir, toggleSort } = useSort(expFiltered, 'pct', 'desc');
   const S = p => <SH {...p} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />;
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+    <div className="oo-summary-bar" style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
       <span><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups ({mode === 'ceiling' ? 'GPP/ceiling' : 'cash/median'}) from {res.total.toLocaleString()} valid</span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span></span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Avg Own: <span style={{ color: avgOwn > 30 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span></span>
       {setMetrics && <>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Median of sum-of-fighter-ownership across the lineup set">Median Own: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.median.toFixed(0)}%</span></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Stdev of cumulative ownership across the set">Stdev: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.stdev.toFixed(1)}</span></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Distinct fighters used across all lineups">Unique: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.uniqueCount}</span></span>
       </>}
     </div>
-    <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+    <div className="oo-action-row" style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild}
         title={canBuild ? '' : `Edit at least 2 projections first (${overrideCount}/2 changed)`}
         style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
       {prevRes && onRestorePrev && <button
         onClick={onRestorePrev}
+        className="oo-restore-btn"
         title="Restore the previous lineup set (undo Rebuild)"
         style={{ flex: '0 1 auto', padding: '10px 18px', fontSize: 13, fontWeight: 600,
           background: 'var(--card)', color: 'var(--text-muted)',
@@ -5446,13 +5509,13 @@ function NBADKTab({ players, gameInfo, own, cptOwn = {}, onOverride, overrides, 
       return (
         <div style={{ padding: '8px 12px', marginBottom: 12, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
           <span>{gameInfo.away} @ {gameInfo.home}</span>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
           <span>Spread: <strong style={{ color: 'var(--text)' }}>{hasSpread ? `${fav} ${Math.abs(spread)}` : '—'}</strong></span>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
           <span>Total: <strong style={{ color: 'var(--text)' }}>{hasTotal ? gameInfo.total : '—'}</strong></span>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
           <span>Pace: <strong style={{ color: 'var(--text)' }}>{hasPace ? ((paceH + paceA) / 2).toFixed(1) : '—'}</strong></span>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
           <span title="Probability the game becomes a blowout — affects starter minutes">Blowout risk: <strong style={{ color: hasBlowout && blowoutH > 0.6 ? 'var(--amber)' : 'var(--text)' }}>{hasBlowout ? `${Math.round(blowoutH * 100)}%` : '—'}</strong></span>
         </div>
       );
@@ -6519,6 +6582,7 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
         {onGoToProjections && (
           <button
             onClick={onGoToProjections}
+            className="oo-jump-btn"
             style={{
               marginTop: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600,
               background: 'var(--primary)', color: '#0A1628', border: 'none',
@@ -7016,27 +7080,28 @@ function NBAExposureResults({ res, ownership, cptOwnership = {}, onRebuild, onEx
   });
 
   return (<>
-    <div style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
+    <div className="oo-summary-bar" style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
       <span><Icon name="check" size={14} color="#22C55E"/> Built <span style={{ color: 'var(--primary-glow)', fontWeight: 700 }}>{res.lineups.length}</span> lineups from {res.total.toLocaleString()} valid</span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Range: <span style={{ color: 'var(--green)' }}>{projMax}</span> → <span style={{ color: 'var(--text-dim)' }}>{projMin}</span></span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Avg Sal: <span style={{ color: 'var(--primary-glow)', fontWeight: 600 }}>${avgSal.toLocaleString()}</span></span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
+      <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
       <span>Avg Own: <span style={{ color: avgOwn > 35 ? 'var(--amber)' : 'var(--green)', fontWeight: 600 }}>{avgOwn}%</span></span>
       {setMetrics && <>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Median of sum-of-player-ownership across the lineup set">Median Own: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.median.toFixed(0)}%</span></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Stdev of cumulative ownership across the set">Stdev: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.stdev.toFixed(1)}</span></span>
-        <span style={{ color: 'var(--text-dim)' }}>·</span>
+        <span className="oo-sum-sep" style={{ color: 'var(--text-dim)' }}>·</span>
         <span title="Distinct players used across all lineups">Unique: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{setMetrics.uniqueCount}</span></span>
       </>}
     </div>
-    <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+    <div className="oo-action-row" style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
       {onRebuild && <button className="btn btn-primary" onClick={onRebuild} disabled={!canBuild} style={{ flex: '1 1 auto', width: 'auto', ...(canBuild ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}><Icon name="bolt" size={14}/> Rebuild {nL}</button>}
       {prevRes && onRestorePrev && <button
         onClick={onRestorePrev}
+        className="oo-restore-btn"
         title="Restore the previous lineup set (undo Rebuild)"
         style={{ flex: '0 1 auto', padding: '10px 18px', fontSize: 13, fontWeight: 600,
           background: 'var(--card)', color: 'var(--text-muted)',
