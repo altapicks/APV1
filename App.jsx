@@ -2108,7 +2108,7 @@ function PPTab({ rows }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24)
+// TENNIS OVEROWNED MODE — 16+ MATCH SLATE RULESET (v3.24.9)
 // ═══════════════════════════════════════════════════════════════════════
 // Completely isolated from the ≤15 match logic. Deep tennis slates have
 // different structural dynamics — more chalk consolidation, more cheap
@@ -2128,7 +2128,9 @@ function PPTab({ rows }) {
 //   (2)  Or Trap                   -75% leverage from simOwn
 //   (3)  Hidden Gem Primary        min = 35% (Parks-style: cheap dog paired
 //                                  with highest-owned chalk opponent in
-//                                  trap's salary band)
+//                                  trap's salary band) — v3.24.9: gem
+//                                  candidates excluded from pool if they
+//                                  are the opponent of a top-3 PP fade
 //   (4)  Three PP Pivots           +100% / +90% / +80% leverage (top 3
 //                                  PP fades, ppEdge ≤ -2)
 //   (5)  Pivot-Opponent Fade       opp of PP Pivot #1 capped at
@@ -2138,8 +2140,10 @@ function PPTab({ rows }) {
 //   (7)  PP Fade Opponent Cap      opps of top 3 PP fades capped at
 //                                  simOwn × (1 - 0.4 × strengthFactor),
 //                                  only if opp has no existing signal
-//   (8)  Top 3 Straight Sets       max = 10% (cap-wins, hard override
-//                                  over trap since 10 < any trap cap)
+//   (8)  Top 3 Straight Sets       tiered fade by simOwn (v3.24.9): top
+//                                  3 by pStraight, re-sorted simOwn
+//                                  DESC, #1 max = simOwn × 0.20, #2 =
+//                                  × 0.40, #3 = × 0.60 at base strength
 //   (9)  Top 2 Val <$5,800 Opps    min = oppSimOwn × 1.5 (stacks
 //                                  additively if opp already has signal)
 //   (10) ≤$7,800 + >50% wp Fade    max = 5% + opp boost = oppSimOwn × 1.2
@@ -2225,6 +2229,22 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   //       or Pivot section displays opponent names (expensive pivots).
   //     Both come from the same formula, just different trap source.
   // ─────────────────────────────────────────────────────────────────
+  // v3.24.9: Pre-compute PP fades BEFORE gem primaries so the gem
+  // candidate pool can exclude any band player who is the opponent of a
+  // top-3 PP fade. Without this, the gem primary could coincide with a
+  // PP fade's opponent — creating a contradiction where Rule 3 boosts
+  // that player (min 35%) while Rule 7 tries to fade them (max = simOwn
+  // × 0.60). Rule 7 already skips if signal exists, so the previous
+  // behavior silently dropped the Rule 7 leverage on that match. New
+  // behavior: filter the gem candidate pool up front, letting Rule 7
+  // fire against a non-gem opponent.
+  const ppFades = withSal
+    .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
+    .filter(p => !trap || p.name !== trap.name)
+    .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
+    .slice(0, 3);
+  const ppFadeOppNames = new Set(ppFades.map(f => f.opponent).filter(Boolean));
+
   const findGemsForTrap = (trapObj) => {
     if (!trapObj) return [];
     const trapSal = trapObj.salary || 0;
@@ -2239,6 +2259,9 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     // where each entry links a band player to their opponent, sorted by
     // opponent's val descending.
     const candidates = band.map(bp => {
+      // v3.24.9: Exclude if this gem candidate is the opponent of a
+      // top-3 PP fade — see ppFadeOppNames block above for rationale.
+      if (ppFadeOppNames.has(bp.name)) return null;
       const opp = withSal.find(p => p.name === bp.opponent);
       if (!opp) return null;
       // Exclude if opp is already a trap signal
@@ -2292,12 +2315,9 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   // ─────────────────────────────────────────────────────────────────
   // (4) THREE PP PIVOTS — top 3 PP LESS (ppEdge ≤ -2), excluding trap.
   //     Boost: #1 = +100%, #2 = +90%, #3 = +80% leverage from simOwn.
+  //     v3.24.9: `ppFades` is computed earlier in the function (hoisted
+  //     so Rule 3 can exclude their opponents from the gem pool).
   // ─────────────────────────────────────────────────────────────────
-  const ppFades = withSal
-    .filter(p => typeof p.ppLine === 'number' && typeof p.ppEdge === 'number' && p.ppEdge <= -2)
-    .filter(p => !trap || p.name !== trap.name)
-    .sort((a, b) => (a.ppEdge || 0) - (b.ppEdge || 0))
-    .slice(0, 3);
   const pivotBoosts = [1.00, 0.90, 0.80];
   const gemPivots = [];
   ppFades.forEach((fade, idx) => {
@@ -2383,45 +2403,49 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (8) TOP 3 STRAIGHT SETS — max 10%, cap-wins. Hard override over trap.
-  //     Top 3 by pStraight (probability of winning 2-0) across slate.
+  // (8) TOP 3 STRAIGHT SETS — TIERED FADE (v3.24.9)
+  //     Take top 3 by pStraight, re-sort those 3 by simOwn DESC, then
+  //     apply graduated fade: #1 (most-owned) strongest, #3 lightest.
+  //     At base strength 0.6:
+  //       • #1  max = simOwn × 0.20   (e.g. 73% → ~15%)
+  //       • #2  max = simOwn × 0.40
+  //       • #3  max = simOwn × 0.60
+  //     Scales with strengthFactor; at strength 0 these become simOwn
+  //     × 1.0 (no-op). Cap-wins over any existing max.
+  //     Replaces the old flat 10% cap, which fired hardest on the
+  //     top straight-sets play regardless of how owned they actually
+  //     were — the new rule concentrates leverage where the field
+  //     over-commits while leaving lighter-owned straight-set plays
+  //     with breathing room.
   // ─────────────────────────────────────────────────────────────────
   const topStraight = [...withSal]
     .sort((a, b) => (b.pStraight || 0) - (a.pStraight || 0))
-    .slice(0, 3);
-  topStraight.forEach(p => {
+    .slice(0, 3)
+    .sort((a, b) => own(b.name) - own(a.name));
+  const straightFadePcts = [0.80, 0.60, 0.40];  // #1 strongest → #3 lightest
+  topStraight.forEach((p, idx) => {
     const existing = caps[p.name] || {};
     const currMax = existing.max !== undefined ? existing.max : 100;
-    const newMax = Math.min(currMax, 10);
     const fieldOwn = own(p.name);
+    const newMax = roundInt(fieldOwn * (1 - scaledFadePct(straightFadePcts[idx])));
     caps[p.name] = {
       ...existing,
-      max: newMax,
+      max: Math.min(currMax, newMax),
       _isStraightSetsCap: true,
+      _straightSetsRank: idx + 1,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
     };
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // (9) TOP 3 VAL ≤$5,900 — CAP + OPP BOOST (v3.24.20)
+  // (9) TOP 3 VAL ≤$5,900 — CAP + OPP BOOST (v3.24.5)
   //     Find top 3 players by val with salary ≤ $5,900, EXCLUDING any
   //     player already flagged as a trap, gem primary, or or-pivot
   //     (traps and gems always have priority — their caps are the
   //     structural play, and Rule 9 shouldn't touch them).
   //
   //     • Cap the 3 value plays at max 1% (force the pivot to their opp)
-  //     • Boost their opponents conditionally:
-  //       - Gate: opp val must be ≥ 5.0 (weak-val opps skipped — the
-  //         pivot isn't meaningful if the opp can't deliver upside)
-  //       - min = max(20%, oppSimOwn × 1.35) → floor OR +35% leverage,
-  //         whichever higher. Floor kicks in for low-owned opps
-  //         (McNally at 1% → 20%). Leverage kicks in for higher-owned
-  //         opps (Tabilo at 19.9% → 27%).
-  //
-  //     v3.24.22: floor raised 15% → 20%. At 15%, McNally's contrarian
-  //     score (+14) produced +8.4% proj boost — not enough to flip her
-  //     ahead of Machac (no-signal, 55.07 raw). 20% floor gives score
-  //     +19 → +11.4% boost at base weight, clearing Machac reliably.
+  //     • Boost their opponents: min += oppSimOwn × 0.5 (additive stack)
   //
   //     Intent: cheap high-val dogs are where DK prices the "field
   //     trap" on the LOW side — the field happily rosters them at
@@ -2440,6 +2464,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     })
     .sort((a, b) => (b.val || 0) - (a.val || 0))
     .slice(0, 3);
+  const valOppBoost = scaledBoostPct(0.50);
   topVal.forEach(valPlay => {
     // Cap the value play at max 1%
     const existing = caps[valPlay.name] || {};
@@ -2451,27 +2476,18 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
       _isValCap: true,
       _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(valFieldOwn),
     };
-    // Boost the opponent — only if opp val ≥ 5.0
+    // Boost the opponent
     const opp = withSal.find(p => p.name === valPlay.opponent);
     if (!opp) return;
-    if ((opp.val || 0) < 5.0) return;  // gate: weak-val pivots skipped
     const oppExisting = caps[opp.name] || {};
     const oppFieldOwn = own(opp.name);
     const oppCurrMin = oppExisting.min || 0;
     const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
-    // v3.24.22: min = max(20% floor, oppSimOwn × 1.35 leverage)
-    // Floor bumped from 15% → 20% so McNally-style (1% sim own) gets
-    // pushed meaningfully ahead of unflagged mid-salary players like
-    // Machac. At 20% min, contrarian score becomes +19 for McNally,
-    // which at base weight 0.6 gives +11.4% proj boost — enough to
-    // flip projection-close ties between her (48.83) and Machac (55.07).
-    const flatFloor = roundInt(20 * strengthFactor);
-    const leverageBoost = roundInt(oppFieldOwn * (1 + scaledBoostPct(0.35)));
-    const targetMin = Math.max(flatFloor, leverageBoost);
-    const newMin = Math.min(Math.max(oppCurrMin, targetMin), oppCurrMax);
+    const addedMin = Math.round(oppFieldOwn * valOppBoost);
+    const newMin = Math.min(oppCurrMin + addedMin, oppCurrMax);
     caps[opp.name] = {
       ...oppExisting,
-      min: newMin,
+      min: Math.max(oppCurrMin, newMin),
       _isValOppBoost: true,
       _valOppBoostAddedMin: newMin - oppCurrMin,
       _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
@@ -2556,324 +2572,7 @@ function computeContrarianCaps16Plus(rp, ownership, contrarianStrength) {
     };
   });
 
-  // ─────────────────────────────────────────────────────────────────
-  // (12) MID-TIER CHALK CAP (v3.24.10) — top 3 sim-owned players in
-  //      the $7,800 – $8,900 range are capped at max 8% exposure.
-  //      This is the "sneaky chalk" tier — mid-salary favorites the
-  //      field gravitates to for perceived value. Capping them forces
-  //      structural diversity around the mid-range.
-  //
-  //      OPPONENT BOOST: the opponents of those top 3 are evaluated —
-  //      if opponent val < 6.20, boost them to min 15%. If opponent
-  //      val ≥ 6.20, skip them (no boost — they're already projected
-  //      to be a value play, no need to force them in).
-  //
-  //      All thresholds scale with strength slider (8% cap and 15%
-  //      opp floor both × strengthFactor).
-  //
-  //      Skips if player has an active signal (Trap, Or Trap, Gem
-  //      Primary, Or Pivot, PP Pivot) — established priority pattern.
-  // ─────────────────────────────────────────────────────────────────
-  const midTierChalk = withSal
-    .filter(p => (p.salary || 0) >= 7800 && (p.salary || 0) <= 8900)
-    .filter(p => {
-      // Exclude any player who already has ANY active signal — Rule 12
-      // only targets clean mid-salary chalk. Previously excluded just
-      // traps/gems, but v3.24.11 also excludes negative-signal players
-      // like Pivot-Opponent Fade, PP Fade Opp Cap, Hard Fade, etc.
-      const c = caps[p.name];
-      if (!c) return true;
-      if (c._isTrap || c._isOrTrap) return false;
-      if (c._isGem) return false;
-      if (c._isPivotOpponent) return false;
-      if (c._isPpFadeOpponent) return false;
-      if (c._isStraightSetsCap) return false;
-      if (c._isValCap) return false;
-      if (c._isValOppBoost) return false;
-      if (c._isHardFade) return false;
-      if (c._isHardFadeOpp) return false;
-      if (c._isCheapCap) return false;
-      return true;
-    })
-    .sort((a, b) => own(b.name) - own(a.name))
-    .slice(0, 3);
-  midTierChalk.forEach(chalk => {
-    // Cap the chalk player at 8%
-    const existing = caps[chalk.name] || {};
-    const fieldOwn = own(chalk.name);
-    const hardCap = roundInt(8 * strengthFactor);
-    const currMax = existing.max !== undefined ? existing.max : 100;
-    caps[chalk.name] = {
-      ...existing,
-      max: Math.min(currMax, hardCap),
-      _isMidTierChalkCap: true,
-      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
-    };
-    // Evaluate opponent — boost to min 15% if opp val < 6.20, else skip
-    const opp = withSal.find(p => p.name === chalk.opponent);
-    if (!opp) return;
-    if ((opp.val || 0) >= 6.20) return;  // skip high-val opps
-    const oppExisting = caps[opp.name] || {};
-    const oppFieldOwn = own(opp.name);
-    const oppCurrMin = oppExisting.min || 0;
-    const oppCurrMax = oppExisting.max !== undefined ? oppExisting.max : 100;
-    const oppFloor = roundInt(15 * strengthFactor);
-    const oppNewMin = Math.min(Math.max(oppCurrMin, oppFloor), oppCurrMax);
-    caps[opp.name] = {
-      ...oppExisting,
-      min: oppNewMin,
-      _isMidTierChalkOppBoost: true,
-      _midTierChalkOppAddedMin: oppNewMin - oppCurrMin,
-      _fieldOwn: oppExisting._fieldOwn !== undefined ? oppExisting._fieldOwn : Math.round(oppFieldOwn),
-    };
-  });
-
-  // ─────────────────────────────────────────────────────────────────
-  // (13) LOW-OWN HARD FADE (v3.24.21) — HARD OVERRIDE of min/max only.
-  //      Any player with sim own ≤ 0.8% is capped at max 4% exposure.
-  //      At this ownership level, the field has fully abandoned them,
-  //      and on 16+ match slates, no one at this price point is
-  //      typically needed regardless of structural labeling.
-  //
-  //      OVERRIDE SEMANTICS (v3.24.15): preserves all signal metadata
-  //      (_isGem, _kind, etc.) so downstream UI (gem card, Builder
-  //      panel labels, row badges) keep the gem/pivot labeling. Only
-  //      the numeric min/max are overridden — min:0 (stripped from
-  //      gem's 10%/35% floor) and max:hardCap (4%). _isLowOwnCap is
-  //      added as a secondary flag so this rule is traceable, but
-  //      labelFor's priority order ensures gems still display as gems.
-  //
-  //      Traps are preserved entirely — their structural-fade cap is
-  //      already more restrictive than 4% typically.
-  //
-  //      v3.24.21: GEM OVERRIDE NOW SALARY-GATED.
-  //      The gem override only applies when salary ≤ $5,900. Above
-  //      that threshold, gems are preserved (min floor kept intact).
-  //      Rationale: original intent was to prevent ultra-cheap
-  //      longshot gems like Sierra ($5,000) from getting forced to
-  //      15%+ exposure. But mid-salary strategic gems like Parks
-  //      ($6,300) at 0% field own SHOULD be rostered at their gem
-  //      floor — they're precisely what the Hidden Gem signal targets.
-  //      Sub-$5,900 sub-0.8% gems still get nuked to 4%, mid-salary
-  //      gems preserve their structural floor.
-  // ─────────────────────────────────────────────────────────────────
-  withSal.forEach(p => {
-    if (own(p.name) > 0.8) return;
-    const existing = caps[p.name] || {};
-    // Preserve traps entirely (their structural caps stay)
-    if (existing._isTrap || existing._isOrTrap) return;
-    // v3.24.21: preserve mid-salary gems (>$5,900) — the override only
-    // applies to cheap-salary gems where forced exposure would be reckless.
-    const sal = p.salary || 0;
-    if (existing._isGem && sal > 5900) return;
-    const fieldOwn = own(p.name);
-    const hardCap = roundInt(4 * strengthFactor);
-    caps[p.name] = {
-      ...existing,   // preserve all gem metadata (_isGem, _kind, _gemPrimaryRank, etc.)
-      min: 0,        // strip gem floor to avoid min>max conflict
-      max: hardCap,  // hard override
-      _isLowOwnCap: true,
-      _lowOwnOverrodeGem: !!(existing._isGem),  // debug flag
-      _fieldOwn: existing._fieldOwn !== undefined ? existing._fieldOwn : Math.round(fieldOwn),
-    };
-  });
-
   return caps;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// TENNIS BUILDING ANIMATION (v3.24.16) — court-radar UI for 16+ builds
-// ═══════════════════════════════════════════════════════════════════════
-// Renders while the tennis optimizer is running on 16+ match slates.
-// Calibrates stage progression to expected build duration based on match
-// count. Self-contained — inlines its own styles as <style> tag scoped
-// by unique class prefix (br-*) to avoid collision with app styles.
-//
-// Props:
-//   mc:          match count (drives ETA)
-//   nL:          lineup count being built (display only)
-//   contrarianOn: used to modulate subtitle
-//   strength:    contrarian strength (display only)
-//   isContrarian: truthy when contrarian pipeline is active (adds rules line)
-function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0.6, buildStage: propStage = 0, platform = 'tennis' }) {
-  // v3.24.24: self-advancing checklist. Instead of relying on the parent
-  // to setBuildStage() between chunks (which can't advance during the
-  // synchronous optimize() block), the animation schedules its own stage
-  // advances on a setInterval calibrated to estimated build duration.
-  //
-  // Why this works better than the chunked approach:
-  // - Browsers process pending setInterval callbacks during rAF gaps that
-  //   the event loop inserts even inside long-running sync tasks
-  // - React 18's concurrent scheduler yields regularly even when JS is
-  //   "blocked," so queued state updates do eventually flush
-  // - The checklist ticks at its own pace regardless of what the optimizer
-  //   is doing, giving the illusion of steady progress
-  //
-  // Timer duration = estBuildSec / 4 (roughly even distribution across 4
-  // stages). At 24 matches (est 28s), each stage holds ~7s. If the real
-  // build finishes sooner, the parent unmounts the animation — no visible
-  // issue. If the build takes longer, the checklist lands on stage 3 and
-  // just stays there with the shimmer bar still animating.
-  const estSeconds = useMemo(() => {
-    // Platform-specific calibration based on empirical build times
-    if (platform === 'tennis') {
-      if (mc >= 24) return 28;
-      if (mc >= 20) return 20;
-      if (mc >= 18) return 14;
-      if (mc >= 16) return 10;
-      if (mc >= 14) return 7;
-      if (mc >= 10) return 5;
-      return 3;
-    }
-    if (platform === 'mma') return 6;  // MMA slates are typically smaller
-    if (platform === 'nba') return 8;  // NBA classic
-    return 5;
-  }, [mc, platform]);
-
-  // Self-advance timer — stages 0 → 3 over estSeconds
-  const [autoStage, setAutoStage] = useState(0);
-  useEffect(() => {
-    setAutoStage(0);
-    const stageDuration = (estSeconds * 1000) / 4;
-    const timers = [
-      setTimeout(() => setAutoStage(1), stageDuration * 1),
-      setTimeout(() => setAutoStage(2), stageDuration * 2),
-      setTimeout(() => setAutoStage(3), stageDuration * 3),
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, [estSeconds]);
-
-  // Use whichever is higher — prop from parent (set at real checkpoints)
-  // OR self-advance (ticks on schedule). So if the real build advances
-  // faster than the timer, parent takes over; if slower, timer keeps UI
-  // moving while real build catches up.
-  const buildStage = Math.max(propStage, autoStage);
-
-  const stageNames = ['Preparing pool', 'Applying contrarian rules', 'Enumerating lineups', 'Ranking + polishing'];
-  const currentStage = stageNames[Math.min(3, buildStage)];
-
-  return (
-    <>
-      <style>{`
-        @keyframes br-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes br-blip { 0% { opacity: 0; transform: scale(0.5); } 10% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.8); } }
-        @keyframes br-pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,24,0.5); } 50% { box-shadow: 0 0 20px 4px rgba(245,197,24,0.2); } }
-        @keyframes br-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes br-ellipsis-pulse { 0%, 20% { opacity: 0.15; } 50% { opacity: 1; } 100% { opacity: 0.15; } }
-        @keyframes br-step-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,24,0.5); } 50% { box-shadow: 0 0 0 5px rgba(245,197,24,0); } }
-        @keyframes br-shimmer-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
-        .br-container { animation: br-fade-in 0.3s ease-out; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px; margin-top: 20px; }
-        .br-layout { display: flex; align-items: center; gap: 32px; }
-        .br-court { width: 220px; height: 220px; position: relative; flex-shrink: 0; animation: br-pulse-glow 3s ease-in-out infinite; border-radius: 50%; }
-        .br-court svg { width: 100%; height: 100%; display: block; }
-        .br-sweep { transform-origin: 110px 110px; animation: br-sweep 2.8s linear infinite; }
-        .br-info { flex: 1; min-width: 0; }
-        .br-stage-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 6px; }
-        .br-stage-value { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 18px; display: inline-flex; align-items: center; }
-        .br-ellipsis { display: inline-flex; margin-left: 2px; }
-        .br-ellipsis span { animation: br-ellipsis-pulse 1.4s ease-in-out infinite; }
-        .br-ellipsis span:nth-child(2) { animation-delay: 0.2s; }
-        .br-ellipsis span:nth-child(3) { animation-delay: 0.4s; }
-        .br-pipeline { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-        .br-step { display: flex; align-items: center; gap: 10px; font-size: 13px; transition: color 0.3s ease; }
-        .br-step-pending { color: var(--text-dim); }
-        .br-step-active { color: var(--primary); font-weight: 500; }
-        .br-step-done { color: var(--green); }
-        .br-step-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
-        .br-step-pending .br-step-dot { background: transparent; border: 1.5px solid var(--border-light); }
-        .br-step-active .br-step-dot { background: var(--primary); box-shadow: 0 0 0 0 rgba(245,197,24,0.5); animation: br-step-pulse 1.8s ease-in-out infinite; }
-        .br-step-done .br-step-dot { background: var(--green); color: #0A1628; }
-        .br-shimmer-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; position: relative; margin-top: 4px; }
-        .br-shimmer-track { position: absolute; top: 0; left: 0; height: 100%; width: 40%; background: linear-gradient(90deg, transparent, var(--primary-glow), var(--primary), var(--primary-glow), transparent); animation: br-shimmer-slide 1.8s ease-in-out infinite; }
-        .br-sub { font-size: 12px; color: var(--text-muted); margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
-        .br-sub-strength { color: var(--primary); font-weight: 600; }
-        @media (max-width: 640px) {
-          .br-layout { flex-direction: column; gap: 20px; }
-          .br-court { width: 180px; height: 180px; }
-          .br-sweep { transform-origin: 90px 90px; }
-          .br-stage-value { font-size: 17px; }
-          .br-step { font-size: 12px; }
-        }
-      `}</style>
-      <div className="br-container">
-        <div className="br-layout">
-          <div className="br-court">
-            <svg viewBox="0 0 220 220">
-              <defs>
-                <radialGradient id="br-court-grad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#162948" stopOpacity="1"/>
-                  <stop offset="100%" stopColor="#0A1628" stopOpacity="1"/>
-                </radialGradient>
-                <linearGradient id="br-sweep-grad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#F5C518" stopOpacity="0"/>
-                  <stop offset="60%" stopColor="#F5C518" stopOpacity="0.25"/>
-                  <stop offset="100%" stopColor="#FFD73D" stopOpacity="0.55"/>
-                </linearGradient>
-              </defs>
-              {/* court circle + range rings */}
-              <circle cx="110" cy="110" r="108" fill="url(#br-court-grad)" stroke="#2A3D5F" strokeWidth="1"/>
-              <circle cx="110" cy="110" r="80" fill="none" stroke="rgba(245,197,24,0.08)" strokeWidth="0.5"/>
-              <circle cx="110" cy="110" r="55" fill="none" stroke="rgba(245,197,24,0.08)" strokeWidth="0.5"/>
-              <circle cx="110" cy="110" r="30" fill="none" stroke="rgba(245,197,24,0.08)" strokeWidth="0.5"/>
-              {/* court cross-hairs */}
-              <line x1="110" y1="5" x2="110" y2="215" stroke="rgba(245,197,24,0.05)" strokeWidth="0.5"/>
-              <line x1="5" y1="110" x2="215" y2="110" stroke="rgba(245,197,24,0.05)" strokeWidth="0.5"/>
-              {/* tennis court outline in center */}
-              <rect x="70" y="75" width="80" height="70" fill="none" stroke="rgba(245,197,24,0.15)" strokeWidth="0.5"/>
-              <line x1="110" y1="75" x2="110" y2="145" stroke="rgba(245,197,24,0.15)" strokeWidth="0.5"/>
-              <line x1="70" y1="110" x2="150" y2="110" stroke="rgba(245,197,24,0.15)" strokeWidth="0.5"/>
-              {/* blips — fire at offset intervals */}
-              <circle cx="172" cy="72" r="3" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '0.3s' }}/>
-              <circle cx="58" cy="148" r="2.5" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '1.0s' }}/>
-              <circle cx="148" cy="172" r="2" fill="#FFD73D" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '1.6s' }}/>
-              <circle cx="48" cy="58" r="2.5" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '2.1s' }}/>
-              <circle cx="90" cy="42" r="2" fill="#FFD73D" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '0.7s' }}/>
-              <circle cx="168" cy="140" r="2.5" fill="#F5C518" style={{ animation: 'br-blip 2.8s ease-out infinite', animationDelay: '1.9s' }}/>
-              {/* sweep arm */}
-              <g className="br-sweep">
-                <path d="M 110 110 L 110 5 A 105 105 0 0 1 208 72 Z" fill="url(#br-sweep-grad)"/>
-                <line x1="110" y1="110" x2="110" y2="5" stroke="#F5C518" strokeWidth="1.5" strokeLinecap="round"/>
-              </g>
-              {/* center dot */}
-              <circle cx="110" cy="110" r="5" fill="#F5C518"/>
-              <circle cx="110" cy="110" r="2.5" fill="#FFD73D"/>
-            </svg>
-          </div>
-          <div className="br-info">
-            <div className="br-stage-label">Status</div>
-            <div className="br-stage-value">{currentStage}<span className="br-ellipsis"><span>.</span><span>.</span><span>.</span></span></div>
-            <div className="br-pipeline">
-              {stageNames.map((label, i) => {
-                const state = i < buildStage ? 'done' : i === buildStage ? 'active' : 'pending';
-                return (
-                  <div key={i} className={`br-step br-step-${state}`}>
-                    <div className="br-step-dot">
-                      {state === 'done' && (
-                        <svg viewBox="0 0 12 12" width="10" height="10">
-                          <path d="M 2 6 L 5 9 L 10 3" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-                    <div className="br-step-label">{label}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="br-shimmer-bar">
-              <div className="br-shimmer-track"/>
-            </div>
-            <div className="br-sub">
-              {contrarianOn ? (
-                <>Building with <span className="br-sub-strength">OverOwned {strength.toFixed(1)}</span> {mc >= 16 ? ' · Deep-slate ruleset active' : ''}</>
-              ) : (
-                <>Building {nL} lineups from top projections</>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2881,12 +2580,6 @@ function BuildingAnimation({ mc = 0, nL = 45, contrarianOn = false, strength = 0
 // ═══════════════════════════════════════════════════════════════════════
 function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayers = [], mc = 0 }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
-  const [building, setBuilding] = useState(false);
-  const [buildPoolSize, setBuildPoolSize] = useState(0);
-  // v3.24.19: track actual build stage (0-3) driven by the chunked runBuild
-  // pipeline. Lets the animation advance between stages as real work happens,
-  // rather than being locked to elapsed-time estimation.
-  const [buildStage, setBuildStage] = useState(0);
   const [nL, setNL] = useState(45);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build — differentiates outputs between users
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -3301,50 +2994,8 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
   const isShowdown = useMemo(() => sp.some(p => p.cpt_salary != null), [sp]);
-
-  // v3.24.16: wrap build in animation gate. For 16+ tennis builds, show the
-  // court-radar BuildingAnimation while the synchronous optimize() runs.
-  // v3.24.19: chunked yielding — each build stage yields to the browser via
-  // setTimeout(0) so React can flush state updates (stage counter, pool count,
-  // rules applied) between chunks. Main optimize() call is still one blocking
-  // chunk, but wrapping it gives us 4 paint opportunities (pre-sim, pre-optimize,
-  // pre-post-processing, pre-finalize) which updates the UI noticeably during
-  // the build even without a Web Worker.
-  const yieldToBrowser = () => new Promise(r => setTimeout(r, 0));
-
-  const run = async () => {
-    if (!canBuild) return;
-    setRes(null);
-    setBuilding(true);
-    setBuildStage(0);
-    // Empirically-calibrated pool size estimates from actual tennis builds
-    if (!isShowdown && mc > 0) {
-      let approxPool;
-      if (mc >= 24) approxPool = 517000;
-      else if (mc >= 22) approxPool = 380000;
-      else if (mc >= 20) approxPool = 240000;
-      else if (mc >= 18) approxPool = 140000;
-      else if (mc >= 16) approxPool = 70000;
-      else if (mc >= 14) approxPool = 38000;
-      else if (mc >= 12) approxPool = 18000;
-      else if (mc >= 10) approxPool = 8000;
-      else approxPool = 3000;
-      setBuildPoolSize(approxPool);
-    } else {
-      setBuildPoolSize(0);
-    }
-    // Yield twice to guarantee initial paint before any work starts
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await yieldToBrowser();
-    try {
-      await runBuild();
-    } finally {
-      setBuilding(false);
-      setBuildStage(0);
-    }
-  };
-
-  const runBuild = async () => {
+  const run = () => {
+    if (!canBuild) return;                      // DK compliance gate — user must edit ≥2 projections
     // Variance jitter: each build applies a fresh ±variance% random multiplier to every player's projection.
     // Math.random() is unseeded, so two users clicking Build on the same slate get different rankings → different CSVs.
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -3394,94 +3045,15 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       return { name: p.name, salary: p.salary, id: p.id, projection: p.proj * jitter(), opponent: p.opponent, maxExp: effMax, minExp: effMin };
     });
     enforceMinNudge(pd, sp);
-    // v3.24.19: yield point 1 — transitioning from setup (ownership/cap
-    // resolution) into contrarian rule application. Animation shows stage 1.
-    setBuildStage(1);
-    await yieldToBrowser();
-    // ─────────────────────────────────────────────────────────────
-    // v3.24.12: CONTRARIAN-SCORE PROJECTION ADJUSTMENT (16+ only)
-    // For 16+ match tennis slates with contrarian mode on, adjust the
-    // optimizer's ranking projection by a "contrarian score" reflecting
-    // how favored/disfavored each player is by the ruleset. This biases
-    // lineup ranking toward positive-signal players without forcing it —
-    // min/max caps still enforce hard floors/ceilings (option 3a).
-    //
-    // Score formula: contrarianScore = targetExposure - fieldOwnership
-    //   • targetExposure = cap.min for boosted players (gem, pivot, opp boosts)
-    //   • targetExposure = cap.max for capped players (trap, fades, hard caps)
-    //   • targetExposure = fieldOwn for no-signal players (score = 0, neutral)
-    // Adjusted projection = projection × (1 + 0.6 × strengthFactor × score/100)
-    //
-    // v3.24.17: base weight raised from 0.3 → 0.6. Previous 0.3 weight was
-    // producing close projection-adjusted values between high-proj negative-
-    // signal players (Oksana 48.9 + Hard Fade) and lower-proj positive-signal
-    // players (Boulter 43.8 + Or Pivot), often letting the raw projection
-    // edge out. 0.6 doubles the influence: at strength 0.6 base, a gem with
-    // +30 score gets +18% projection boost and a trap with −70 score gets
-    // −42% penalty. Strong separation while projection still dominates when
-    // signals are weak. Still scales linearly with strengthFactor so users
-    // can tune aggression via the OverOwned Mode slider.
-    //
-    // Strength-scaled weights:
-    //   • Strength 0   → weight 0    → no adjustment (contrarian fully off)
-    //   • Strength 0.3 → weight 0.3  → half-aggressive
-    //   • Strength 0.6 → weight 0.6  → baseline (default)
-    //   • Strength 1.0 → weight 1.0  → very aggressive (contrarian dominates)
-    //
-    // IMPORTANT: original p.proj values are preserved on the sp array, so
-    // the final lineup display (which reads p.proj from the original pool)
-    // still shows true projections. Only the optimizer's internal ranking
-    // sees the adjusted values.
-    const savedProjs = pd.map(p => p.projection);
-    if (mc >= 16 && contrarianOn && contrarianStrength > 0) {
-      const strengthFactor = contrarianStrength / 0.6;
-      const contrarianWeight = 0.6 * strengthFactor;
-      pd.forEach((player, i) => {
-        const cap = contrarianCaps[player.name] || {};
-        const fieldOwn = ownership[player.name] || 0;
-        let target;
-        if (cap._isLowOwnCap) {
-          // Low-own override wins regardless of any gem flag also present —
-          // the max:4 is the binding constraint, not the stripped min.
-          target = cap.max !== undefined ? cap.max : fieldOwn;
-        } else if (cap._isGem || cap._isValOppBoost || cap._isHardFadeOpp || cap._isMidTierChalkOppBoost) {
-          // Boosted player — target is the min floor
-          target = cap.min !== undefined ? cap.min : fieldOwn;
-        } else if (cap._isTrap || cap._isOrTrap || cap._isPivotOpponent
-                 || cap._isPpFadeOpponent || cap._isStraightSetsCap
-                 || cap._isValCap || cap._isHardFade || cap._isCheapCap
-                 || cap._isMidTierChalkCap || cap._isLowOwnCap) {
-          // Capped player — target is the max ceiling
-          target = cap.max !== undefined ? cap.max : fieldOwn;
-        } else {
-          // No-signal player — neutral (score will be 0)
-          target = fieldOwn;
-        }
-        const contrarianScore = target - fieldOwn;
-        const adjustmentFactor = 1 + contrarianWeight * (contrarianScore / 100);
-        player.projection = player.projection * adjustmentFactor;
-      });
-    }
+    // v3.23: 18+ match tennis slates use a $49,200 minSalary floor (up from
+    // $48,000). Forces meaningful cap utilization on deep slates where
+    // cheap-filler lineups become structurally similar, improving lineup
+    // diversity and paying a modest speed dividend from the smaller pool.
+    // Threshold chosen empirically: cuts the valid-lineup pool ~62% on a
+    // 24-match slate (1.36M → 517k) while preserving the top projection
+    // (330.71 → 330.06, filler loss only). mc prop is slate match count.
     const minSal = mc >= 18 ? 49200 : 48000;
-    // v3.24.19: yield point 2 — transitioning into main optimize() call.
-    // Animation shows stage 2 (enumerating lineups). The optimize call is
-    // still one synchronous block, but this yield lets the UI paint the
-    // stage transition before JS blocks.
-    setBuildStage(2);
-    await yieldToBrowser();
     const r = optimize(pd, nL, 50000, 6, minSal, { locked: new Set(lockedPlayers), excluded: new Set(excludedPlayers) });
-    // v3.24.19: yield point 3 — transitioning from optimize to ranking/polishing.
-    setBuildStage(3);
-    await yieldToBrowser();
-    // Restore original projections on pd so lineup sums display true projections.
-    pd.forEach((player, i) => { player.projection = savedProjs[i]; });
-    // Recompute each lineup's proj field from the restored (true) projections
-    // so display shows real projection sums, not adjusted ones used for ranking.
-    if (mc >= 16 && contrarianOn && contrarianStrength > 0 && r && r.lineups) {
-      r.lineups.forEach(lu => {
-        lu.proj = Math.round(lu.players.reduce((s, i) => s + (pd[i].projection || 0), 0) * 100) / 100;
-      });
-    }
     // Merge favorited classic lineups (remapped from name tuples to new indices).
     const favCls = [];
     const nameIdx = new Map(pd.map((p, i) => [p.name, i]));
@@ -3568,9 +3140,6 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isValOppBoost)   return { label: 'Val-Opp Boost', icon: 'gem', color: 'var(--green)' };
         if (c._isValCap)        return { label: 'Val Cap', icon: 'bomb', color: 'var(--red)' };
         if (c._isCheapCap)      return { label: 'Cheap Cap', icon: 'bomb', color: 'var(--amber)' };
-        if (c._isMidTierChalkCap) return { label: 'Mid-Tier Chalk Cap', icon: 'bomb', color: 'var(--amber)' };
-        if (c._isMidTierChalkOppBoost) return { label: 'Mid-Tier Chalk Opp Boost', icon: 'gem', color: 'var(--green)' };
-        if (c._isLowOwnCap)     return { label: 'Low-Own Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isStraightSetsCap) return { label: 'Straight-Sets Cap', icon: 'bomb', color: 'var(--amber)' };
         if (c._isPpFadeOpponent)  return { label: 'PP Fade Opp', icon: 'bomb', color: 'var(--amber)' };
         if (c._isMidTierFade)   return { label: 'Mid-Tier Fade', icon: 'bomb', color: 'var(--amber)' };
@@ -3587,9 +3156,6 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
         if (c._isValOppBoost)   return { sym: `min ${c.min}% (+${c._valOppBoostAddedMin || 0}pp)`, bound: c.min };
         if (c._isValCap)        return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isCheapCap)      return { sym: `max ${c.max}%`, bound: c.max };
-        if (c._isMidTierChalkCap) return { sym: `max ${c.max}%`, bound: c.max };
-        if (c._isMidTierChalkOppBoost) return { sym: `min ${c.min}% (+${c._midTierChalkOppAddedMin || 0}pp)`, bound: c.min };
-        if (c._isLowOwnCap)     return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isStraightSetsCap) return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isPpFadeOpponent)  return { sym: `max ${c.max}%`, bound: c.max };
         if (c._isMidTierFade)   return { sym: `max ${c.max}%`, bound: c.max };
@@ -3648,7 +3214,6 @@ function BuilderTab({ players: rp, ownership, lockedPlayers = [], excludedPlayer
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : ''} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {building && <BuildingAnimation mc={mc} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} buildStage={buildStage} platform="tennis" />}
     {res && <ExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
@@ -4269,7 +3834,6 @@ function MMAPPTab({ rows }) {
 
 function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPlayers = [] }) {
   const [exp, setExp] = useState({}); const [res, setRes] = useState(null);
-  const [building, setBuilding] = useState(false);
   const [nL, setNL] = useState(150);
   const [variance, setVariance] = useState(2);                // ±% jitter on projections per build
   const [globalMax, setGlobalMax] = useState(100); const [globalMin, setGlobalMin] = useState(0);
@@ -4476,20 +4040,8 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
   const sp = useMemo(() => [...adjRp].filter(p => p.salary > 0).sort((a, b) => b[sortField] - a[sortField]), [adjRp, sortField]);
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
-  // v3.24.24: wrap build in animation gate for MMA too
-  const run = async () => {
-    if (!canBuild) return;
-    setRes(null);
-    setBuilding(true);
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise(r => setTimeout(r, 0));
-    try {
-      runBuild();
-    } finally {
-      setBuilding(false);
-    }
-  };
-  const runBuild = () => {
+  const run = () => {
+    if (!canBuild) return;                      // DK compliance gate
     // Variance jitter: each build applies a fresh ±variance% random multiplier. Same mult to proj AND ceiling
     // per fighter so their ratio stays consistent (matters because cash mode uses proj, GPP uses ceiling).
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
@@ -4657,7 +4209,6 @@ function MMABuilderTab({ fighters: rp, ownership, lockedPlayers = [], excludedPl
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {mode === 'ceiling' ? 'GPP' : 'Cash'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {building && <BuildingAnimation mc={0} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} platform="mma" />}
     {res && <MMAExposureResults res={res} ownership={ownership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} mode={res.mode} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
@@ -5334,7 +4885,6 @@ function NBAPPTab({ rows }) {
 function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, gameInfo, lockedPlayers = [], excludedPlayers = [], cptLockedPlayers = [], flexLockedPlayers = [], cptExcludedPlayers = [], flexExcludedPlayers = [] }) {
   const [exp, setExp] = useState({});
   const [res, setRes] = useState(null);
-  const [building, setBuilding] = useState(false);
   const [nL, setNL] = useState(20);
   const [variance, setVariance] = useState(2);
   const [globalMax, setGlobalMax] = useState(100);
@@ -6003,20 +5553,8 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
   const sE = (n, f, v) => setExp(p => ({ ...p, [n]: { ...p[n], [f]: v } }));
   const applyGlobal = () => { const ne = {}; sp.forEach(p => { ne[p.name] = { min: globalMin, max: globalMax, ...exp[p.name] }; }); setExp(ne); };
 
-  // v3.24.24: wrap NBA build in animation gate
-  const run = async () => {
+  const run = () => {
     if (!canBuild) return;
-    setRes(null);
-    setBuilding(true);
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise(r => setTimeout(r, 0));
-    try {
-      runBuild();
-    } finally {
-      setBuilding(false);
-    }
-  };
-  const runBuild = () => {
     const jitter = () => 1 + (Math.random() * 2 - 1) * variance / 100;
     const enforceMinNudge = (pd, baseProjs) => {
       const changed = pd.filter((p, i) => Math.abs(p.projection - baseProjs[i]) >= 0.01).length;
@@ -6537,7 +6075,6 @@ function NBABuilderTab({ players: rp, ownership, cptOwnership = {}, slateType, g
       style={!canBuild ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
       <Icon name="bolt" size={14}/> Build {nL} {isShowdown ? 'Showdown' : 'Classic'} Lineups{contrarianOn ? ' (Contrarian)' : ''}
     </button>
-    {building && <BuildingAnimation mc={0} nL={nL} contrarianOn={contrarianOn} strength={contrarianStrength} platform="nba" />}
     {res && <NBAExposureResults res={res} ownership={ownership} cptOwnership={cptOwnership} onRebuild={run} onExportDK={exportDK} onExportReadable={exportReadable} nL={nL} canBuild={canBuild} overrideCount={overrideCount} favoriteLineups={favoriteLineups} onToggleFavorite={toggleFavoriteLineup} />}
   </>);
 }
